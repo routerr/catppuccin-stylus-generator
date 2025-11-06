@@ -49,7 +49,7 @@ export function APIKeyConfig({ aiProvider, onKeyChange }: APIKeyConfigProps) {
         <div className="flex gap-2">
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-md text-sm transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 grass-green-gradient hover:opacity-90 rounded-md text-sm transition-colors text-white font-medium"
           >
             <Save className="h-4 w-4" />
             {saved ? 'Saved!' : 'Save Key'}

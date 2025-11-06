@@ -1,0 +1,153 @@
+/**
+ * ============================================
+ * Catppuccin Latte Theme
+ * ============================================
+ *
+ * Generated from: /Users/raychang/Repo/catppuccin-stylus-generator/stylus_example.less
+ * Date: 2025-11-06
+ * Generator: Catppuccin Theme Generator
+ *
+ * This theme uses the Catppuccin Latte color palette
+ * to create a beautiful, consistent look for your website.
+ */
+ 
+/* ============================================
+ * BASE COLOR PALETTE
+ * ============================================
+ * These are all the Catppuccin Latte colors
+ */
+
+// Palette reference
+$base = #eff1f5
+$mantle = #e6e9ef
+$crust = #dce0e8
+$surface0 = #ccd0da
+$surface1 = #bcc0cc
+$surface2 = #acb0be
+$overlay0 = #9ca0b0
+$overlay1 = #8c8fa1
+$overlay2 = #7c7f93
+$subtext0 = #6c6f85
+$subtext1 = #5c5f77
+$text = #4c4f69
+$rosewater = #dc8a78
+$flamingo = #dd7878
+$pink = #ea76cb
+$mauve = #8839ef
+$red = #d20f39
+$maroon = #e64553
+$peach = #fe640b
+$yellow = #df8e1d
+$green = #40a02b
+$teal = #179299
+$sky = #04a5e5
+$sapphire = #209fb5
+$blue = #1e66f5
+$lavender = #7287fd
+
+// ==========================
+// Level 1: cp_* color bindings
+// ==========================
+$cp_background_primary = #eff1f5 // from role background.primary
+$cp_background_secondary = #e6e9ef // from role background.secondary
+$cp_background_tertiary = #dce0e8 // from role background.tertiary
+$cp_surface_0 = #ccd0da // from role surface.0
+$cp_surface_1 = #bcc0cc // from role surface.1
+$cp_surface_2 = #acb0be // from role surface.2
+$cp_border_subtle = #9ca0b0 // from role border.subtle
+$cp_border_default = #8c8fa1 // from role border.default
+$cp_border_strong = #7c7f93 // from role border.strong
+$cp_text_primary = #4c4f69 // from role text.primary
+$cp_text_secondary = #5c5f77 // from role text.secondary
+$cp_text_muted = #6c6f85 // from role text.muted
+$cp_accent_interactive = #04a5e5 // from role accent.interactive
+$cp_accent_focus = #dc8a78 // from role accent.focus
+$cp_secondary_base = #ea76cb // from role secondary.base
+$cp_success_base = #40a02b // from role success.base
+$cp_warning_base = #df8e1d // from role warning.base
+$cp_danger_base = #d20f39 // from role danger.base
+$cp_primary_hover = #cc8b80 // derived primary.hover
+$cp_primary_active = #bf8780 // derived primary.active
+$cp_secondary_hover = #d77bc3 // derived secondary.hover
+$cp_secondary_active = #c979ba // derived secondary.active
+$cp_success_hover = #4f9d43 // derived success.hover
+$cp_success_active = #52964a // derived success.active
+$cp_warning_hover = #ce8e37 // derived warning.hover
+$cp_warning_active = #c18a40 // derived warning.active
+$cp_danger_hover = #c4294e // derived danger.hover
+$cp_danger_active = #b83154 // derived danger.active
+$cp_info_hover = #1fa1d7 // derived info.hover
+$cp_info_active = #289acc // derived info.active
+$cp_focus_ring = #489ac3 // derived focus.ring
+$cp_selection_bg = #4bbcea // derived selection.bg
+
+// ==========================
+// Level 2: role variables
+// ==========================
+$background-primary = $cp_background_primary
+$background-secondary = $cp_background_secondary
+$background-tertiary = $cp_background_tertiary
+$surface-0 = $cp_surface_0
+$surface-1 = $cp_surface_1
+$surface-2 = $cp_surface_2
+$border-subtle = $cp_border_subtle
+$border-default = $cp_border_default
+$border-strong = $cp_border_strong
+$text-primary = $cp_text_primary
+$text-secondary = $cp_text_secondary
+$text-muted = $cp_text_muted
+$text-disabled = $cp_border_strong
+$accent-interactive = $cp_accent_interactive
+$accent-selection = $cp_accent_interactive
+$accent-focus = $cp_accent_focus
+$primary-base = $cp_accent_focus
+$primary-text = $cp_text_primary
+$secondary-base = $cp_secondary_base
+$secondary-text = $cp_text_primary
+$success-base = $cp_success_base
+$success-text = $cp_background_primary
+$warning-base = $cp_warning_base
+$warning-text = $cp_text_primary
+$danger-base = $cp_danger_base
+$danger-text = $cp_background_primary
+$info-base = $cp_accent_interactive
+$info-text = $cp_text_primary
+$primary-hover = $cp_primary_hover
+$primary-active = $cp_primary_active
+$secondary-hover = $cp_secondary_hover
+$secondary-active = $cp_secondary_active
+$success-hover = $cp_success_hover
+$success-active = $cp_success_active
+$warning-hover = $cp_warning_hover
+$warning-active = $cp_warning_active
+$danger-hover = $cp_danger_hover
+$danger-active = $cp_danger_active
+$info-hover = $cp_info_hover
+$info-active = $cp_info_active
+$focus-ring = $cp_focus_ring
+$selection-bg = $cp_selection_bg
+
+/* Buttons (use role variables) */
+.btn-primary
+  background-color $primary-base
+  color $primary-text
+
+.btn-secondary
+  background-color $secondary-base
+  color $secondary-text
+
+.btn-outline
+  background-color transparent
+  border 1px solid $border-default
+  color $text-primary
+
+.btn-subtle
+  background-color transparent
+  color $text-primary
+  &:hover
+    background-color $surface_0
+
+.btn-destructive
+  background-color $danger-base
+  color $danger-text
+

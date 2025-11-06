@@ -1,4 +1,5 @@
 import type { ColorMapping } from '../../types/catppuccin';
+import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 
 export interface UserStyleMetadata {
   name: string;
@@ -9,10 +10,29 @@ export interface UserStyleMetadata {
   domain: string;
 }
 
+export interface CSSAnalysisData {
+  grouped?: {
+    buttons: Array<{ className: string; properties: any[] }>;
+    links: Array<{ className: string; properties: any[] }>;
+    backgrounds: Array<{ className: string; properties: any[] }>;
+    text: Array<{ className: string; properties: any[] }>;
+    borders: Array<{ className: string; properties: any[] }>;
+  };
+}
+
+/**
+ * generateUserStyle
+ * Accepts legacy mappings: ColorMapping[]
+ * OR MappingOutput (roleMap + derivedScales).
+ * When MappingOutput is provided, emits two-level CSS custom properties:
+ *  - --cp-<sanitized> : hex  (Level 1)
+ *  - --<role-name> : var(--cp-...) (Level 2)
+ */
 export function generateUserStyle(
-  mappings: ColorMapping[],
+  mappings: ColorMapping[] | MappingOutput,
   websiteUrl: string,
-  metadata?: Partial<UserStyleMetadata>
+  metadata?: Partial<UserStyleMetadata>,
+  cssAnalysis?: CSSAnalysisData
 ): string {
   // Extract domain from URL
   let domain = '';
@@ -37,14 +57,15 @@ export function generateUserStyle(
     domain: domain,
   };
 
-  // Group mappings by purpose
-  const colorMap = new Map<string, string>();
-  mappings.forEach(m => {
-    colorMap.set(m.originalColor, m.catppuccinColor);
-  });
-
-  // Generate CSS variable mappings
-  const cssVarMappings = generateCSSVariableMappings(mappings);
+  // Build CSS variable block depending on input shape
+  let cssVarMappings = '';
+  if ((mappings as MappingOutput).roleMap) {
+    const mappingOutput = mappings as MappingOutput;
+    cssVarMappings = generateCSSFromMappingOutput(mappingOutput);
+  } else {
+    const legacy = mappings as ColorMapping[];
+    cssVarMappings = generateCSSVariableMappings(legacy);
+  }
 
   return `/* ==UserStyle==
 @name ${meta.name}
@@ -98,26 +119,35 @@ ${cssVarMappings}
       color: @text;
     }
 
-    /* Links */
+    /* Links - preserve original backgrounds, gradient on hover */
     a {
       color: @accent;
       &:hover {
-        color: lighten(@accent, 10%);
+        background: linear-gradient(135deg, @accent 0%, @sapphire 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        text-fill-color: transparent !important;
       }
     }
 
-    /* Buttons */
+    /* Buttons - preserve original backgrounds, gradient on hover */
     button,
     input[type="button"],
     input[type="submit"] {
-      background: @accent;
-      color: @base;
-      border-color: @accent;
+      /* No background changes in normal state - preserve original */
 
       &:hover {
-        background: lighten(@accent, 10%);
+        background: linear-gradient(135deg, @accent 0%, @mauve 100%) !important;
+        color: @base !important;
+        border-color: transparent !important;
+        transition: all 0.3s ease !important;
       }
     }
+
+    /* Class-specific styling (from CSS analysis) */
+    /* These rules will be added if directory analysis is used */
+${generateClassSpecificRules(cssAnalysis)}
 
     /* Input fields */
     input,
@@ -148,6 +178,7 @@ ${cssVarMappings}
 `;
 }
 
+/** Generate CSS custom properties from legacy ColorMapping[] (keeps previous behaviour) */
 function generateCSSVariableMappings(mappings: ColorMapping[]): string {
   const lines: string[] = [];
 
@@ -221,6 +252,150 @@ function generateCSSVariableMappings(mappings: ColorMapping[]): string {
   lines.push('    --color-warning: #hslify(@yellow)[];');
   lines.push('    --color-danger: #hslify(@red)[];');
   lines.push('    --color-info: #hslify(@blue)[];');
+
+  return lines.join('\n');
+}
+
+/** Generate CSS custom properties from MappingOutput (two-level system) */
+function generateCSSFromMappingOutput(mappingOutput: MappingOutput): string {
+  const lines: string[] = [];
+  const roleMap: RoleMap = mappingOutput.roleMap || {};
+  const derived: DerivedScales = mappingOutput.derivedScales || {};
+
+  lines.push('    /* Level 1: cp_ binding */');
+  const seen = new Map<string, string>(); // hex -> cpName
+  function cpNameForKey(k: string) { return `cp-${sanitizeKey(k)}`; }
+
+  for (const [role, cv] of Object.entries(roleMap)) {
+    if (!cv) continue;
+    const hex = cv.hex;
+    if (!seen.has(hex)) {
+      const cp = cpNameForKey(role);
+      seen.set(hex, cp);
+      lines.push(`    --${cp}: ${hex}; /* from ${role} */`);
+    }
+  }
+  for (const [dk, cv] of Object.entries(derived)) {
+    if (!cv) continue;
+    const hex = cv.hex;
+    if (!seen.has(hex)) {
+      const cp = cpNameForKey(dk);
+      seen.set(hex, cp);
+      lines.push(`    --${cp}: ${hex}; /* derived ${dk} */`);
+    }
+  }
+
+  lines.push('');
+  lines.push('    /* Level 2: role variables */');
+  for (const [role, cv] of Object.entries(roleMap)) {
+    if (!cv) continue;
+    const cp = seen.get(cv.hex) || cpNameForKey(role);
+    const roleVar = roleToCssVar(role);
+    lines.push(`    --${roleVar}: var(--${cp});`);
+  }
+  for (const [dk, cv] of Object.entries(derived)) {
+    if (!cv) continue;
+    const cp = seen.get(cv.hex) || cpNameForKey(dk);
+    const roleVar = roleToCssVar(dk);
+    lines.push(`    --${roleVar}: var(--${cp});`);
+  }
+
+  // Provide button usage mapping comment
+  lines.push('');
+  lines.push('    /* Button role mappings:');
+  lines.push('       .btn-primary => --primary-base / --primary-text');
+  lines.push('       .btn-secondary => --secondary-base / --secondary-text');
+  lines.push('       .btn-outline => transparent / --border-default / --text-primary');
+  lines.push('       .btn-subtle => transparent / --text-primary (hover: --surface-0)');
+  lines.push('       .btn-destructive => --danger-base / --danger-text');
+  lines.push('    */');
+
+  return lines.join('\n');
+}
+
+function sanitizeKey(key: string): string {
+  return key.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+}
+
+function roleToCssVar(role: string): string {
+  return role.replace(/\./g, '-');
+}
+
+/**
+ * Generate class-specific CSS rules from CSS analysis data
+ */
+function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
+  if (!cssAnalysis || !cssAnalysis.grouped) {
+    return '    /* No class-specific analysis available */';
+  }
+
+  const lines: string[] = [];
+  const grouped = cssAnalysis.grouped;
+
+  // Button classes
+  if (grouped.buttons && grouped.buttons.length > 0) {
+    lines.push('');
+    lines.push('    /* Button classes with gradient hover */');
+    grouped.buttons.slice(0, 20).forEach(btn => {
+      lines.push(`    .${btn.className} {`);
+      lines.push(`      /* Preserve original styling */`);
+      lines.push(`      &:hover {`);
+      lines.push(`        background: linear-gradient(135deg, @accent 0%, @mauve 100%) !important;`);
+      lines.push(`        color: @base !important;`);
+      lines.push(`        transition: all 0.3s ease !important;`);
+      lines.push(`      }`);
+      lines.push(`    }`);
+    });
+  }
+
+  // Link classes
+  if (grouped.links && grouped.links.length > 0) {
+    lines.push('');
+    lines.push('    /* Link classes with gradient text hover */');
+    grouped.links.slice(0, 20).forEach(link => {
+      lines.push(`    .${link.className} {`);
+      lines.push(`      color: @accent;`);
+      lines.push(`      &:hover {`);
+      lines.push(`        background: linear-gradient(135deg, @accent 0%, @sapphire 100%) !important;`);
+      lines.push(`        -webkit-background-clip: text !important;`);
+      lines.push(`        -webkit-text-fill-color: transparent !important;`);
+      lines.push(`      }`);
+      lines.push(`    }`);
+    });
+  }
+
+  // Background classes
+  if (grouped.backgrounds && grouped.backgrounds.length > 0) {
+    lines.push('');
+    lines.push('    /* Background classes */');
+    grouped.backgrounds.slice(0, 15).forEach(bg => {
+      lines.push(`    .${bg.className} {`);
+      lines.push(`      background: @surface0 !important;`);
+      lines.push(`    }`);
+    });
+  }
+
+  // Text classes
+  if (grouped.text && grouped.text.length > 0) {
+    lines.push('');
+    lines.push('    /* Text classes */');
+    grouped.text.slice(0, 15).forEach(txt => {
+      lines.push(`    .${txt.className} {`);
+      lines.push(`      color: @text !important;`);
+      lines.push(`    }`);
+    });
+  }
+
+  // Border classes
+  if (grouped.borders && grouped.borders.length > 0) {
+    lines.push('');
+    lines.push('    /* Border classes */');
+    grouped.borders.slice(0, 15).forEach(border => {
+      lines.push(`    .${border.className} {`);
+      lines.push(`      border-color: @overlay0 !important;`);
+      lines.push(`    }`);
+    });
+  }
 
   return lines.join('\n');
 }

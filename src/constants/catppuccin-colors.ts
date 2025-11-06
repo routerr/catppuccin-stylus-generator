@@ -1,7 +1,9 @@
-import type { CatppuccinPalettes, ColorValue } from '../types/catppuccin';
+// Catppuccin palette © Catppuccin community (MIT). Source: https://github.com/catppuccin/palette
+
+import type { CatppuccinPalettes, ColorValue, CatppuccinFlavor, CatppuccinPalette } from '../types/catppuccin';
 
 // Helper function to convert hex to RGB
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? {
     r: parseInt(result[1], 16),
@@ -11,7 +13,7 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 }
 
 // Helper function to convert RGB to HSL
-function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+export function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
   r /= 255;
   g /= 255;
   b /= 255;
@@ -40,14 +42,17 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
 }
 
 // Helper to create ColorValue from hex
-function color(hex: string): ColorValue {
+export function makeColorValue(hex: string): ColorValue {
   const rgb = hexToRgb(hex);
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
   return { hex, rgb, hsl };
 }
 
+// Keep internal helper for backward compatibility
+const color = makeColorValue;
+
 // Official Catppuccin color palettes
-export const CATPPUCCIN_PALETTES: CatppuccinPalettes = {
+export const CATPPUCCIN_PALETTES: Record<CatppuccinFlavor, CatppuccinPalette> = {
   latte: {
     // Base colors
     base: color('#eff1f5'),

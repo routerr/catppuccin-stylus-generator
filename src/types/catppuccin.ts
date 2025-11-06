@@ -38,7 +38,34 @@ export interface ColorValue {
 }
 
 // Complete palette for a flavor
-export type CatppuccinPalette = Record<CatppuccinColor, ColorValue>;
+export interface CatppuccinPalette {
+  base: ColorValue;
+  mantle: ColorValue;
+  crust: ColorValue;
+  surface0: ColorValue;
+  surface1: ColorValue;
+  surface2: ColorValue;
+  overlay0: ColorValue;
+  overlay1: ColorValue;
+  overlay2: ColorValue;
+  subtext0: ColorValue;
+  subtext1: ColorValue;
+  text: ColorValue;
+  rosewater: ColorValue;
+  flamingo: ColorValue;
+  pink: ColorValue;
+  mauve: ColorValue;
+  red: ColorValue;
+  maroon: ColorValue;
+  peach: ColorValue;
+  yellow: ColorValue;
+  green: ColorValue;
+  teal: ColorValue;
+  sky: ColorValue;
+  sapphire: ColorValue;
+  blue: ColorValue;
+  lavender: ColorValue;
+}
 
 // All palettes
 export type CatppuccinPalettes = Record<CatppuccinFlavor, CatppuccinPalette>;
@@ -59,6 +86,25 @@ export interface ColorMapping {
   reason: string;
 }
 
+// CSS class mapping result
+export interface CSSClassMapping {
+  className: string;
+  selector: string;
+  properties: Array<{
+    property: string;
+    originalValue: string;
+    catppuccinValue: string;
+    catppuccinColor?: CatppuccinColor;
+  }>;
+  purpose: string; // e.g., "button", "link", "background", "text"
+}
+
+// Enhanced website analysis with CSS classes
+export interface EnhancedWebsiteAnalysis extends WebsiteColorAnalysis {
+  cssClasses: CSSClassMapping[];
+  classUsage: Record<string, number>;
+}
+
 // Theme generation config
 export interface ThemeConfig {
   url: string;
@@ -66,4 +112,5 @@ export interface ThemeConfig {
   accentPriority: AccentColor[];
   colorAnalysis: WebsiteColorAnalysis;
   colorMappings: ColorMapping[];
+  cssClassMappings?: CSSClassMapping[];
 }

@@ -1,10 +1,11 @@
-import type { CatppuccinFlavor, CatppuccinColor } from '../../types/catppuccin';
+import type { CatppuccinFlavor, CatppuccinColor, ColorMapping } from '../../types/catppuccin';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
 
 export function generateCssTheme(
   flavor: CatppuccinFlavor,
   colorMappings: Map<string, CatppuccinColor>,
-  url: string
+  url: string,
+  mappingsWithReasons?: ColorMapping[]
 ): string {
   const palette = CATPPUCCIN_PALETTES[flavor];
   const date = new Date().toISOString().split('T')[0];

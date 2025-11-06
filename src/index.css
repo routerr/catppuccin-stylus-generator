@@ -1,9 +1,24 @@
+/* Catppuccin Grass Green Gradient */
+.grass-green-gradient {
+  background: linear-gradient(135deg, #74c69d 0%, #2d6a4f 100%);
+}
+
+.grass-green-text {
+  background: linear-gradient(135deg, #74c69d 0%, #2d6a4f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.grass-green-border {
+  border-color: #2d6a4f;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: iansui, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
