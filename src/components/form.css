@@ -1,0 +1,116 @@
+.card {
+  background: rgba(49, 50, 68, 0.85);
+  border: 1px solid rgba(137, 180, 250, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 18px 40px rgba(17, 17, 27, 0.45);
+  backdrop-filter: blur(16px);
+}
+
+.card__header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.card__header p {
+  margin: 4px 0 0;
+  color: rgba(205, 214, 244, 0.76);
+  font-size: 0.95rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-weight: 600;
+  color: #f5c2e7;
+}
+
+input,
+select,
+textarea {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(205, 214, 244, 0.2);
+  background: rgba(24, 24, 37, 0.8);
+  color: #cdd6f4;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid rgba(203, 166, 247, 0.7);
+}
+
+.primary,
+.secondary,
+button {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.primary {
+  background: linear-gradient(135deg, #cba6f7, #89b4fa);
+  color: #1e1e2e;
+  font-weight: 700;
+}
+
+.secondary {
+  background: rgba(49, 50, 68, 0.6);
+  border: 1px solid rgba(203, 166, 247, 0.3);
+  color: #f5c2e7;
+}
+
+button:disabled,
+.primary[aria-disabled='true'],
+.secondary[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(203, 166, 247, 0.25);
+  background: rgba(30, 30, 46, 0.7);
+}
+
+.toggle-row input[type='checkbox'] {
+  width: auto;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+textarea.result-box {
+  min-height: 160px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 18px;
+  }
+}
