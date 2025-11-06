@@ -65,7 +65,7 @@ npm run deploy
 
 ### One-Click Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/catppuccin-stylus-generator-claude-code)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/routerr/catppuccin-stylus-generator)
 
 ### Manual Deployment
 
