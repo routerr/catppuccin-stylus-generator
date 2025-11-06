@@ -6,52 +6,52 @@ import type { CrawlerResult } from '../../types/theme';
 // NOTE: Free models change frequently. Check https://openrouter.ai/models for current free models.
 // Models with ":free" suffix are free to use (rate-limited)
 export const OPENROUTER_MODELS: AIModel[] = [
-  // Free models (check https://openrouter.ai/models for current list)
+  // Free models (updated 2025-01-06)
   {
-    id: 'google/gemma-2-9b-it:free',
-    name: 'Google Gemma 2 9B (Free)',
+    id: 'minimax/minimax-m2:free',
+    name: 'MiniMax M2 (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'meta-llama/llama-3.2-3b-instruct:free',
-    name: 'Llama 3.2 3B Instruct (Free)',
+    id: 'deepseek/deepseek-chat-v3.1:free',
+    name: 'DeepSeek Chat v3.1 (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'meta-llama/llama-3.1-8b-instruct:free',
-    name: 'Llama 3.1 8B Instruct (Free)',
+    id: 'deepseek/deepseek-r1:free',
+    name: 'DeepSeek R1 (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'microsoft/phi-3-mini-128k-instruct:free',
-    name: 'Phi-3 Mini 128K (Free)',
+    id: 'deepseek/deepseek-r1-distill-llama-70b:free',
+    name: 'DeepSeek R1 Distill Llama 70B (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'qwen/qwen-2-7b-instruct:free',
-    name: 'Qwen 2 7B Instruct (Free)',
+    id: 'z-ai/glm-4.5-air:free',
+    name: 'GLM 4.5 Air (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'mistralai/mistral-7b-instruct:free',
-    name: 'Mistral 7B Instruct (Free)',
+    id: 'tngtech/deepseek-r1t2-chimera:free',
+    name: 'DeepSeek R1T2 Chimera (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'huggingfaceh4/zephyr-7b-beta:free',
-    name: 'Zephyr 7B Beta (Free)',
+    id: 'microsoft/mai-ds-r1:free',
+    name: 'Microsoft MAI DS R1 (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'openchat/openchat-7b:free',
-    name: 'OpenChat 7B (Free)',
+    id: 'nvidia/nemotron-nano-12b-v2-vl:free',
+    name: 'Nvidia Nemotron Nano 12B v2 VL (Free)',
     provider: 'openrouter',
     isFree: true,
   },
@@ -222,36 +222,37 @@ OUTPUT ONLY THE CLEAN JSON OBJECT. No explanations, no markdown, no code blocks.
 
 function createColorAnalysisPrompt(crawlerResult: CrawlerResult): string {
   const colorsInfo = crawlerResult.colors && crawlerResult.colors.length > 0
-    ? `\nDetected colors from CSS/HTML:\n${crawlerResult.colors.slice(0, 30).join(', ')}`
+    ? `\nDetected colors:\n${crawlerResult.colors.slice(0, 30).join(', ')}`
     : '';
 
-  return `You are a color extraction and mapping system. Your ONLY task is to output valid JSON. Do not include any explanatory text, greetings, or apologies.
+  return `Color extraction system. Output ONLY valid JSON.
 
-WEBSITE DATA:
-URL: ${crawlerResult.url}
-Title: ${crawlerResult.title}
+Website: ${crawlerResult.url} | ${crawlerResult.title}
 ${colorsInfo}
 
-HTML snippet (first 2000 chars):
-${crawlerResult.content.slice(0, 2000)}
+Content: ${crawlerResult.content.slice(0, 2000)}
 
 TASK:
-1. Identify the website's primary colors (2-3 main brand colors)
-2. Identify secondary colors (1-2 supporting colors)
-3. Identify background color (usually lightest or darkest)
-4. Identify text color (main text)
-5. Identify accent colors (highlights, links, buttons - 2-5 colors)
+1. Identify primary colors (2-3 brand colors)
+2. Secondary colors (1-2 supporting)
+3. Background (lightest/darkest)
+4. Text color (main text)
+5. Accent colors (buttons, links, highlights)
 
-6. Map EACH identified color to the closest Catppuccin color:
-
-CATPPUCCIN PALETTE (choose from these):
+MAP TO CATPPUCCIN:
 Base: base, mantle, crust
 Surfaces: surface0, surface1, surface2
 Overlays: overlay0, overlay1, overlay2
 Text: text, subtext0, subtext1
 Accents: rosewater, flamingo, pink, mauve, red, maroon, peach, yellow, green, teal, sky, sapphire, blue, lavender
 
-OUTPUT FORMAT (JSON ONLY - NO OTHER TEXT):
+GRADIENTS:
+Create beautiful gradients for buttons/titles using accent Catppuccin colors:
+- Primary button: linear-gradient(135deg, {accent1} 0%, {accent2} 100%)
+- Secondary button: linear-gradient(45deg, {accent3}, {accent4})
+- Title gradient: linear-gradient(90deg, {accent5}, {accent6})
+
+JSON ONLY:
 {
   "analysis": {
     "primaryColors": ["#HEX1", "#HEX2"],
@@ -261,17 +262,17 @@ OUTPUT FORMAT (JSON ONLY - NO OTHER TEXT):
     "accentColors": ["#HEX6", "#HEX7"]
   },
   "mappings": [
-    {"originalColor": "#HEX1", "catppuccinColor": "mauve", "reason": "Main brand color"},
+    {"originalColor": "#HEX1", "catppuccinColor": "mauve", "reason": "Main brand"},
     {"originalColor": "#HEX2", "catppuccinColor": "blue", "reason": "Secondary brand"},
     {"originalColor": "#HEX3", "catppuccinColor": "surface0", "reason": "UI element"},
     {"originalColor": "#HEX4", "catppuccinColor": "base", "reason": "Background"},
     {"originalColor": "#HEX5", "catppuccinColor": "text", "reason": "Main text"},
-    {"originalColor": "#HEX6", "catppuccinColor": "peach", "reason": "CTA button"},
+    {"originalColor": "#HEX6", "catppuccinColor": "peach", "reason": "Primary button"},
     {"originalColor": "#HEX7", "catppuccinColor": "green", "reason": "Success state"}
   ]
 }
 
-CRITICAL: Output ONLY the JSON object above. No markdown, no code blocks, no explanations. Start with { and end with }.`;
+OUTPUT JSON ONLY.`;
 }
 
 function parseColorAnalysisResponse(content: string): { analysis: WebsiteColorAnalysis; mappings: ColorMapping[] } {

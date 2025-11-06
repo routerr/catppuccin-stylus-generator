@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { URLInput } from './components/URLInput';
+import { InputSelector } from './components/InputSelector';
 import { APIKeyConfig } from './components/APIKeyConfig';
 import { ServiceSelector } from './components/ServiceSelector';
 import { ThemePreview } from './components/ThemePreview';
-import type { AIProvider, ThemePackage } from './types/theme';
+import type { AIProvider, ThemePackage, CrawlerResult } from './types/theme';
 import { fetchWebsiteContent } from './services/fetcher';
 import { analyzeWebsiteColors } from './services/ai';
 import { createUserStylePackage } from './services/generators';
+import { MHTMLParser } from './utils/mhtml-parser';
 
 function App() {
   const [aiProvider, setAIProvider] = useState<AIProvider>('openrouter');
@@ -38,7 +39,7 @@ function App() {
       }
 
       // Convert to crawler-compatible format
-      const crawlerResult = {
+      const crawlerResult: CrawlerResult = {
         url: fetchResult.url,
         title: fetchResult.title,
         content: fetchResult.html,
@@ -46,6 +47,39 @@ function App() {
         colors: fetchResult.colors,
       };
 
+      await processContent(crawlerResult, 'direct-fetch');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setProgress('');
+      setIsProcessing(false);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!aiKey) {
+      setError('Please provide your AI API key');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError('');
+    setProgress('Starting...');
+
+    try {
+      // Step 1: Parse MHTML file
+      setProgress('Parsing MHTML file...');
+      const crawlerResult = await MHTMLParser.parseFile(file);
+
+      await processContent(crawlerResult, 'mhtml-upload');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setProgress('');
+      setIsProcessing(false);
+    }
+  };
+
+  const processContent = async (crawlerResult: CrawlerResult, source: string) => {
+    try {
       // Step 2: Analyze colors with AI
       setProgress('Analyzing colors with AI...');
       const { analysis, mappings } = await analyzeWebsiteColors(crawlerResult, {
@@ -57,18 +91,17 @@ function App() {
       // Step 3: Generate UserStyle theme
       setProgress('Generating UserStyle theme...');
       const pkg = createUserStylePackage(
-        url,
+        crawlerResult.url,
         mappings,
         analysis.accentColors,
-        'direct-fetch',
+        source as any,
         aiModel
       );
 
       setThemePackage(pkg);
       setProgress('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      setProgress('');
+      throw err;
     } finally {
       setIsProcessing(false);
     }
@@ -120,7 +153,11 @@ function App() {
 
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700">
               <h2 className="text-2xl font-bold mb-6">Generate Theme</h2>
-              <URLInput onSubmit={handleGenerate} disabled={isProcessing} />
+              <InputSelector
+                onURLSubmit={handleGenerate}
+                onFileSelect={handleFileUpload}
+                disabled={isProcessing}
+              />
             </div>
           </div>
 
