@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create vite:*)",
+      "Bash(npm run build:*)",
+      "WebFetch(domain:openrouter.ai)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
