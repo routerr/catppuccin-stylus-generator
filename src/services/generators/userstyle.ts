@@ -123,11 +123,11 @@ ${cssVarMappings}
     a {
       color: @accent;
       &:hover {
-        background: linear-gradient(135deg, @accent 0%, @sapphire 100%) !important;
-        -webkit-background-clip: text !important;
-        -webkit-text-fill-color: transparent !important;
-        background-clip: text !important;
-        text-fill-color: transparent !important;
+        background: transparent !important;
+        -webkit-background-clip: transparent !important;
+        -webkit-text-fill-color: linear-gradient(45deg, @accent 0%, @sapphire 100%) !important;
+        background-clip: transparent !important;
+        text-fill-color: linear-gradient(45deg, @accent 0%, @sapphire 100%) !important;
       }
     }
 
