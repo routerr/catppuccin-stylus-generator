@@ -424,24 +424,25 @@ CRITICAL: Text must NEVER be transparent at any time!
 - Never use transparent or semi-transparent values for text
 - Text should always be readable with solid colors from the Catppuccin palette
 
-BUTTON & LINK STYLING RULES:
-CRITICAL: Buttons and links should preserve their ORIGINAL background colors in normal state.
-- DO NOT change button/link backgrounds from the original theme unless hovering
-- Normal state: Keep original backgrounds (or transparent/none for text links)
-
 HOVER STATE RULES FOR TEXT & LINKS (DIFFERENT FROM BUTTONS):
 Text elements (links, text buttons, hoverable text):
-- Hover background: Solid base background color (use 'base' from Catppuccin)
-- Hover text: Gradient color with angle 45deg (different from buttons)
-- Example text hover: background: base; color: linear-gradient(45deg, blue, sapphire)
-- Text gradient angles: 45deg, 225deg, or 315deg
+- Hover background: Gradient at 45deg or 225deg angle (e.g., linear-gradient(45deg, blue, sapphire))
+- Hover text: Solid color (text or base - always opaque, never transparent!)
+- Example: a:hover { background: linear-gradient(45deg, blue, sapphire); color: text; }
+- Different angles: 45deg, 225deg, or 315deg for visual variety
 
 Button elements (solid buttons, CTAs):
-- Hover background: Gradient with angle 135deg
-- Example button hover: background: linear-gradient(135deg, blue, sapphire)
-- Button gradient angles: 135deg or 225deg
+- Hover background: Gradient at 135deg or 225deg angle (different angles from text!)
+- Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); }
+- Button text: Solid color (base or text - always opaque, never transparent!)
+- Different angles: 135deg or 225deg
 
-CRITICAL: Use DIFFERENT gradient angles for text (45deg) vs buttons (135deg) to create visual distinction!
+CRITICAL RULES:
+- Text is ALWAYS solid and opaque (never transparent!)
+- Gradients go on BACKGROUNDS only (not text)
+- Links use 45deg/225deg/315deg gradients
+- Buttons use 135deg/225deg gradients
+- Different angles create visual distinction between text and buttons!
 
 REQUIRED JSON OUTPUT (no thinking tags, no markdown, just this structure):
 {

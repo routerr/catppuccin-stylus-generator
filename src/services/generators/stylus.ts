@@ -102,11 +102,11 @@ export function generateStylusTheme(
     }
 
     // Usage examples prefer role variables
-    stylus += `\n/* =========================\n * TEXT & LINK STYLES\n * Text never transparent!\n * Hover: solid background + gradient text (45deg angle)\n * =========================*/\n`;
-    stylus += `a, .link\n  color $text-primary\n  text-decoration underline\n  &:hover\n    background-color $base\n    background-image linear-gradient(45deg, $blue, $sapphire)\n    -webkit-background-clip text\n    -webkit-text-fill-color transparent\n    background-clip text\n\n`;
-    stylus += `.text-link\n  color $text-primary\n  &:hover\n    background-color $base\n    background-image linear-gradient(225deg, $mauve, $lavender)\n    -webkit-background-clip text\n    -webkit-text-fill-color transparent\n    background-clip text\n\n`;
+    stylus += `\n/* =========================\n * TEXT & LINK STYLES\n * Text always solid (never transparent!)\n * Hover: gradient background at 45deg angle + solid text color\n * =========================*/\n`;
+    stylus += `a, .link\n  color $text-primary\n  text-decoration underline\n  &:hover\n    background linear-gradient(45deg, $blue, $sapphire)\n    color $text\n\n`;
+    stylus += `.text-link\n  color $text-primary\n  &:hover\n    background linear-gradient(225deg, $mauve, $lavender)\n    color $text\n\n`;
 
-    stylus += `/* =========================\n * BUTTON STYLES\n * Hover: gradient background (135deg angle, different from text)\n * =========================*/\n`;
+    stylus += `/* =========================\n * BUTTON STYLES\n * Text always solid (never transparent!)\n * Hover: gradient background at 135deg angle (different from links)\n * =========================*/\n`;
     stylus += `.btn-primary\n  background-color $primary-base\n  color $primary-text\n  &:hover\n    background-image linear-gradient(135deg, $blue, $sapphire)\n\n`;
     stylus += `.btn-secondary\n  background-color $secondary-base\n  color $secondary-text\n  &:hover\n    background-image linear-gradient(135deg, $mauve, $pink)\n\n`;
     stylus += `.btn-outline\n  background-color transparent\n  border 1px solid $border-default\n  color $text-primary\n  &:hover\n    background-image linear-gradient(135deg, $surface_0, $surface_1)\n\n`;
