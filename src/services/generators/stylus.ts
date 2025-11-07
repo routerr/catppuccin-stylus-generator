@@ -102,12 +102,16 @@ export function generateStylusTheme(
     }
 
     // Usage examples prefer role variables
-    stylus += `\n/* Buttons (use role variables) */\n`;
-    stylus += `.btn-primary\n  background-color $primary-base\n  color $primary-text\n\n`;
-    stylus += `.btn-secondary\n  background-color $secondary-base\n  color $secondary-text\n\n`;
-    stylus += `.btn-outline\n  background-color transparent\n  border 1px solid $border-default\n  color $text-primary\n\n`;
+    stylus += `\n/* =========================\n * TEXT & LINK STYLES\n * Text never transparent!\n * Hover: solid background + gradient text (45deg angle)\n * =========================*/\n`;
+    stylus += `a, .link\n  color $text-primary\n  text-decoration underline\n  &:hover\n    background-color $base\n    background-image linear-gradient(45deg, $blue, $sapphire)\n    -webkit-background-clip text\n    -webkit-text-fill-color transparent\n    background-clip text\n\n`;
+    stylus += `.text-link\n  color $text-primary\n  &:hover\n    background-color $base\n    background-image linear-gradient(225deg, $mauve, $lavender)\n    -webkit-background-clip text\n    -webkit-text-fill-color transparent\n    background-clip text\n\n`;
+
+    stylus += `/* =========================\n * BUTTON STYLES\n * Hover: gradient background (135deg angle, different from text)\n * =========================*/\n`;
+    stylus += `.btn-primary\n  background-color $primary-base\n  color $primary-text\n  &:hover\n    background-image linear-gradient(135deg, $blue, $sapphire)\n\n`;
+    stylus += `.btn-secondary\n  background-color $secondary-base\n  color $secondary-text\n  &:hover\n    background-image linear-gradient(135deg, $mauve, $pink)\n\n`;
+    stylus += `.btn-outline\n  background-color transparent\n  border 1px solid $border-default\n  color $text-primary\n  &:hover\n    background-image linear-gradient(135deg, $surface_0, $surface_1)\n\n`;
     stylus += `.btn-subtle\n  background-color transparent\n  color $text-primary\n  &:hover\n    background-color $surface_0\n\n`;
-    stylus += `.btn-destructive\n  background-color $danger-base\n  color $danger-text\n\n`;
+    stylus += `.btn-destructive\n  background-color $danger-base\n  color $danger-text\n  &:hover\n    background-image linear-gradient(135deg, $red, $maroon)\n\n`;
 
   } else {
     // Legacy: fallback to mapping map / reasons

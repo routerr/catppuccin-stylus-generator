@@ -418,13 +418,30 @@ VARIETY IS KEY: If the website has multiple shades of blue, map them to DIFFEREN
 - Light blue banner → sky
 This prevents everything from looking the same color!
 
+TEXT & TRANSPARENCY RULES:
+CRITICAL: Text must NEVER be transparent at any time!
+- All text colors must be fully opaque (opacity: 1.0, no rgba with alpha < 1)
+- Never use transparent or semi-transparent values for text
+- Text should always be readable with solid colors from the Catppuccin palette
+
 BUTTON & LINK STYLING RULES:
 CRITICAL: Buttons and links should preserve their ORIGINAL background colors in normal state.
 - DO NOT change button/link backgrounds from the original theme unless hovering
 - Normal state: Keep original backgrounds (or transparent/none for text links)
-- Hover state: Apply gradient accent colors from the Catppuccin palette
-- Example hover gradient: linear-gradient(135deg, blue, sapphire) or linear-gradient(135deg, mauve, pink)
-- The generated theme should ONLY modify colors when user hovers over buttons/links
+
+HOVER STATE RULES FOR TEXT & LINKS (DIFFERENT FROM BUTTONS):
+Text elements (links, text buttons, hoverable text):
+- Hover background: Solid base background color (use 'base' from Catppuccin)
+- Hover text: Gradient color with angle 45deg (different from buttons)
+- Example text hover: background: base; color: linear-gradient(45deg, blue, sapphire)
+- Text gradient angles: 45deg, 225deg, or 315deg
+
+Button elements (solid buttons, CTAs):
+- Hover background: Gradient with angle 135deg
+- Example button hover: background: linear-gradient(135deg, blue, sapphire)
+- Button gradient angles: 135deg or 225deg
+
+CRITICAL: Use DIFFERENT gradient angles for text (45deg) vs buttons (135deg) to create visual distinction!
 
 REQUIRED JSON OUTPUT (no thinking tags, no markdown, just this structure):
 {

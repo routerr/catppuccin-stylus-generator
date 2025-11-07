@@ -460,3 +460,49 @@ Add to `index.html`:
 - Check [README.md](README.md) for more information
 - Open an issue on GitHub
 - Join the Catppuccin Discord community
+
+### Cross-repo CI commit/PR (GitHub Actions)
+
+Short recipe to push or open a PR in another GitHub repo from CI:
+
+- Create a Personal Access Token (repo scope) for the target repo owner and save it as a secret in the source repo (e.g. `TARGET_REPO_PAT`).
+- Use the workflow file [` .github/workflows/push-to-other-repo.yml `](.github/workflows/push-to-other-repo.yml:1) to:
+  - build/generate files in the source workspace,
+  - checkout the target repo with the PAT (use `fetch-depth: 0`),
+  - copy files into the checked-out target repo path,
+  - either commit & push to a branch in the target repo or open a PR.
+
+Key points:
+- Prefer opening a PR (safer) using `peter-evans/create-pull-request@v4` with a branch like `ci-sync/${{ github.sha }}`.
+- If pushing directly, set git user/email and only push when there are changes; never force-push protected branches.
+- Store the PAT as a secret in the source repo and reference it as `${{ secrets.TARGET_REPO_PAT }}`.
+- Runner resolves action versions at runtime — editor/IDE linter errors about resolving actions are usually harmless.
+
+Minimal commit step (excerpt):
+
+```yaml
+- name: Checkout target
+  uses: actions/checkout@v4
+  with:
+    repository: target-owner/target-repo
+    path: target
+    token: ${{ secrets.TARGET_REPO_PAT }}
+    fetch-depth: 0
+
+- name: Commit & push to target
+  run: |
+    cd target
+    git config user.name "github-actions[bot]"
+    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+    if [ -n "$(git status --porcelain)" ]; then
+      git add .
+      git commit -m "ci: update generated files from $GITHUB_REPOSITORY@$GITHUB_SHA"
+      git push origin HEAD:main
+    fi
+  env:
+    GIT_ASKPASS: /bin/echo
+    GIT_TERMINAL_PROMPT: 0
+    GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT }}
+```
+
+See [` .github/workflows/push-to-other-repo.yml `](.github/workflows/push-to-other-repo.yml:1) for a full example.

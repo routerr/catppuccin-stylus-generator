@@ -45,10 +45,19 @@ export function generateCssTheme(
   css += `}\n\n`;
 
   css += `/* Example Usage */\n`;
-  css += `/*\nbody {\n  background-color: var(--ctp-base);\n  color: var(--ctp-text);\n}\n\n`;
-  css += `a {\n  color: var(--ctp-blue);\n}\n\n`;
-  css += `a:hover {\n  color: var(--ctp-sky);\n}\n\n`;
-  css += `/* Using RGB values for transparency */\n`;
+  css += `/*\n/* TEXT & LINK STYLES\n * Text never transparent!\n * Hover: solid background + gradient text (45deg angle)\n */\nbody {\n  background-color: var(--ctp-base);\n  color: var(--ctp-text);\n}\n\n`;
+  css += `a, .link {\n  color: var(--ctp-text);\n  text-decoration: underline;\n}\n\n`;
+  css += `a:hover, .link:hover {\n  background-color: var(--ctp-base);\n  background-image: linear-gradient(45deg, var(--ctp-blue), var(--ctp-sapphire));\n  -webkit-background-clip: text;\n  -webkit-text-fill-color: transparent;\n  background-clip: text;\n}\n\n`;
+  css += `.text-link {\n  color: var(--ctp-text);\n}\n\n`;
+  css += `.text-link:hover {\n  background-color: var(--ctp-base);\n  background-image: linear-gradient(225deg, var(--ctp-mauve), var(--ctp-lavender));\n  -webkit-background-clip: text;\n  -webkit-text-fill-color: transparent;\n  background-clip: text;\n}\n\n`;
+  css += `/* BUTTON STYLES\n * Hover: gradient background (135deg angle, different from text)\n */\n`;
+  css += `.btn-primary {\n  background-color: var(--ctp-blue);\n  color: var(--ctp-base);\n}\n\n`;
+  css += `.btn-primary:hover {\n  background-image: linear-gradient(135deg, var(--ctp-blue), var(--ctp-sapphire));\n}\n\n`;
+  css += `.btn-secondary {\n  background-color: var(--ctp-mauve);\n  color: var(--ctp-base);\n}\n\n`;
+  css += `.btn-secondary:hover {\n  background-image: linear-gradient(135deg, var(--ctp-mauve), var(--ctp-pink));\n}\n\n`;
+  css += `.btn-destructive {\n  background-color: var(--ctp-red);\n  color: var(--ctp-base);\n}\n\n`;
+  css += `.btn-destructive:hover {\n  background-image: linear-gradient(135deg, var(--ctp-red), var(--ctp-maroon));\n}\n\n`;
+  css += `/* Using RGB values for overlays (not for text!) */\n`;
   css += `.overlay {\n  background-color: rgba(var(--ctp-base-rgb), 0.8);\n}\n*/\n`;
 
   return css;
