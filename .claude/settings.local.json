@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create vite:*)",
+      "Bash(npm run build:*)",
+      "WebFetch(domain:openrouter.ai)",
+      "Bash(npm run dev)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "context7",
+    "sequentialthinking",
+    "filesystem",
+    "tavily",
+    "slack",
+    "puppeteer",
+    "github",
+    "time",
+    "memory",
+    "atlassian",
+    "notion",
+    "browserbase",
+    "browser-tools",
+    "task-master-ai-rmba",
+    "atlassian-mcp-example",
+    "claude-desktop-example"
+  ]
+}
