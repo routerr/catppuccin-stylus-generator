@@ -59,7 +59,7 @@ export function generateCssTheme(
   css += `/*\n/* Catppuccin Theme with Bi-Accent Gradients - Smooth & Elegant */\nbody {\n  background-color: var(--ctp-base);\n  color: var(--ctp-text);\n}\n\n`;
   css += `/* Links with bi-accent gradient on hover */\n`;
   css += `a, .link {\n  color: var(--ctp-blue);\n  text-decoration-color: var(--ctp-blue);\n  text-decoration: underline;\n}\n\n`;
-  css += `a:hover, .link:hover {\n  background: linear-gradient(90deg, var(--ctp-blue) 0%, var(--ctp-bi-accent) 100%);\n  -webkit-background-clip: text;\n  -webkit-text-fill-color: transparent;\n  background-clip: text;\n  transition: all 0.3s ease;\n}\n\n`;
+  css += `a:hover, .link:hover {\n  color: linear-gradient(90deg, var(--ctp-blue) 0%, var(--ctp-bi-accent) 100%);\n  background: none;\n  transition: all 0.3s ease;\n}\n\n`;
   css += `/* BUTTON STYLES - Bi-accent gradient backgrounds */\n`;
   css += `.btn-primary {\n  background-color: var(--ctp-surface0);\n  color: var(--ctp-blue);\n  border: 1px solid var(--ctp-blue);\n}\n\n`;
   css += `.btn-primary:hover {\n  background: linear-gradient(135deg, var(--ctp-blue) 0%, var(--ctp-bi-accent) 100%);\n  color: var(--ctp-base);\n  border-color: var(--ctp-bi-accent);\n  transition: all 0.3s ease;\n}\n\n`;

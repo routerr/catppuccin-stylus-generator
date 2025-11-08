@@ -115,13 +115,11 @@ a, .link {
   text-decoration-color: @text-primary;
   text-decoration: underline;
 
-  &:hover {
-    background: linear-gradient(90deg, @blue 0%, @bi-accent 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    transition: all 0.3s ease;
-  }
+    &:hover {
+      color: linear-gradient(90deg, @blue 0%, @bi-accent 100%);
+      background: none;
+      transition: all 0.3s ease;
+    }
 }
 
 .text-link {
@@ -129,10 +127,8 @@ a, .link {
   text-decoration-color: @mauve;
 
   &:hover {
-    background: linear-gradient(90deg, @mauve 0%, @bi-accent 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: linear-gradient(90deg, @mauve 0%, @bi-accent 100%);
+    background: none;
     transition: all 0.3s ease;
   }
 }

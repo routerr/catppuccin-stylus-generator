@@ -143,10 +143,8 @@ ${cssVarMappings}
       text-decoration-color: @accent;
 
       &:hover {
-        background: linear-gradient(90deg, @accent 0%, @bi-accent 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: linear-gradient(90deg, @accent 0%, @bi-accent 100%);
+        background: none;
         transition: all 0.3s ease;
       }
     }
@@ -394,10 +392,8 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
       lines.push(`      text-decoration-color: @co-accent1;`);
       lines.push(``);
       lines.push(`      &:hover {`);
-      lines.push(`        background: linear-gradient(90deg, @accent 0%, @co-accent1 50%, @co-accent2 100%);`);
-      lines.push(`        -webkit-background-clip: text;`);
-      lines.push(`        -webkit-text-fill-color: transparent;`);
-      lines.push(`        background-clip: text;`);
+  lines.push(`        color: linear-gradient(90deg, @accent 0%, @co-accent1 50%, @co-accent2 100%);`);
+  lines.push(`        background: none;`);
       lines.push(`        text-decoration-color: @co-accent2;`);
       lines.push(`        transition: all 0.3s ease;`);
       lines.push(`      }`);

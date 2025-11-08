@@ -66,8 +66,47 @@ export async function analyzeColorsWithChutes(
   crawlerResult: CrawlerResult,
   apiKey: string,
   model: string
-): Promise<{ analysis: WebsiteColorAnalysis; mappings: ColorMapping[] }> {
-  const prompt = createColorAnalysisPrompt(crawlerResult);
+): Promise<{ analysis: WebsiteColorAnalysis; mappings: ColorMapping[]; mode: 'dark' | 'light' }> {
+  // Step 1: Detect dark/light mode using AI
+  const modePrompt = `You are a web design expert. Analyze the following website content and CSS and answer with ONLY "dark" or "light" (no explanation, no markdown, just the word). Is this site primarily dark mode or light mode?
+
+Website: ${crawlerResult.url} | ${crawlerResult.title}
+Content: ${crawlerResult.content.slice(0, 2000)}
+CSS: ${crawlerResult.cssAnalysis ? JSON.stringify(crawlerResult.cssAnalysis).slice(0, 2000) : ''}`;
+
+  let detectedMode: 'dark' | 'light' = 'light';
+  try {
+    const modeResponse = await fetch('https://llm.chutes.ai/v1/chat/completions', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: 'You are a web design expert. Only answer "dark" or "light".' },
+          { role: 'user', content: modePrompt },
+        ],
+        stream: false,
+        temperature: 0.0,
+        max_tokens: 10,
+      }),
+    });
+    if (modeResponse.ok) {
+      const modeData = await modeResponse.json();
+      const modeText = modeData.choices?.[0]?.message?.content?.trim().toLowerCase();
+      if (modeText === 'dark' || modeText === 'light') {
+        detectedMode = modeText;
+      }
+    }
+  } catch (e) {
+    console.warn('Mode detection failed, defaulting to light mode.', e);
+  }
+
+  // Step 2: Color analysis, pass detected mode to prompt
+  const prompt = createColorAnalysisPrompt({ ...crawlerResult, detectedMode });
 
   try {
     // Stage 1: AI analyzes colors (may return messy output)
@@ -112,13 +151,15 @@ export async function analyzeColorsWithChutes(
     // Try to parse directly first
     try {
       console.log('Attempting direct JSON parsing...');
-      return parseColorAnalysisResponse(content);
+      const result = parseColorAnalysisResponse(content);
+      return { ...result, mode: detectedMode };
     } catch (parseError) {
       // Stage 2: If direct parsing fails, use AI to extract JSON
       console.log('Direct parsing failed, using AI to extract JSON...');
       console.log('Parse error:', parseError);
       console.log('Original AI response preview:', content.slice(0, 800));
-      return await extractJSONWithAI(content, apiKey, model);
+      const result = await extractJSONWithAI(content, apiKey, model);
+      return { ...result, mode: detectedMode };
     }
   } catch (error) {
     throw new Error(`Failed to analyze colors with Chutes: ${error}`);
@@ -354,7 +395,7 @@ function extractJSONManually(text: string): { analysis: WebsiteColorAnalysis; ma
   };
 }
 
-function createColorAnalysisPrompt(crawlerResult: CrawlerResult & { cssAnalysis?: any }): string {
+function createColorAnalysisPrompt(crawlerResult: CrawlerResult & { cssAnalysis?: any; detectedMode?: 'dark' | 'light' }): string {
   const colorsInfo = crawlerResult.colors && crawlerResult.colors.length > 0
     ? `\nDetected colors:\n${crawlerResult.colors.slice(0, 30).join(', ')}`
     : '';
@@ -380,6 +421,8 @@ ${colorsInfo}
 ${cssClassInfo}
 
 Content: ${crawlerResult.content.slice(0, 2000)}
+
+MODE DETECTED: ${crawlerResult.detectedMode || 'light'}
 
 CRITICAL: Analyze the website's color usage carefully and create DIVERSE, ELEGANT mappings!
 
@@ -409,6 +452,8 @@ TEXT (maintain readability):
 - Primary text: text
 - Secondary/muted text: subtext0, subtext1
 - Disabled text: overlay2
+
+IMPORTANT: For BUTTON BORDERS, DO NOT add accent color borders if the original site does not use accent borders. Only modify button borders if the original site uses accent colors for borders. Otherwise, preserve the original border style from the website.
 
 ACCENT COLORS - USE DIFFERENT COLORS FOR DIFFERENT PURPOSES:
 CRITICAL: Map different original colors to different Catppuccin accents based on their semantic meaning:

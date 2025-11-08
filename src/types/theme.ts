@@ -15,10 +15,12 @@ export interface CrawlerResult {
   html?: string;
   screenshot?: string;
   colors?: string[];
+  cssAnalysis?: any;
+  detectedMode?: 'dark' | 'light';
 }
 
 // AI service types
-export type AIProvider = 'openrouter' | 'chutes';
+export type AIProvider = 'openrouter' | 'chutes' | 'ollama';
 
 export interface AIModel {
   id: string;

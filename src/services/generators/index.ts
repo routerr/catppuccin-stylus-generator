@@ -54,7 +54,14 @@ export function generateTheme(
     const output: ThemeOutput = {
       stylus: generateStylusTheme(flavor, mappingOutput, url),
       less: generateLessTheme(flavor, mappingOutput, url),
-      css: generateCssTheme(flavor, mappingOutput, url),
+      css: generateCssTheme(
+        flavor,
+        new Map(
+          Object.entries(mappingOutput.roleMap || {})
+            .map(([key, value]) => [key, key as import('../../types/catppuccin').CatppuccinColor])
+        ),
+        url
+      ),
     };
     return { flavor, output };
   }

@@ -7,11 +7,13 @@ interface ServiceSelectorProps {
   onAIProviderChange: (provider: AIProvider) => void;
   aiModel: string;
   onAIModelChange: (model: string) => void;
+  ollamaModels?: string[];
 }
 
 const AI_PROVIDERS: { value: AIProvider; label: string; description?: string }[] = [
   { value: 'openrouter', label: 'OpenRouter', description: '8+ free models available' },
   { value: 'chutes', label: 'Chutes AI', description: '5 free + 2 paid models' },
+  { value: 'ollama', label: 'Ollama (Local)', description: 'No API key, runs on localhost' },
 ];
 
 export function ServiceSelector({
@@ -19,8 +21,28 @@ export function ServiceSelector({
   onAIProviderChange,
   aiModel,
   onAIModelChange,
+  ollamaModels,
 }: ServiceSelectorProps) {
   const availableModels = getModelsByProvider(aiProvider);
+  // Combine defaults + discovered Ollama models and ensure current selection is present
+  const modelsForRender = (() => {
+    let list = availableModels;
+    if (aiProvider === 'ollama') {
+      const discovered = (ollamaModels || []).map(id => ({ id, name: id, provider: 'ollama' as const, isFree: true }));
+      // merge & dedupe by id
+      const byId = new Map<string, typeof discovered[number]>();
+      [...list, ...discovered].forEach(m => byId.set(m.id, m as any));
+      list = Array.from(byId.values());
+      // Ensure current selection exists
+      if (aiModel && !list.some(m => m.id === aiModel)) {
+        list.push({ id: aiModel, name: `Custom: ${aiModel}`, provider: 'ollama', isFree: true } as any);
+      }
+    } else if (aiModel && !list.some(m => m.id === aiModel)) {
+      // Non-ollama safety: ensure current selection is visible if external logic set it
+      list = [...list, { id: aiModel, name: `Custom: ${aiModel}`, provider: aiProvider, isFree: true } as any];
+    }
+    return list;
+  })();
 
   return (
     <div className="space-y-6">
@@ -66,14 +88,16 @@ export function ServiceSelector({
           onChange={(e) => onAIModelChange(e.target.value)}
           className="block w-full px-3 py-2 border border-ctp-surface2 rounded-lg bg-ctp-surface1/50 text-ctp-text focus:outline-none focus:ring-2 focus:ring-ctp-accent focus:border-transparent"
         >
-          {availableModels.map((model) => (
+          {modelsForRender.map((model) => (
             <option key={model.id} value={model.id}>
               {model.name}
             </option>
           ))}
         </select>
         <p className="mt-1 text-xs text-ctp-subtext0">
-          {availableModels.find(m => m.id === aiModel)?.isFree ? 'Free tier (rate-limited)' : 'Paid model'}
+          {modelsForRender.find(m => m.id === aiModel)?.provider === 'ollama'
+            ? 'Local model (Ollama)'
+            : (modelsForRender.find(m => m.id === aiModel)?.isFree ? 'Free tier (rate-limited)' : 'Paid model')}
         </p>
       </div>
     </div>

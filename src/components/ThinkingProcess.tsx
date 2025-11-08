@@ -93,13 +93,11 @@ export function ThinkingProcess({ steps, title = "AI Processing Steps" }: Thinki
                   </div>
                 )}
 
-                {/* Progress indicator for in-progress steps */}
-                {step.status === 'in_progress' && (
-                  <div className="mt-2">
-                    <div className="w-full h-1 bg-ctp-surface2 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-ctp-accent to-ctp-bi-accent animate-pulse"
-                           style={{ width: '60%' }} />
-                    </div>
+                {/* Real-time process output for in-progress steps */}
+                {step.status === 'in_progress' && step.details && (
+                  <div className="mt-2 p-2 bg-ctp-surface2/30 rounded text-xs font-mono text-ctp-accent border border-ctp-accent/30">
+                    <span>Output: </span>
+                    <span>{step.details}</span>
                   </div>
                 )}
               </div>
