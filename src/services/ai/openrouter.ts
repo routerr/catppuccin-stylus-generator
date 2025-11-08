@@ -50,6 +50,18 @@ export const OPENROUTER_MODELS: AIModel[] = [
     isFree: true,
   },
   {
+    id: 'openrouter/polaris-alpha:free',
+    name: 'Polaris Alpha (Free)',
+    provider: 'openrouter',
+    isFree: true,
+  },
+  {
+    id: 'mistralai/mistral-small-3.2-24b-instruct:free',
+    name: 'Mistral Small 3.2 24B Instruct (Free)',
+    provider: 'openrouter',
+    isFree: true,
+  },
+  {
     id: 'nvidia/nemotron-nano-12b-v2-vl:free',
     name: 'Nvidia Nemotron Nano 12B v2 VL (Free)',
     provider: 'openrouter',

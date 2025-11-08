@@ -48,6 +48,18 @@ export const CHUTES_MODELS: AIModel[] = [
     provider: 'chutes',
     isFree: false,
   },
+  {
+    id: 'microsoft/MAI-DS-R1-FP8',
+    name: 'Microsoft MAI-DS-R1-FP8 ($0.30/$1.20)',
+    provider: 'chutes',
+    isFree: false,
+  },
+  {
+    id: 'moonshotai/Kimi-K2-Instruct-0905',
+    name: 'Kimi K2 Instruct (moonshotai) ($0.39/$1.90)',
+    provider: 'chutes',
+    isFree: false,
+  },
 ];
 
 export async function analyzeColorsWithChutes(
