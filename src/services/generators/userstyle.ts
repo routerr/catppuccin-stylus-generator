@@ -1,7 +1,7 @@
 import type { ColorMapping, AccentColor, CatppuccinFlavor } from '../../types/catppuccin';
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
-import { calculateTriadicAccents, calculateBiAccent } from '../../utils/color-analysis';
+import { calculateTriadicAccents, calculateBiAccent, calculateBiAccents } from '../../utils/color-analysis';
 
 export interface UserStyleMetadata {
   name: string;
@@ -64,7 +64,23 @@ export function generateUserStyle(
   // Calculate accent colors for harmonious color scheme
   const palette = CATPPUCCIN_PALETTES[flavor];
   const triadicColors = calculateTriadicAccents(defaultAccent, palette);
-  const biAccent = calculateBiAccent(defaultAccent, palette);
+  const biAccents = calculateBiAccents(defaultAccent, palette);
+
+  // Flavor-based intensity tuning for subtle gradients and tints
+  const intensity = (() => {
+    // percentages for LESS fade(); decimals for Stylus handled elsewhere
+    switch (flavor) {
+      case 'latte':
+        return { weak: 10, mid: 14, strong: 18, inputHover: 22 };
+      case 'frappe':
+        return { weak: 12, mid: 16, strong: 20, inputHover: 26 };
+      case 'macchiato':
+        return { weak: 12, mid: 16, strong: 20, inputHover: 28 };
+      case 'mocha':
+      default:
+        return { weak: 12, mid: 16, strong: 20, inputHover: 28 };
+    }
+  })();
 
   // Build CSS variable block depending on input shape
   let cssVarMappings = '';
@@ -120,13 +136,40 @@ export function generateUserStyle(
 ${cssVarMappings}
 
     /* Accent Color Scheme Variables */
-    /* Main accents (used for static colors before interactions) */
-    @co-accent1: @${triadicColors.coAccent1};  /* First triadic companion */
-    @co-accent2: @${triadicColors.coAccent2};  /* Second triadic companion */
+    /* Co-accents (triadic companions to the selected accent) */
+    @co-accent1: @${triadicColors.coAccent1};
+    @co-accent2: @${triadicColors.coAccent2};
 
-    /* Bi-accent (used for smooth gradients with main accent) */
-    /* Most similar color to @accent, creating elegant transitions */
-    @bi-accent: @${biAccent};  /* Similar to ${defaultAccent} for gradients */
+    /* Bi-accents (two closest accents to the selected accent) */
+    @bi-accent1: @${biAccents.biAccent1};
+    @bi-accent2: @${biAccents.biAccent2};
+    /* Back-compat alias */
+    @bi-accent: @bi-accent1;  /* Similar to @accent for gradients */
+
+    /* Intensity tuning (flavor-aware) */
+    @tint-weak: ${intensity.weak}%;
+    @tint-mid: ${intensity.mid}%;
+    @tint-strong: ${intensity.strong}%;
+    @tint-input-hover: ${intensity.inputHover}%;
+
+    /* Derived at runtime based on the user's accent choice in UserStyle UI */
+    /* The following mixin overrides the above when @accentColor changes */
+    #derive-accents() when (@accentColor = "rosewater") { @accent: @rosewater; @bi-accent1: @flamingo; @bi-accent2: @pink; @co-accent1: @green; @co-accent2: @sapphire; }
+    #derive-accents() when (@accentColor = "flamingo") { @accent: @flamingo; @bi-accent1: @rosewater; @bi-accent2: @pink; @co-accent1: @teal; @co-accent2: @blue; }
+    #derive-accents() when (@accentColor = "pink") { @accent: @pink; @bi-accent1: @flamingo; @bi-accent2: @mauve; @co-accent1: @sky; @co-accent2: @green; }
+    #derive-accents() when (@accentColor = "mauve") { @accent: @mauve; @bi-accent1: @pink; @bi-accent2: @lavender; @co-accent1: @yellow; @co-accent2: @sapphire; }
+    #derive-accents() when (@accentColor = "red") { @accent: @red; @bi-accent1: @maroon; @bi-accent2: @peach; @co-accent1: @teal; @co-accent2: @blue; }
+    #derive-accents() when (@accentColor = "maroon") { @accent: @maroon; @bi-accent1: @red; @bi-accent2: @peach; @co-accent1: @sky; @co-accent2: @green; }
+    #derive-accents() when (@accentColor = "peach") { @accent: @peach; @bi-accent1: @maroon; @bi-accent2: @yellow; @co-accent1: @sapphire; @co-accent2: @blue; }
+    #derive-accents() when (@accentColor = "yellow") { @accent: @yellow; @bi-accent1: @peach; @bi-accent2: @green; @co-accent1: @mauve; @co-accent2: @sapphire; }
+    #derive-accents() when (@accentColor = "green") { @accent: @green; @bi-accent1: @yellow; @bi-accent2: @teal; @co-accent1: @pink; @co-accent2: @mauve; }
+    #derive-accents() when (@accentColor = "teal") { @accent: @teal; @bi-accent1: @green; @bi-accent2: @sky; @co-accent1: @flamingo; @co-accent2: @mauve; }
+    #derive-accents() when (@accentColor = "sky") { @accent: @sky; @bi-accent1: @teal; @bi-accent2: @sapphire; @co-accent1: @pink; @co-accent2: @peach; }
+    #derive-accents() when (@accentColor = "sapphire") { @accent: @sapphire; @bi-accent1: @sky; @bi-accent2: @blue; @co-accent1: @mauve; @co-accent2: @peach; }
+    #derive-accents() when (@accentColor = "blue") { @accent: @blue; @bi-accent1: @sapphire; @bi-accent2: @lavender; @co-accent1: @peach; @co-accent2: @maroon; }
+    #derive-accents() when (@accentColor = "lavender") { @accent: @lavender; @bi-accent1: @blue; @bi-accent2: @mauve; @co-accent1: @peach; @co-accent2: @green; }
+    #derive-accents();
+    /* Deprecated alias below was removed to avoid undefined references */
 
     /* Custom styling rules */
     /* Add website-specific color overrides here */
@@ -137,36 +180,52 @@ ${cssVarMappings}
       color: @text;
     }
 
-    /* Links - elegant gradient with bi-accent for smooth color transition */
-    a {
+    /* Links - subtle gradient highlights tied to accent + bi-accents */
+    a,
+    .link {
       color: @accent;
       text-decoration-color: @accent;
+      text-decoration-thickness: 1.5px;
+      text-underline-offset: 2px;
+      transition: color 0.2s ease, text-decoration-color 0.2s ease, background 0.25s ease;
 
-      &:hover {
-        color: linear-gradient(90deg, @accent 0%, @bi-accent 100%);
-        background: none;
-        transition: all 0.3s ease;
+      &:hover,
+      &:focus-visible {
+        color: @accent;
+        text-decoration-color: @bi-accent1;
+        background: linear-gradient(90deg,
+          fade(@accent, @tint-mid) 0%,
+          fade(@bi-accent1, @tint-mid) 50%,
+          fade(@bi-accent2, @tint-mid) 100%
+        );
+        border-radius: 6px;
       }
     }
 
-    /* Buttons - smooth gradients using bi-accent for elegant appearance */
+    /* Buttons - soft gradients using accent + bi-accents for harmony */
     button,
     input[type="button"],
     input[type="submit"] {
       background: @surface0;
       color: @accent;
-      border: 1px solid @accent;
+      /* Keep original border styling from the site; avoid adding accent border */
 
       &:hover {
-        background: linear-gradient(135deg, @accent 0%, @bi-accent 100%);
-        color: @base;
-        border-color: @bi-accent;
-        transition: all 0.3s ease;
+        background: linear-gradient(135deg,
+          fade(@accent, @tint-strong) 0%,
+          fade(@bi-accent1, @tint-strong) 50%,
+          fade(@bi-accent2, @tint-strong) 100%
+        );
+        color: @accent;
+        transition: background 0.25s ease, color 0.2s ease;
       }
 
       &:active {
-        background: @accent;
-        border-color: @accent;
+        background: linear-gradient(135deg,
+          fade(@bi-accent2, (@tint-strong + 2%)) 0%,
+          fade(@bi-accent1, (@tint-strong + 2%)) 50%,
+          fade(@accent, (@tint-strong + 2%)) 100%
+        );
       }
     }
 
@@ -177,13 +236,36 @@ ${generateClassSpecificRules(cssAnalysis)}
     /* Input fields */
     input,
     textarea,
-    select {
-      background: @surface0;
+    select,
+    input[type="text"],
+    input[type="search"],
+    input[type="email"],
+    input[type="password"],
+    input[type="url"],
+    input[type="tel"],
+    input[type="number"] {
+      background-color: transparent !important;
       color: @text;
+      /* Keep site border styling; set a gentle default if none exists */
       border-color: @overlay0;
+      caret-color: @accent;
+
+      &::placeholder { color: @subtext0; opacity: .75; }
+      &::-webkit-input-placeholder { color: @subtext0; opacity: .75; }
+      &::-moz-placeholder { color: @subtext0; opacity: .75; }
+      &:-ms-input-placeholder { color: @subtext0; opacity: .75; }
+
+      &:hover {
+        background-color: fade(@surface0, @tint-input-hover);
+      }
 
       &:focus {
-        border-color: @accent;
+        /* Subtle focus indication without heavy overrides */
+        border-color: @overlay1;
+        outline: 2px solid fade(@accent, 35%);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px fade(@accent, 20%);
+        background-color: transparent;
       }
     }
 
@@ -192,6 +274,269 @@ ${generateClassSpecificRules(cssAnalysis)}
     pre {
       background: @crust;
       color: @text;
+      border: 1px solid @surface2;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+    }
+
+    /* Syntax highlighting (Prism.js / highlight.js) */
+    pre[class*="language-"],
+    code[class*="language-"],
+    .hljs {
+      background: @crust;
+      color: @text;
+    }
+    .token.comment,
+    .hljs-comment,
+    .hljs-quote { color: @overlay1; font-style: italic; }
+    .token.keyword,
+    .hljs-keyword,
+    .hljs-selector-tag { color: @mauve; }
+    .token.string,
+    .hljs-string,
+    .hljs-attr,
+    .hljs-attribute { color: @green; }
+    .token.function,
+    .hljs-function,
+    .hljs-title.function_ { color: @blue; }
+    .token.number,
+    .token.boolean,
+    .hljs-number { color: @peach; }
+    .token.operator,
+    .hljs-operator { color: @sky; }
+    .token.constant,
+    .token.symbol,
+    .hljs-literal { color: @yellow; }
+    .token.class-name,
+    .hljs-type,
+    .hljs-built_in,
+    .token.builtin { color: @sapphire; }
+    .token.punctuation,
+    .hljs-punctuation { color: @overlay2; }
+
+    /* Text selection */
+    ::selection {
+      background: fade(@accent, 35%);
+      color: @base;
+    }
+    ::-moz-selection {
+      background: fade(@accent, 35%);
+      color: @base;
+    }
+
+    /* Scrollbar (WebKit) */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: @base;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: fade(@overlay2, 35%);
+      border-radius: 8px;
+      border: 2px solid @base;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: fade(@overlay2, 50%);
+    }
+
+    /* Global focus ring */
+    :focus-visible {
+      outline: 2px solid fade(@accent, 35%);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 2px fade(@accent, 20%);
+    }
+
+    /* Form controls - checkboxes, radios, switches */
+    input[type="checkbox"],
+    input[type="radio"] {
+      accent-color: @accent;
+      background-color: transparent;
+      border-color: @overlay0;
+    }
+
+    /* Role-based switches */
+    [role="switch"] {
+      accent-color: @accent;
+    }
+
+    /* Generic toggle/switch UI helpers (class-based for common libs) */
+    .switch,
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+      background: fade(@overlay2, 25%);
+      border-radius: 999px;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: inset 0 2px 4px fade(@overlay2, 12%);
+    }
+    .switch::after,
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 18px; height: 18px;
+      background: @surface2;
+      border-radius: 999px;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+      box-shadow: 0 1px 2px fade(@overlay2, 20%);
+    }
+    .switch[aria-checked="true"],
+    .toggle.is-on,
+    .toggle[aria-checked="true"],
+    .toggle[aria-pressed="true"] {
+      background: fade(@accent, 65%);
+    }
+    .switch[aria-checked="true"]::after,
+    .toggle.is-on::after,
+    .toggle[aria-checked="true"]::after,
+    .toggle[aria-pressed="true"]::after {
+      transform: translateX(18px);
+      background: @base;
+    }
+
+    input:disabled,
+    select:disabled,
+    textarea:disabled,
+    button:disabled,
+    [aria-disabled="true"] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Select dropdown options */
+    select,
+    option {
+      background: @base;
+      color: @text;
+    }
+
+    /* Horizontal rules */
+    hr {
+      border-color: @overlay1;
+      opacity: 0.6;
+    }
+
+    /* Tables */
+    table {
+      background: @base;
+      border: 1px solid @overlay1;
+      border-collapse: separate;
+      border-spacing: 0;
+      box-shadow: 0 2px 8px fade(@overlay2, 15%);
+    }
+    thead {
+      background: @surface0;
+      color: @text;
+    }
+    th, td {
+      border-bottom: 1px solid @overlay1;
+      padding: 0.65rem 0.9rem;
+    }
+    tbody tr:nth-child(even) {
+      background: fade(@surface0, 60%);
+    }
+    tbody tr:hover {
+      background: fade(@accent, 8%);
+    }
+
+    /* Dense tables variant */
+    .table--dense,
+    .table.dense,
+    table.table-dense {
+      font-size: 0.95em;
+    }
+    .table--dense th, .table--dense td,
+    .table.dense th, .table.dense td,
+    table.table-dense th, table.table-dense td {
+      padding: 0.35rem 0.6rem;
+    }
+
+    /* Cards / panels / containers */
+    .card,
+    .panel,
+    .box,
+    .container,
+    .paper,
+    .well {
+      background: fade(@surface0, 90%);
+      border: 1px solid @surface2;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px fade(@overlay2, 18%);
+      backdrop-filter: blur(4px);
+    }
+
+    /* Tooltips & popovers */
+    [role="tooltip"],
+    .tooltip,
+    .popover {
+      background: @mantle;
+      color: @text;
+      border: 1px solid @overlay1;
+      box-shadow: 0 6px 18px fade(@overlay2, 20%);
+    }
+
+    /* Dropdown menus */
+    .menu,
+    .dropdown-menu,
+    [role="menu"] {
+      background: @base;
+      border: 1px solid @overlay1;
+      box-shadow: 0 10px 24px fade(@overlay2, 18%);
+    }
+    .menu-item,
+    [role="menuitem"],
+    .dropdown-item {
+      color: @text;
+    }
+    .menu-item:hover,
+    [role="menuitem"]:hover,
+    .dropdown-item:hover {
+      background: fade(@accent, 10%);
+      color: @text;
+    }
+
+    /* Modals & dialogs */
+    .modal,
+    .dialog,
+    [role="dialog"],
+    [aria-modal="true"] {
+      background: @base;
+      color: @text;
+      border: 1px solid @overlay1;
+      box-shadow: 0 20px 48px fade(@overlay2, 25%);
+    }
+    .modal-backdrop,
+    .overlay,
+    .backdrop {
+      background: fade(@crust, 70%);
+    }
+
+    /* Alerts / banners */
+    .alert,
+    .banner,
+    .notice {
+      background: fade(@surface0, 90%);
+      border: 1px solid @surface2;
+      border-left: 4px solid @accent;
+      color: @text;
+    }
+    .alert-success { border-left-color: @green; }
+    .alert-warning { border-left-color: @yellow; }
+    .alert-danger, .alert-error { border-left-color: @red; }
+    .alert-info { border-left-color: @blue; }
+
+    /* Badges / chips */
+    .badge,
+    .tag,
+    .chip {
+      background: fade(@accent, 20%);
+      color: @accent;
+      border: 1px solid fade(@accent, 35%);
+      border-radius: 999px;
     }
   }
 }
@@ -365,18 +710,15 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
       lines.push(`    .${btn.className} {`);
       lines.push(`      background: @surface0;`);
       lines.push(`      color: @accent;`);
-      lines.push(`      border: 1px solid @accent;`);
       lines.push(``);
       lines.push(`      &:hover {`);
       lines.push(`        background: linear-gradient(135deg, @accent 0%, @co-accent1 100%) !important;`);
       lines.push(`        color: @base !important;`);
-      lines.push(`        border-color: @co-accent1 !important;`);
       lines.push(`        transition: all 0.3s ease !important;`);
       lines.push(`      }`);
       lines.push(``);
       lines.push(`      &:active {`);
       lines.push(`        background: linear-gradient(135deg, @co-accent1 0%, @co-accent2 100%) !important;`);
-      lines.push(`        border-color: @co-accent2 !important;`);
       lines.push(`      }`);
       lines.push(`    }`);
     });

@@ -15,7 +15,7 @@ import { useVersion } from './hooks/useVersion';
 
 function App() {
   const [aiProvider, setAIProvider] = useState<AIProvider>('openrouter');
-  const [aiModel, setAIModel] = useState('deepseek/deepseek-chat-v3.1:free');
+  const [aiModel, setAIModel] = useState('tngtech/deepseek-r1t2-chimera:free');
   const [aiKey, setAIKey] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +24,22 @@ function App() {
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
   const [discoveredOllamaModels, setDiscoveredOllamaModels] = useState<string[]>([]);
   const version = useVersion();
+
+  // Regeneration support state
+  const [lastCrawlerResult, setLastCrawlerResult] = useState<CrawlerResult | null>(null);
+  const [lastSource, setLastSource] = useState<string | null>(null);
+  const [lastAIConfig, setLastAIConfig] = useState<{ provider: AIProvider; model: string; apiKey: string } | null>(null);
+  const [lastUrl, setLastUrl] = useState<string | null>(null);
+  const [hasCompleted, setHasCompleted] = useState(false);
+
+  const aiChangedSinceLast = !!(
+    lastAIConfig && (
+      lastAIConfig.provider !== aiProvider ||
+      lastAIConfig.model !== aiModel ||
+      lastAIConfig.apiKey !== aiKey
+    )
+  );
+  const canRegenerate = (!!error) || (hasCompleted && aiChangedSinceLast);
 
   const updateStep = (id: string, updates: Partial<ThinkingStep>) => {
     setThinkingSteps(prev => prev.map(step =>
@@ -45,6 +61,8 @@ function App() {
     setError('');
     setProgress('Starting...');
     setThemePackage(null);
+    setHasCompleted(false);
+    setLastUrl(url);
 
     // Initialize thinking steps
     setThinkingSteps([
@@ -78,6 +96,8 @@ function App() {
         colors: fetchResult.colors,
       };
 
+      setLastCrawlerResult(crawlerResult);
+      setLastSource('direct-fetch');
       await processContent(crawlerResult, 'direct-fetch');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -96,6 +116,8 @@ function App() {
     setError('');
     setProgress('Starting...');
     setThemePackage(null);
+    setHasCompleted(false);
+    setLastUrl(null);
 
     // Initialize thinking steps
     setThinkingSteps([
@@ -115,6 +137,8 @@ function App() {
         details: `Parsed ${file.name} - Found ${crawlerResult.colors.length} colors`
       });
 
+      setLastCrawlerResult(crawlerResult);
+      setLastSource('mhtml-upload');
       await processContent(crawlerResult, 'mhtml-upload');
     } catch (err) {
       updateStep('parse', { status: 'error', details: err instanceof Error ? err.message : 'Parse failed' });
@@ -134,6 +158,8 @@ function App() {
     setError('');
     setProgress('Starting...');
     setThemePackage(null);
+    setHasCompleted(false);
+    setLastUrl(null);
 
     // Initialize thinking steps with CSS analysis
     setThinkingSteps([
@@ -182,6 +208,8 @@ function App() {
         },
       };
 
+      setLastCrawlerResult(crawlerResult);
+      setLastSource('directory-upload');
       await processContent(crawlerResult, 'directory-upload');
     } catch (err) {
       const currentStep = thinkingSteps.find(s => s.status === 'in_progress');
@@ -247,6 +275,8 @@ function App() {
       });
 
       setThemePackage(pkg);
+      setLastAIConfig({ provider: aiProvider, model: aiModel, apiKey: aiKey });
+      setHasCompleted(true);
       setProgress('');
     } catch (err) {
       // Mark current step as error
@@ -272,6 +302,13 @@ function App() {
             <img
               src="/catppuccin.png"
               alt="Catppuccin"
+              onError={(e) => {
+                console.error('Image failed to load:', e);
+                // Cast to HTMLImageElement and set fallback
+                if (e.currentTarget instanceof HTMLImageElement) {
+                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='100' height='100'%3E%3Crect width='100' height='100' fill='%2345475a'/%3E%3Ccircle cx='50' cy='50' r='40' fill='%23cba6f7'/%3E%3Cpath d='M30,30 L70,30 L70,70 L30,70 Z' fill='%23cba6f7'/%3E%3Cpath d='M40,40 L60,40 L60,60 L40,60 Z' fill='%23f5e0dc'/%3E%3C/svg%3E";
+                }
+              }}
               className="w-20 h-20 sm:w-24 sm:h-24 rounded-full shadow-lg shadow-ctp-accent/50 hover:shadow-ctp-accent/70 transition-all duration-300 hover:scale-110"
             />
           </div>
@@ -283,7 +320,7 @@ function App() {
             Analyze any website and generate beautiful Catppuccin themes in Stylus, LESS, and CSS
           </p>
           <p className="text-ctp-green text-sm mt-2">
-            ✨ Now with direct HTTP fetching - no external crawler needed! Just AI API key required.
+            ✨ Generated and powered by advanced AI models for accurate color analysis! ✨
           </p>
           <a
             href="https://github.com/catppuccin/catppuccin"
@@ -292,6 +329,14 @@ function App() {
             className="inline-block mt-2 text-sm text-ctp-lavender hover:text-ctp-mauve underline transition-colors"
           >
             Learn more about Catppuccin
+          </a>
+          <a
+            href="https://github.com/openstyles/stylus"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block mt-1 text-sm text-ctp-lavender hover:text-ctp-mauve underline transition-colors"
+          >
+            Learn more about Stylus
           </a>
         </header>
 
@@ -308,6 +353,39 @@ function App() {
                 onAIModelChange={setAIModel}
                 ollamaModels={discoveredOllamaModels}
               />
+
+              {canRegenerate && (
+                <div className="mt-4 p-3 rounded-lg border border-ctp-surface2 bg-ctp-surface0/60 flex items-center justify-between gap-3">
+                  <div className="text-sm text-ctp-subtext0">
+                    {error
+                      ? 'The previous run ended with an error.'
+                      : 'AI config changed since the last successful generation.'}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      setError('');
+                      setIsProcessing(true);
+                      // Minimal pipeline since we already have content
+                      setThinkingSteps([
+                        { id: 'analyze', title: 'AI Color Analysis', description: 'Analyzing color scheme with AI', status: 'in_progress' },
+                        { id: 'map', title: 'Mapping to Catppuccin', description: 'Creating semantic color mappings', status: 'pending' },
+                        { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
+                      ]);
+                      try {
+                        if (lastUrl) {
+                          // fall back to rerun from URL
+                          await handleGenerate(lastUrl);
+                        }
+                      } finally {
+                        // lastAIConfig updates upon success in processContent
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-gradient-to-r from-ctp-lavender to-ctp-mauve hover:opacity-90 rounded-md text-sm text-ctp-base font-medium"
+                  >
+                    Regenerate the theme
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">

@@ -436,6 +436,38 @@ export function calculateBiAccent(
 }
 
 /**
+ * Calculate two bi-accents: the two accent tokens nearest to the main accent
+ * on the color wheel (by perceptual ΔE distance in LAB), excluding the accent itself.
+ * Returns the closest (biAccent1) and second-closest (biAccent2).
+ */
+export function calculateBiAccents(
+  accentName: AccentColor,
+  palette: CatppuccinPalette
+): { biAccent1: AccentColor; biAccent2: AccentColor } {
+  const accentHex = palette[accentName].hex;
+  const accentLab = hexToLab(accentHex);
+
+  const accentKeys: AccentColor[] = [
+    'rosewater', 'flamingo', 'pink', 'mauve',
+    'red', 'maroon', 'peach', 'yellow',
+    'green', 'teal', 'sky', 'sapphire',
+    'blue', 'lavender'
+  ];
+
+  const distances: Array<{ key: AccentColor; d: number }> = [];
+  for (const key of accentKeys) {
+    if (key === accentName) continue;
+    const tokenLab = hexToLab(palette[key].hex);
+    distances.push({ key, d: deltaE76(accentLab, tokenLab) });
+  }
+
+  distances.sort((a, b) => a.d - b.d);
+  const biAccent1 = distances[0]?.key || 'pink';
+  const biAccent2 = distances[1]?.key || 'lavender';
+  return { biAccent1, biAccent2 };
+}
+
+/**
  * Convert HSL to RGB.
  * H: 0-360, S: 0-100, L: 0-100
  * Returns RGB in 0-255 scale.

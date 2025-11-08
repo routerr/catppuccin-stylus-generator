@@ -1,7 +1,7 @@
 import type { CatppuccinFlavor, CatppuccinColor, ColorMapping, AccentColor } from '../../types/catppuccin';
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
-import { calculateTriadicAccents, calculateBiAccent } from '../../utils/color-analysis';
+import { calculateTriadicAccents, calculateBiAccent, calculateBiAccents } from '../../utils/color-analysis';
 
 /**
  * generateLessTheme
@@ -23,7 +23,7 @@ export function generateLessTheme(
 ): string {
   const palette = CATPPUCCIN_PALETTINOTE(flaworCheck(flavor)) || CATPPUCCIN_PALETTES[flavor];
   const triadicColors = calculateTriadicAccents(defaultAccent, palette);
-  const biAccent = calculateBiAccent(defaultAccent, palette);
+  const biAccents = calculateBiAccents(defaultAccent, palette);
   const date = new Date().toISOString().split('T')[0];
 
   // Header
@@ -48,7 +48,11 @@ export function generateLessTheme(
   less += `@co-accent1: @${triadicColors.coAccent1};\n`;
   less += `@co-accent2: @${triadicColors.coAccent2};\n`;
   less += `// Bi-accent (most similar to ${defaultAccent}, used for smooth gradients)\n`;
-  less += `@bi-accent: @${biAccent};\n`;
+  // Accent family variables
+  less += `@accent: @${defaultAccent};\n`;
+  less += `@bi-accent1: @${biAccents.biAccent1};\n`;
+  less += `@bi-accent2: @${biAccents.biAccent2};\n`;
+  less += `@bi-accent: @bi-accent1;\n`;
 
   // If MappingOutput provided, prefer roleMap/derivedScales path
   if ((colorMappings as MappingOutput)?.roleMap) {
@@ -111,62 +115,85 @@ export function generateLessTheme(
  * Catppuccin Theme with Bi-Accent Gradients - Smooth & Elegant
  */
 a, .link {
-  color: @text-primary;
-  text-decoration-color: @text-primary;
+  color: @accent;
+  text-decoration-color: @accent;
   text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease, background 0.25s ease;
 
-    &:hover {
-      color: linear-gradient(90deg, @blue 0%, @bi-accent 100%);
-      background: none;
-      transition: all 0.3s ease;
-    }
+  &:hover,
+  &:focus {
+    color: @accent;
+    text-decoration-color: @bi-accent1;
+    background: linear-gradient(90deg,
+      fade(@accent, @tint-mid),
+      fade(@bi-accent1, @tint-mid),
+      fade(@bi-accent2, @tint-mid)
+    );
+    border-radius: 6px;
+  }
 }
 
 .text-link {
-  color: @mauve;
-  text-decoration-color: @mauve;
+  color: @accent;
+  text-decoration-color: @accent;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease, background 0.25s ease;
 
-  &:hover {
-    color: linear-gradient(90deg, @mauve 0%, @bi-accent 100%);
-    background: none;
-    transition: all 0.3s ease;
+  &:hover,
+  &:focus {
+    color: @accent;
+    text-decoration-color: @bi-accent1;
+    background: linear-gradient(90deg,
+      fade(@accent, @tint-mid),
+      fade(@bi-accent1, @tint-mid),
+      fade(@bi-accent2, @tint-mid)
+    );
+    border-radius: 6px;
   }
 }
 
 .btn-primary {
   background: @surface_0;
   color: @primary-base;
-  border: 1px solid @primary-base;
+  // Keep original borders; avoid accent border override
 
   &:hover {
-    background: linear-gradient(135deg, @primary-base 0%, @bi-accent 100%);
-    color: @base;
-    border-color: @bi-accent;
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg,
+      fade(@accent, @tint-strong) 0%,
+      fade(@bi-accent1, @tint-strong) 50%,
+      fade(@bi-accent2, @tint-strong) 100%
+    );
+    color: @accent;
+    transition: background 0.25s ease, color 0.2s ease;
   }
 
   &:active {
-    background: @primary-base;
-    border-color: @primary-base;
+    background: fade(@primary-base, 26%);
   }
 }
 
 .btn-secondary {
   background: @surface_0;
   color: @secondary-base;
-  border: 1px solid @secondary-base;
+  // Keep original borders
 
   &:hover {
-    background: linear-gradient(135deg, @secondary-base 0%, @bi-accent 100%);
-    color: @base;
-    border-color: @bi-accent;
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg,
+      fade(@accent, @tint-strong) 0%,
+      fade(@bi-accent1, @tint-strong) 50%,
+      fade(@bi-accent2, @tint-strong) 100%
+    );
+    color: @accent;
+    transition: background 0.25s ease, color 0.2s ease;
   }
 }
 
 .btn-outline {
   background: transparent;
-  border-color: @border-default;
   color: @text-primary;
 
   &:hover {
@@ -186,27 +213,203 @@ a, .link {
 .btn-destructive {
   background: @surface_0;
   color: @danger-base;
-  border: 1px solid @danger-base;
+  // Keep original borders
 
   &:hover {
-    background: linear-gradient(135deg, @red 0%, @maroon 100%);
-    color: @base;
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg,
+      fade(@accent, @tint-strong) 0%,
+      fade(@bi-accent1, @tint-strong) 50%,
+      fade(@bi-accent2, @tint-strong) 100%
+    );
+    color: @accent;
+    transition: background 0.25s ease, color 0.2s ease;
   }
 }
 
 .btn-success {
   background: @surface_0;
   color: @success-base;
-  border: 1px solid @success-base;
+  // Keep original borders
 
   &:hover {
-    background: linear-gradient(135deg, @green 0%, @teal 100%);
-    color: @base;
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg,
+      fade(@accent, @tint-strong) 0%,
+      fade(@bi-accent1, @tint-strong) 50%,
+      fade(@bi-accent2, @tint-strong) 100%
+    );
+    color: @accent;
+    transition: background 0.25s ease, color 0.2s ease;
   }
 }
 */
+
+// INPUTS - Transparent backgrounds for text fields
+input,
+textarea,
+select,
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="tel"],
+input[type="number"] {
+  background-color: transparent !important;
+  color: @text;
+  border-color: @overlay0;
+  caret-color: @co-accent1;
+  
+  &:hover {
+    background-color: fade(@surface0, 28%);
+  }
+
+  &::placeholder { color: @subtext0; opacity: .75; }
+  &::-webkit-input-placeholder { color: @subtext0; opacity: .75; }
+  &::-moz-placeholder { color: @subtext0; opacity: .75; }
+  &:-ms-input-placeholder { color: @subtext0; opacity: .75; }
+
+  &:focus {
+    border-color: @overlay1;
+    outline: 2px solid fade(@co-accent1, 35%);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px fade(@co-accent1, 20%);
+    background-color: transparent;
+  }
+}
+
+// Text selection
+::selection {
+  background: fade(@co-accent1, 35%);
+  color: @base;
+}
+::-moz-selection {
+  background: fade(@co-accent1, 35%);
+  color: @base;
+}
+
+// Scrollbar (WebKit)
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: @base; }
+::-webkit-scrollbar-thumb {
+  background: fade(@overlay2, 35%);
+  border-radius: 8px;
+  border: 2px solid @base;
+}
+::-webkit-scrollbar-thumb:hover { background: fade(@overlay2, 50%); }
+
+// Global focus ring
+:focus-visible {
+  outline: 2px solid fade(@co-accent1, 35%);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px fade(@co-accent1, 20%);
+}
+
+// Checkboxes / radios / switches
+input[type="checkbox"], input[type="radio"] {
+  accent-color: @co-accent1;
+  background: transparent;
+  border-color: @overlay0;
+}
+[role="switch"] { accent-color: @co-accent1; }
+
+// Disabled states
+input:disabled,
+select:disabled,
+textarea:disabled,
+button:disabled,
+[aria-disabled="true"] {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+// Select dropdown options
+select, option { background: @base; color: @text; }
+
+// Horizontal rules
+hr { border-color: @overlay1; opacity: .6; }
+
+// Tables (base)
+table {
+  background: @base;
+  border: 1px solid @overlay1;
+  border-collapse: separate;
+  border-spacing: 0;
+  box-shadow: 0 2px 8px fade(@overlay2, 15%);
+}
+thead { background: @surface0; color: @text; }
+th, td { border-bottom: 1px solid @overlay1; padding: .65rem .9rem; }
+tbody tr:nth-child(even) { background: fade(@surface0, 60%); }
+tbody tr:hover { background: fade(@co-accent1, 8%); }
+
+// Tables - Dense variant
+.table--dense,
+.table.dense,
+table.table-dense {
+  font-size: 0.95em;
+}
+.table--dense th, .table--dense td,
+.table.dense th, .table.dense td,
+table.table-dense th, table.table-dense td {
+  padding: 0.35rem 0.6rem;
+}
+
+// Cards / panels / containers
+.card, .panel, .box, .container, .paper, .well {
+  background: fade(@surface0, 90%);
+  border: 1px solid @surface2;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px fade(@overlay2, 18%);
+  backdrop-filter: blur(4px);
+}
+
+// Tooltips & popovers
+[role="tooltip"], .tooltip, .popover {
+  background: @mantle;
+  color: @text;
+  border: 1px solid @overlay1;
+  box-shadow: 0 6px 18px fade(@overlay2, 20%);
+}
+
+// Dropdown menus
+.menu, .dropdown-menu, [role="menu"] {
+  background: @base;
+  border: 1px solid @overlay1;
+  box-shadow: 0 10px 24px fade(@overlay2, 18%);
+}
+.menu-item, [role="menuitem"], .dropdown-item { color: @text; }
+.menu-item:hover, [role="menuitem"]:hover, .dropdown-item:hover {
+  background: fade(@co-accent1, 10%);
+  color: @text;
+}
+
+// Modals & dialogs
+.modal, .dialog, [role="dialog"], [aria-modal="true"] {
+  background: @base;
+  color: @text;
+  border: 1px solid @overlay1;
+  box-shadow: 0 20px 48px fade(@overlay2, 25%);
+}
+.modal-backdrop, .overlay, .backdrop { background: fade(@crust, 70%); }
+
+// Alerts / banners
+.alert, .banner, .notice {
+  background: fade(@surface0, 90%);
+  border: 1px solid @surface2;
+  border-left: 4px solid @co-accent1;
+  color: @text;
+}
+.alert-success { border-left-color: @green; }
+.alert-warning { border-left-color: @yellow; }
+.alert-danger, .alert-error { border-left-color: @red; }
+.alert-info { border-left-color: @blue; }
+
+// Badges / chips
+.badge, .tag, .chip {
+  background: fade(@co-accent1, 20%);
+  color: @co-accent1;
+  border: 1px solid fade(@co-accent1, 35%);
+  border-radius: 999px;
+}
 `;
 
   } else {

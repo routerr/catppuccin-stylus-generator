@@ -12,7 +12,7 @@ interface ServiceSelectorProps {
 
 const AI_PROVIDERS: { value: AIProvider; label: string; description?: string }[] = [
   { value: 'openrouter', label: 'OpenRouter', description: '8+ free models available' },
-  { value: 'chutes', label: 'Chutes AI', description: '5 free + 2 paid models' },
+  { value: 'chutes', label: 'Chutes AI', description: '5+ free models available' },
   { value: 'ollama', label: 'Ollama (Local)', description: 'No API key, runs on localhost' },
 ];
 
