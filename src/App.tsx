@@ -11,6 +11,7 @@ import { analyzeWebsiteColors } from './services/ai';
 import { createUserStylePackage } from './services/generators';
 import { MHTMLParser } from './utils/mhtml-parser';
 import { parseWebpageDirectory, groupCSSClassesByPurpose } from './utils/directory-parser';
+import { useVersion } from './hooks/useVersion';
 
 function App() {
   const [aiProvider, setAIProvider] = useState<AIProvider>('openrouter');
@@ -21,6 +22,7 @@ function App() {
   const [progress, setProgress] = useState('');
   const [themePackage, setThemePackage] = useState<ThemePackage | null>(null);
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
+  const version = useVersion();
 
   const updateStep = (id: string, updates: Partial<ThinkingStep>) => {
     setThinkingSteps(prev => prev.map(step =>
@@ -261,23 +263,32 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-purple-900/30 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-ctp-base via-ctp-mantle to-ctp-crust text-ctp-text">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <header className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+          {/* Catppuccin Icon */}
+          <div className="flex justify-center mb-6">
+            <img
+              src="/catppuccin.png"
+              alt="Catppuccin"
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full shadow-lg shadow-ctp-accent/50 hover:shadow-ctp-accent/70 transition-all duration-300 hover:scale-110"
+            />
+          </div>
+
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-ctp-accent to-ctp-bi-accent bg-clip-text text-transparent">
             Catppuccin Theme Generator
           </h1>
-          <p className="text-gray-300 text-lg">
+          <p className="text-ctp-subtext0 text-lg">
             Analyze any website and generate beautiful Catppuccin themes in Stylus, LESS, and CSS
           </p>
-          <p className="grass-green-text text-sm mt-2">
+          <p className="text-ctp-green text-sm mt-2">
             ✨ Now with direct HTTP fetching - no external crawler needed! Just AI API key required.
           </p>
           <a
             href="https://github.com/catppuccin/catppuccin"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block mt-2 text-sm text-purple-300 hover:text-purple-200 underline"
+            className="inline-block mt-2 text-sm text-ctp-lavender hover:text-ctp-mauve underline transition-colors"
           >
             Learn more about Catppuccin
           </a>
@@ -286,8 +297,8 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Left Column - Configuration */}
           <div className="space-y-6">
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700">
-              <h2 className="text-2xl font-bold mb-6">AI Configuration</h2>
+            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
+              <h2 className="text-2xl font-bold mb-6 text-ctp-accent">AI Configuration</h2>
 
               <ServiceSelector
                 aiProvider={aiProvider}
@@ -297,15 +308,15 @@ function App() {
               />
             </div>
 
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700">
+            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
               <APIKeyConfig
                 aiProvider={aiProvider}
                 onKeyChange={(key) => setAIKey(key)}
               />
             </div>
 
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700">
-              <h2 className="text-2xl font-bold mb-6">Generate Theme</h2>
+            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
+              <h2 className="text-2xl font-bold mb-6 text-ctp-accent">Generate Theme</h2>
               <InputSelector
                 onURLSubmit={handleGenerate}
                 onFileSelect={handleFileUpload}
@@ -323,12 +334,12 @@ function App() {
             )}
 
             {error && (
-              <div className="bg-red-900/30 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-red-500/50">
+              <div className="bg-ctp-red/20 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-red/50">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="h-6 w-6 text-red-400 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="h-6 w-6 text-ctp-red flex-shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="text-lg font-semibold text-red-300 mb-2">Error</h3>
-                    <p className="text-red-200">{error}</p>
+                    <h3 className="text-lg font-semibold text-ctp-red mb-2">Error</h3>
+                    <p className="text-ctp-subtext0">{error}</p>
                   </div>
                 </div>
               </div>
@@ -338,21 +349,44 @@ function App() {
           </div>
         </div>
 
-        <footer className="text-center text-gray-500 text-sm mt-12 pb-8">
+        <footer className="text-center text-ctp-overlay0 text-sm mt-12 pb-8">
           <p className="mb-2">
             Made with Catppuccin |
             <a
               href="https://github.com/catppuccin/catppuccin"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-1 hover:text-purple-400"
+              className="ml-1 hover:text-ctp-lavender transition-colors"
             >
               GitHub
             </a>
           </p>
-          <p className="text-gray-600 text-xs">
+          <p className="text-ctp-overlay1 text-xs mb-3">
             Generated by Claude Code, Roo Code, MiniMax M2
           </p>
+
+          {/* Version Banner */}
+          {version && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-ctp-accent/10 to-ctp-bi-accent/10 rounded-lg border border-ctp-accent/20">
+              <div className="flex items-center gap-2">
+                <span className="text-ctp-accent font-mono font-semibold">
+                  v{version.version}
+                </span>
+                <span className="text-ctp-overlay1">•</span>
+                <span className="text-ctp-overlay0 text-xs">
+                  {version.commitHash}
+                </span>
+                {version.branchName !== 'main' && (
+                  <>
+                    <span className="text-ctp-overlay1">•</span>
+                    <span className="text-ctp-yellow text-xs">
+                      {version.branchName}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </footer>
       </div>
     </div>

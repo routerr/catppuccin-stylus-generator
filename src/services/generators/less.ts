@@ -1,6 +1,7 @@
-import type { CatppuccinFlavor, CatppuccinColor, ColorMapping } from '../../types/catppuccin';
+import type { CatppuccinFlavor, CatppuccinColor, ColorMapping, AccentColor } from '../../types/catppuccin';
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
+import { calculateTriadicAccents, calculateBiAccent } from '../../utils/color-analysis';
 
 /**
  * generateLessTheme
@@ -17,9 +18,12 @@ export function generateLessTheme(
   flavor: CatppuccinFlavor,
   colorMappings: Map<string, CatppuccinColor> | MappingOutput,
   url: string,
-  mappingsWithReasons?: ColorMapping[]
+  mappingsWithReasons?: ColorMapping[],
+  defaultAccent: AccentColor = 'mauve'
 ): string {
   const palette = CATPPUCCIN_PALETTINOTE(flaworCheck(flavor)) || CATPPUCCIN_PALETTES[flavor];
+  const triadicColors = calculateTriadicAccents(defaultAccent, palette);
+  const biAccent = calculateBiAccent(defaultAccent, palette);
   const date = new Date().toISOString().split('T')[0];
 
   // Header
@@ -29,7 +33,7 @@ export function generateLessTheme(
  * Date: ${date}
  * Generator: Catppuccin Theme Generator
  */
- 
+
 // Catppuccin ${capitalize(flavor)} Color Palette
 `;
 
@@ -37,6 +41,14 @@ export function generateLessTheme(
   for (const [colorName, colorValue] of Object.entries(palette)) {
     less += `@${colorName}: ${colorValue.hex};\n`;
   }
+
+  // Add accent color scheme variables
+  less += `\n// Accent Color Scheme Variables\n`;
+  less += `// Main accents (used for static colors before interactions)\n`;
+  less += `@co-accent1: @${triadicColors.coAccent1};\n`;
+  less += `@co-accent2: @${triadicColors.coAccent2};\n`;
+  less += `// Bi-accent (most similar to ${defaultAccent}, used for smooth gradients)\n`;
+  less += `@bi-accent: @${biAccent};\n`;
 
   // If MappingOutput provided, prefer roleMap/derivedScales path
   if ((colorMappings as MappingOutput)?.roleMap) {
@@ -95,12 +107,111 @@ export function generateLessTheme(
 
     // Usage examples using role variables (buttons, inputs)
     less += `\n// ==========================\n// Usage examples (roles)\n// ==========================\n`;
-    less += `/* TEXT & LINK STYLES
- * Text always solid (never transparent!)
- * Hover: gradient background at 45deg angle + solid text color
- */\na, .link {\n  color: @text-primary;\n  text-decoration: underline;\n  \n  &:hover {\n    background: linear-gradient(45deg, @blue, @sapphire);\n    color: @text;\n  }\n}\n\n.text-link {\n  color: @text-primary;\n  \n  &:hover {\n    background: linear-gradient(225deg, @mauve, @lavender);\n    color: @text;\n  }\n}\n\n/* BUTTON STYLES
- * Text always solid (never transparent!)
- * Hover: gradient background at 135deg angle (different from links)\n */\n.btn-primary {\n  background: @primary-base;\n  color: @primary-text;\n  \n  &:hover {\n    background: linear-gradient(135deg, @blue, @sapphire);\n  }\n}\n\n.btn-secondary {\n  background: @secondary-base;\n  color: @secondary-text;\n  \n  &:hover {\n    background: linear-gradient(135deg, @mauve, @pink);\n  }\n}\n\n.btn-outline {\n  background: transparent;\n  border-color: @border-default;\n  color: @text-primary;\n  \n  &:hover {\n    background: linear-gradient(135deg, @surface_0, @surface_1);\n  }\n}\n\n.btn-subtle {\n  background: transparent;\n  color: @text-primary;\n  \n  &:hover {\n    background-color: @surface_0;\n  }\n}\n\n.btn-destructive {\n  background: @danger-base;\n  color: @danger-text;\n  \n  &:hover {\n    background: linear-gradient(135deg, @red, @maroon);\n  }\n}\n\n.btn-success {\n  background: @success-base;\n  color: @success-text;\n  \n  &:hover {\n    background: linear-gradient(135deg, @green, @teal);\n  }\n}\n*/\n`;
+    less += `/* LINK & BUTTON STYLES
+ * Catppuccin Theme with Bi-Accent Gradients - Smooth & Elegant
+ */
+a, .link {
+  color: @text-primary;
+  text-decoration-color: @text-primary;
+  text-decoration: underline;
+
+  &:hover {
+    background: linear-gradient(90deg, @blue 0%, @bi-accent 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: all 0.3s ease;
+  }
+}
+
+.text-link {
+  color: @mauve;
+  text-decoration-color: @mauve;
+
+  &:hover {
+    background: linear-gradient(90deg, @mauve 0%, @bi-accent 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: all 0.3s ease;
+  }
+}
+
+.btn-primary {
+  background: @surface_0;
+  color: @primary-base;
+  border: 1px solid @primary-base;
+
+  &:hover {
+    background: linear-gradient(135deg, @primary-base 0%, @bi-accent 100%);
+    color: @base;
+    border-color: @bi-accent;
+    transition: all 0.3s ease;
+  }
+
+  &:active {
+    background: @primary-base;
+    border-color: @primary-base;
+  }
+}
+
+.btn-secondary {
+  background: @surface_0;
+  color: @secondary-base;
+  border: 1px solid @secondary-base;
+
+  &:hover {
+    background: linear-gradient(135deg, @secondary-base 0%, @bi-accent 100%);
+    color: @base;
+    border-color: @bi-accent;
+    transition: all 0.3s ease;
+  }
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: @border-default;
+  color: @text-primary;
+
+  &:hover {
+    background: @surface_0;
+  }
+}
+
+.btn-subtle {
+  background: transparent;
+  color: @text-primary;
+
+  &:hover {
+    background-color: @surface_0;
+  }
+}
+
+.btn-destructive {
+  background: @surface_0;
+  color: @danger-base;
+  border: 1px solid @danger-base;
+
+  &:hover {
+    background: linear-gradient(135deg, @red 0%, @maroon 100%);
+    color: @base;
+    transition: all 0.3s ease;
+  }
+}
+
+.btn-success {
+  background: @surface_0;
+  color: @success-base;
+  border: 1px solid @success-base;
+
+  &:hover {
+    background: linear-gradient(135deg, @green 0%, @teal 100%);
+    color: @base;
+    transition: all 0.3s ease;
+  }
+}
+*/
+`;
 
   } else {
     // Legacy behavior (preserve)

@@ -17,7 +17,7 @@ export function InputSelector({ onURLSubmit, onFileSelect, onDirectorySelect, di
   return (
     <div className="space-y-4">
       {/* Tab Buttons */}
-      <div className="flex gap-2 p-1 bg-gray-700/30 rounded-lg">
+      <div className="flex gap-2 p-1 bg-ctp-surface1/30 rounded-lg">
         <button
           type="button"
           onClick={() => setActiveTab('url')}
@@ -25,8 +25,8 @@ export function InputSelector({ onURLSubmit, onFileSelect, onDirectorySelect, di
           className={`
             flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md font-medium transition-all duration-200
             ${activeTab === 'url'
-              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+              ? 'bg-gradient-to-r from-ctp-accent to-ctp-bi-accent text-ctp-base shadow-lg'
+              : 'text-ctp-subtext0 hover:text-ctp-text hover:bg-ctp-surface1/50'
             }
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
           `}
@@ -42,8 +42,8 @@ export function InputSelector({ onURLSubmit, onFileSelect, onDirectorySelect, di
           className={`
             flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md font-medium transition-all duration-200
             ${activeTab === 'file'
-              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+              ? 'bg-gradient-to-r from-ctp-accent to-ctp-bi-accent text-ctp-base shadow-lg'
+              : 'text-ctp-subtext0 hover:text-ctp-text hover:bg-ctp-surface1/50'
             }
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
           `}
@@ -59,8 +59,8 @@ export function InputSelector({ onURLSubmit, onFileSelect, onDirectorySelect, di
           className={`
             flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md font-medium transition-all duration-200
             ${activeTab === 'directory'
-              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+              ? 'bg-gradient-to-r from-ctp-accent to-ctp-bi-accent text-ctp-base shadow-lg'
+              : 'text-ctp-subtext0 hover:text-ctp-text hover:bg-ctp-surface1/50'
             }
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
           `}

@@ -1,6 +1,7 @@
-import type { CatppuccinFlavor, CatppuccinColor, ColorMapping } from '../../types/catppuccin';
+import type { CatppuccinFlavor, CatppuccinColor, ColorMapping, AccentColor } from '../../types/catppuccin';
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
+import { calculateTriadicAccents, calculateBiAccent } from '../../utils/color-analysis';
 
 /**
  * generateStylusTheme
@@ -13,9 +14,12 @@ export function generateStylusTheme(
   flavor: CatppuccinFlavor,
   colorMappings: Map<string, CatppuccinColor> | MappingOutput,
   url: string,
-  mappingsWithReasons?: ColorMapping[]
+  mappingsWithReasons?: ColorMapping[],
+  defaultAccent: AccentColor = 'mauve'
 ): string {
   const palette = CATPPUCCIN_PALETTES[flavor];
+  const triadicColors = calculateTriadicAccents(defaultAccent, palette);
+  const biAccent = calculateBiAccent(defaultAccent, palette);
   const date = new Date().toISOString().split('T')[0];
 
   let stylus = `/**
@@ -30,7 +34,7 @@ export function generateStylusTheme(
  * This theme uses the Catppuccin ${capitalize(flavor)} color palette
  * to create a beautiful, consistent look for your website.
  */
- 
+
 /* ============================================
  * BASE COLOR PALETTE
  * ============================================
@@ -53,6 +57,14 @@ export function generateStylusTheme(
     const c = palette[colorName as CatppuccinColor];
     if (c) stylus += `$${colorName} = ${c.hex}\n`;
   });
+
+  // Add accent color scheme variables
+  stylus += `\n// Accent Color Scheme Variables\n`;
+  stylus += `// Main accents (used for static colors before interactions)\n`;
+  stylus += `$co-accent1 = $${triadicColors.coAccent1}\n`;
+  stylus += `$co-accent2 = $${triadicColors.coAccent2}\n`;
+  stylus += `// Bi-accent (most similar to ${defaultAccent}, used for smooth gradients)\n`;
+  stylus += `$bi-accent = $${biAccent}\n`;
 
   // If MappingOutput, emit two-level system
   if ((colorMappings as MappingOutput)?.roleMap) {
@@ -102,16 +114,15 @@ export function generateStylusTheme(
     }
 
     // Usage examples prefer role variables
-    stylus += `\n/* =========================\n * TEXT & LINK STYLES\n * Text always solid (never transparent!)\n * Hover: gradient background at 45deg angle + solid text color\n * =========================*/\n`;
-    stylus += `a, .link\n  color $text-primary\n  text-decoration underline\n  &:hover\n    background linear-gradient(45deg, $blue, $sapphire)\n    color $text\n\n`;
-    stylus += `.text-link\n  color $text-primary\n  &:hover\n    background linear-gradient(225deg, $mauve, $lavender)\n    color $text\n\n`;
+    stylus += `\n/* =========================\n * LINK & BUTTON STYLES\n * Catppuccin Theme with Bi-Accent Gradients - Smooth & Elegant\n * =========================*/\n`;
+    stylus += `a, .link\n  color $text-primary\n  text-decoration-color $text-primary\n  text-decoration underline\n  &:hover\n    background linear-gradient(90deg, $blue 0%, $bi-accent 100%)\n    -webkit-background-clip text\n    -webkit-text-fill-color transparent\n    background-clip text\n    transition all 0.3s ease\n\n`;
+    stylus += `.text-link\n  color $mauve\n  text-decoration-color $mauve\n  &:hover\n    background linear-gradient(90deg, $mauve 0%, $bi-accent 100%)\n    -webkit-background-clip text\n    -webkit-text-fill-color transparent\n    background-clip text\n    transition all 0.3s ease\n\n`;
 
-    stylus += `/* =========================\n * BUTTON STYLES\n * Text always solid (never transparent!)\n * Hover: gradient background at 135deg angle (different from links)\n * =========================*/\n`;
-    stylus += `.btn-primary\n  background-color $primary-base\n  color $primary-text\n  &:hover\n    background-image linear-gradient(135deg, $blue, $sapphire)\n\n`;
-    stylus += `.btn-secondary\n  background-color $secondary-base\n  color $secondary-text\n  &:hover\n    background-image linear-gradient(135deg, $mauve, $pink)\n\n`;
-    stylus += `.btn-outline\n  background-color transparent\n  border 1px solid $border-default\n  color $text-primary\n  &:hover\n    background-image linear-gradient(135deg, $surface_0, $surface_1)\n\n`;
+    stylus += `.btn-primary\n  background-color $surface_0\n  color $primary-base\n  border 1px solid $primary-base\n  &:hover\n    background linear-gradient(135deg, $primary-base 0%, $bi-accent 100%)\n    color $base\n    border-color $bi-accent\n    transition all 0.3s ease\n  &:active\n    background $primary-base\n    border-color $primary-base\n\n`;
+    stylus += `.btn-secondary\n  background-color $surface_0\n  color $secondary-base\n  border 1px solid $secondary-base\n  &:hover\n    background linear-gradient(135deg, $secondary-base 0%, $bi-accent 100%)\n    color $base\n    border-color $bi-accent\n    transition all 0.3s ease\n\n`;
+    stylus += `.btn-outline\n  background-color transparent\n  border 1px solid $border-default\n  color $text-primary\n  &:hover\n    background-color $surface_0\n\n`;
     stylus += `.btn-subtle\n  background-color transparent\n  color $text-primary\n  &:hover\n    background-color $surface_0\n\n`;
-    stylus += `.btn-destructive\n  background-color $danger-base\n  color $danger-text\n  &:hover\n    background-image linear-gradient(135deg, $red, $maroon)\n\n`;
+    stylus += `.btn-destructive\n  background-color $surface_0\n  color $danger-base\n  border 1px solid $danger-base\n  &:hover\n    background linear-gradient(135deg, $red 0%, $maroon 100%)\n    color $base\n    transition all 0.3s ease\n\n`;
 
   } else {
     // Legacy: fallback to mapping map / reasons

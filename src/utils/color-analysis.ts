@@ -342,8 +342,133 @@ export function nearestAccentToken(
     'green', 'teal', 'sky', 'sapphire',
     'blue', 'lavender'
   ];
-  
+
   return nearestFromSet(hex, palette, accentKeys) as AccentColor;
+}
+
+/**
+ * Calculate triadic color scheme from an accent color.
+ * Triadic colors are evenly spaced 120° apart on the color wheel.
+ * Returns the two companion colors that form a harmonious triadic scheme.
+ *
+ * @param accentName - The main accent color name
+ * @param palette - The Catppuccin palette to search in
+ * @returns Object with co-accent1 and co-accent2 (the two triadic companions)
+ */
+export function calculateTriadicAccents(
+  accentName: AccentColor,
+  palette: CatppuccinPalette
+): { coAccent1: AccentColor; coAccent2: AccentColor } {
+  const accentHex = palette[accentName].hex;
+  const rgb = hexToRgb(accentHex);
+
+  if (!rgb) {
+    // Fallback to safe defaults
+    return { coAccent1: 'blue', coAccent2: 'green' };
+  }
+
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  const baseHue = hsl.h;
+
+  // Calculate triadic hues (120° and 240° apart)
+  const triadic1Hue = (baseHue + 120) % 360;
+  const triadic2Hue = (baseHue + 240) % 360;
+
+  // Convert triadic hues back to RGB (keep same saturation and lightness)
+  const triadic1Rgb = hslToRgb(triadic1Hue, hsl.s, hsl.l);
+  const triadic2Rgb = hslToRgb(triadic2Hue, hsl.s, hsl.l);
+
+  // Convert to hex
+  const triadic1Hex = rgbToHex(triadic1Rgb.r, triadic1Rgb.g, triadic1Rgb.b);
+  const triadic2Hex = rgbToHex(triadic2Rgb.r, triadic2Rgb.g, triadic2Rgb.b);
+
+  // Find nearest Catppuccin accent colors
+  const coAccent1 = nearestAccentToken(triadic1Hex, palette);
+  const coAccent2 = nearestAccentToken(triadic2Hex, palette);
+
+  return { coAccent1, coAccent2 };
+}
+
+/**
+ * Calculate bi-accent color - the accent color most similar to the main accent.
+ * Used for smooth, elegant gradients that maintain color harmony.
+ *
+ * Uses perceptual Delta E distance in CIE LAB space to find the closest
+ * accent color (excluding the main accent itself).
+ *
+ * @param accentName - The main accent color name
+ * @param palette - The Catppuccin palette to search in
+ * @returns The most similar accent color for gradient pairing
+ */
+export function calculateBiAccent(
+  accentName: AccentColor,
+  palette: CatppuccinPalette
+): AccentColor {
+  const accentHex = palette[accentName].hex;
+  const accentLab = hexToLab(accentHex);
+
+  const accentKeys: AccentColor[] = [
+    'rosewater', 'flamingo', 'pink', 'mauve',
+    'red', 'maroon', 'peach', 'yellow',
+    'green', 'teal', 'sky', 'sapphire',
+    'blue', 'lavender'
+  ];
+
+  // Find the closest accent color (excluding the main accent itself)
+  let minDistance = Infinity;
+  let biAccent: AccentColor = 'pink'; // Safe fallback
+
+  for (const key of accentKeys) {
+    // Skip the main accent itself
+    if (key === accentName) continue;
+
+    const tokenHex = palette[key].hex;
+    const tokenLab = hexToLab(tokenHex);
+    const distance = deltaE76(accentLab, tokenLab);
+
+    if (distance < minDistance) {
+      minDistance = distance;
+      biAccent = key;
+    }
+  }
+
+  return biAccent;
+}
+
+/**
+ * Convert HSL to RGB.
+ * H: 0-360, S: 0-100, L: 0-100
+ * Returns RGB in 0-255 scale.
+ */
+export function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
+  s = s / 100;
+  l = l / 100;
+
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+
+  let r = 0, g = 0, b = 0;
+
+  if (h >= 0 && h < 60) {
+    r = c; g = x; b = 0;
+  } else if (h >= 60 && h < 120) {
+    r = x; g = c; b = 0;
+  } else if (h >= 120 && h < 180) {
+    r = 0; g = c; b = x;
+  } else if (h >= 180 && h < 240) {
+    r = 0; g = x; b = c;
+  } else if (h >= 240 && h < 300) {
+    r = x; g = 0; b = c;
+  } else if (h >= 300 && h < 360) {
+    r = c; g = 0; b = x;
+  }
+
+  return {
+    r: Math.round((r + m) * 255),
+    g: Math.round((g + m) * 255),
+    b: Math.round((b + m) * 255)
+  };
 }
 
 /**

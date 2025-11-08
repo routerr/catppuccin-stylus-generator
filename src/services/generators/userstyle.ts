@@ -1,5 +1,7 @@
-import type { ColorMapping } from '../../types/catppuccin';
+import type { ColorMapping, AccentColor, CatppuccinFlavor } from '../../types/catppuccin';
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
+import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
+import { calculateTriadicAccents, calculateBiAccent } from '../../utils/color-analysis';
 
 export interface UserStyleMetadata {
   name: string;
@@ -32,7 +34,9 @@ export function generateUserStyle(
   mappings: ColorMapping[] | MappingOutput,
   websiteUrl: string,
   metadata?: Partial<UserStyleMetadata>,
-  cssAnalysis?: CSSAnalysisData
+  cssAnalysis?: CSSAnalysisData,
+  flavor: CatppuccinFlavor = 'mocha',
+  defaultAccent: AccentColor = 'mauve'
 ): string {
   // Extract domain from URL
   let domain = '';
@@ -56,6 +60,11 @@ export function generateUserStyle(
     description: metadata?.description || `Soothing pastel theme for ${safeName}`,
     domain: domain,
   };
+
+  // Calculate accent colors for harmonious color scheme
+  const palette = CATPPUCCIN_PALETTES[flavor];
+  const triadicColors = calculateTriadicAccents(defaultAccent, palette);
+  const biAccent = calculateBiAccent(defaultAccent, palette);
 
   // Build CSS variable block depending on input shape
   let cssVarMappings = '';
@@ -110,6 +119,15 @@ export function generateUserStyle(
 
 ${cssVarMappings}
 
+    /* Accent Color Scheme Variables */
+    /* Main accents (used for static colors before interactions) */
+    @co-accent1: @${triadicColors.coAccent1};  /* First triadic companion */
+    @co-accent2: @${triadicColors.coAccent2};  /* Second triadic companion */
+
+    /* Bi-accent (used for smooth gradients with main accent) */
+    /* Most similar color to @accent, creating elegant transitions */
+    @bi-accent: @${biAccent};  /* Similar to ${defaultAccent} for gradients */
+
     /* Custom styling rules */
     /* Add website-specific color overrides here */
 
@@ -119,29 +137,38 @@ ${cssVarMappings}
       color: @text;
     }
 
-    /* Links - preserve original backgrounds, gradient on hover */
+    /* Links - elegant gradient with bi-accent for smooth color transition */
     a {
       color: @accent;
+      text-decoration-color: @accent;
+
       &:hover {
-        background: transparent !important;
-        -webkit-background-clip: transparent !important;
-        -webkit-text-fill-color: linear-gradient(45deg, @accent 0%, @sapphire 100%) !important;
-        background-clip: transparent !important;
-        text-fill-color: linear-gradient(45deg, @accent 0%, @sapphire 100%) !important;
+        background: linear-gradient(90deg, @accent 0%, @bi-accent 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        transition: all 0.3s ease;
       }
     }
 
-    /* Buttons - preserve original backgrounds, gradient on hover */
+    /* Buttons - smooth gradients using bi-accent for elegant appearance */
     button,
     input[type="button"],
     input[type="submit"] {
-      /* No background changes in normal state - preserve original */
+      background: @surface0;
+      color: @accent;
+      border: 1px solid @accent;
 
       &:hover {
-        background: linear-gradient(135deg, @accent 0%, @mauve 100%) !important;
-        color: @base !important;
-        border-color: transparent !important;
-        transition: all 0.3s ease !important;
+        background: linear-gradient(135deg, @accent 0%, @bi-accent 100%);
+        color: @base;
+        border-color: @bi-accent;
+        transition: all 0.3s ease;
+      }
+
+      &:active {
+        background: @accent;
+        border-color: @accent;
       }
     }
 
@@ -335,14 +362,23 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
   // Button classes
   if (grouped.buttons && grouped.buttons.length > 0) {
     lines.push('');
-    lines.push('    /* Button classes with gradient hover */');
+    lines.push('    /* Button classes with triadic gradient backgrounds */');
     grouped.buttons.slice(0, 20).forEach(btn => {
       lines.push(`    .${btn.className} {`);
-      lines.push(`      /* Preserve original styling */`);
+      lines.push(`      background: @surface0;`);
+      lines.push(`      color: @accent;`);
+      lines.push(`      border: 1px solid @accent;`);
+      lines.push(``);
       lines.push(`      &:hover {`);
-      lines.push(`        background: linear-gradient(135deg, @accent 0%, @mauve 100%) !important;`);
+      lines.push(`        background: linear-gradient(135deg, @accent 0%, @co-accent1 100%) !important;`);
       lines.push(`        color: @base !important;`);
+      lines.push(`        border-color: @co-accent1 !important;`);
       lines.push(`        transition: all 0.3s ease !important;`);
+      lines.push(`      }`);
+      lines.push(``);
+      lines.push(`      &:active {`);
+      lines.push(`        background: linear-gradient(135deg, @co-accent1 0%, @co-accent2 100%) !important;`);
+      lines.push(`        border-color: @co-accent2 !important;`);
       lines.push(`      }`);
       lines.push(`    }`);
     });
@@ -351,14 +387,19 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
   // Link classes
   if (grouped.links && grouped.links.length > 0) {
     lines.push('');
-    lines.push('    /* Link classes with gradient text hover */');
+    lines.push('    /* Link classes with triadic gradient text */');
     grouped.links.slice(0, 20).forEach(link => {
       lines.push(`    .${link.className} {`);
       lines.push(`      color: @accent;`);
+      lines.push(`      text-decoration-color: @co-accent1;`);
+      lines.push(``);
       lines.push(`      &:hover {`);
-      lines.push(`        background: linear-gradient(135deg, @accent 0%, @sapphire 100%) !important;`);
-      lines.push(`        -webkit-background-clip: text !important;`);
-      lines.push(`        -webkit-text-fill-color: transparent !important;`);
+      lines.push(`        background: linear-gradient(90deg, @accent 0%, @co-accent1 50%, @co-accent2 100%);`);
+      lines.push(`        -webkit-background-clip: text;`);
+      lines.push(`        -webkit-text-fill-color: transparent;`);
+      lines.push(`        background-clip: text;`);
+      lines.push(`        text-decoration-color: @co-accent2;`);
+      lines.push(`        transition: all 0.3s ease;`);
       lines.push(`      }`);
       lines.push(`    }`);
     });

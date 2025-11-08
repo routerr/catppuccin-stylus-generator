@@ -94,10 +94,10 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-ctp-subtext1 mb-2">
           MHTML File
         </label>
-        
+
         {/* Drop zone */}
         <div
           onDrop={handleDrop}
@@ -105,11 +105,11 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
           onDragLeave={handleDragLeave}
           className={`
             relative border-2 border-dashed rounded-lg p-6 transition-all duration-200
-            ${isDragging 
-              ? 'border-purple-400 bg-purple-900/20' 
-              : 'border-gray-600 bg-gray-700/30'
+            ${isDragging
+              ? 'border-ctp-accent bg-ctp-accent/20'
+              : 'border-ctp-surface2 bg-ctp-surface1/30'
             }
-            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-purple-500 hover:bg-gray-700/50'}
+            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-ctp-accent hover:bg-ctp-surface1/50'}
           `}
           onClick={!disabled && !selectedFile ? handleBrowseClick : undefined}
         >
@@ -125,10 +125,10 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
           {selectedFile ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <File className="h-8 w-8 text-purple-400" />
+                <File className="h-8 w-8 text-ctp-accent" />
                 <div>
-                  <p className="text-white font-medium">{selectedFile.name}</p>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-ctp-text font-medium">{selectedFile.name}</p>
+                  <p className="text-ctp-subtext0 text-sm">
                     {(selectedFile.size / 1024).toFixed(2)} KB
                   </p>
                 </div>
@@ -140,22 +140,22 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
                     e.stopPropagation();
                     handleRemoveFile();
                   }}
-                  className="p-2 hover:bg-gray-600 rounded-lg transition-colors"
+                  className="p-2 hover:bg-ctp-surface2 rounded-lg transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-400 hover:text-white" />
+                  <X className="h-5 w-5 text-ctp-overlay1 hover:text-ctp-text" />
                 </button>
               )}
             </div>
           ) : (
             <div className="text-center">
-              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-white font-medium mb-1">
+              <Upload className="h-12 w-12 text-ctp-overlay1 mx-auto mb-3" />
+              <p className="text-ctp-text font-medium mb-1">
                 Drop your MHTML file here
               </p>
-              <p className="text-gray-400 text-sm mb-2">
+              <p className="text-ctp-subtext0 text-sm mb-2">
                 or click to browse
               </p>
-              <p className="text-gray-500 text-xs">
+              <p className="text-ctp-overlay0 text-xs">
                 Supports .mhtml and .mht files (max 50MB)
               </p>
             </div>
@@ -163,14 +163,14 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
         </div>
 
         {error && (
-          <p className="mt-2 text-sm text-red-400">{error}</p>
+          <p className="mt-2 text-sm text-ctp-red">{error}</p>
         )}
       </div>
 
       <button
         type="submit"
         disabled={disabled || !selectedFile}
-        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+        className="w-full bg-gradient-to-r from-ctp-accent to-ctp-bi-accent hover:opacity-90 text-ctp-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
       >
         {disabled ? 'Processing...' : 'Generate Theme from MHTML'}
       </button>

@@ -4,7 +4,8 @@
       "Bash(npm create vite:*)",
       "Bash(npm run build:*)",
       "WebFetch(domain:openrouter.ai)",
-      "Bash(npm run dev)"
+      "Bash(npm run dev)",
+      "Bash(git rev-list:*)"
     ],
     "deny": [],
     "ask": []

@@ -25,14 +25,14 @@ export function DirectoryUpload({ onDirectorySelect, disabled }: DirectoryUpload
       <div
         onClick={() => !disabled && inputRef.current?.click()}
         className={`
-          border-2 border-dashed border-gray-600 rounded-xl p-8
+          border-2 border-dashed border-ctp-surface2 rounded-xl p-8
           flex flex-col items-center justify-center gap-3
           transition-all duration-200
           ${disabled
             ? 'opacity-50 cursor-not-allowed'
-            : 'cursor-pointer hover:border-purple-500 hover:bg-gray-800/30'
+            : 'cursor-pointer hover:border-ctp-accent hover:bg-ctp-surface1/30'
           }
-          ${selectedPath ? 'border-green-500 bg-green-900/10' : ''}
+          ${selectedPath ? 'border-ctp-green bg-ctp-green/10' : ''}
         `}
       >
         <input
@@ -49,18 +49,18 @@ export function DirectoryUpload({ onDirectorySelect, disabled }: DirectoryUpload
 
         {selectedPath ? (
           <>
-            <CheckCircle2 className="h-12 w-12 text-green-400" />
-            <p className="text-green-300 font-medium">Directory selected!</p>
-            <p className="text-sm text-gray-400">{selectedPath}</p>
-            <p className="text-xs text-gray-500 mt-2">
+            <CheckCircle2 className="h-12 w-12 text-ctp-green" />
+            <p className="text-ctp-green font-medium">Directory selected!</p>
+            <p className="text-sm text-ctp-subtext0">{selectedPath}</p>
+            <p className="text-xs text-ctp-overlay0 mt-2">
               Click again to select a different directory
             </p>
           </>
         ) : (
           <>
-            <FolderOpen className="h-12 w-12 text-gray-400" />
-            <p className="text-gray-300 font-medium">Select webpage directory</p>
-            <p className="text-sm text-gray-400 text-center max-w-md">
+            <FolderOpen className="h-12 w-12 text-ctp-overlay1" />
+            <p className="text-ctp-subtext1 font-medium">Select webpage directory</p>
+            <p className="text-sm text-ctp-subtext0 text-center max-w-md">
               Choose a directory containing HTML file and assets folder
               <br />
               (Saved using "Webpage, Complete" in browser)
@@ -69,20 +69,20 @@ export function DirectoryUpload({ onDirectorySelect, disabled }: DirectoryUpload
         )}
       </div>
 
-      <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-        <h4 className="text-sm font-semibold text-blue-300 mb-2">💡 How to save a webpage directory:</h4>
-        <ol className="text-xs text-gray-300 space-y-1 list-decimal list-inside">
+      <div className="bg-ctp-blue/20 border border-ctp-blue/30 rounded-lg p-4">
+        <h4 className="text-sm font-semibold text-ctp-blue mb-2">💡 How to save a webpage directory:</h4>
+        <ol className="text-xs text-ctp-subtext1 space-y-1 list-decimal list-inside">
           <li>Open the webpage you want to theme in your browser</li>
-          <li>Press <code className="bg-gray-800 px-1 rounded">Ctrl+S</code> (or <code className="bg-gray-800 px-1 rounded">Cmd+S</code> on Mac)</li>
+          <li>Press <code className="bg-ctp-base px-1 rounded">Ctrl+S</code> (or <code className="bg-ctp-base px-1 rounded">Cmd+S</code> on Mac)</li>
           <li>Select "Webpage, Complete" or "Web Page, Complete" as the save type</li>
           <li>Save it (creates an HTML file + a folder with assets)</li>
           <li>Click above to select the saved directory</li>
         </ol>
       </div>
 
-      <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
-        <h4 className="text-sm font-semibold text-purple-300 mb-2">✨ Advanced Analysis Features:</h4>
-        <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
+      <div className="bg-ctp-accent/20 border border-ctp-accent/30 rounded-lg p-4">
+        <h4 className="text-sm font-semibold text-ctp-accent mb-2">✨ Advanced Analysis Features:</h4>
+        <ul className="text-xs text-ctp-subtext1 space-y-1 list-disc list-inside">
           <li>Analyzes all CSS files and inline styles</li>
           <li>Identifies CSS class usage patterns</li>
           <li>Generates class-specific color mappings using AI</li>
