@@ -124,13 +124,17 @@ a, .link {
 
   &:hover,
   &:focus {
-    color: @accent;
-    text-decoration-color: @bi-accent1;
+    /* Gradient text effect */
     background: linear-gradient(90deg,
-      fade(@accent, @tint-mid),
-      fade(@bi-accent1, @tint-mid),
-      fade(@bi-accent2, @tint-mid)
+      fade(@accent, @tint-strong),
+      fade(@bi-accent1, @tint-strong),
+      fade(@bi-accent2, @tint-strong)
     );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    text-decoration-color: @bi-accent1;
     border-radius: 6px;
   }
 }
@@ -145,13 +149,17 @@ a, .link {
 
   &:hover,
   &:focus {
-    color: @accent;
-    text-decoration-color: @bi-accent1;
+    /* Gradient text effect */
     background: linear-gradient(90deg,
-      fade(@accent, @tint-mid),
-      fade(@bi-accent1, @tint-mid),
-      fade(@bi-accent2, @tint-mid)
+      fade(@accent, @tint-strong),
+      fade(@bi-accent1, @tint-strong),
+      fade(@bi-accent2, @tint-strong)
     );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    text-decoration-color: @bi-accent1;
     border-radius: 6px;
   }
 }

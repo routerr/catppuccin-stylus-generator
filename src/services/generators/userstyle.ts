@@ -180,25 +180,53 @@ ${cssVarMappings}
       color: @text;
     }
 
-    /* Links - subtle gradient highlights tied to accent + bi-accents */
+    /* Links - text-only gradients using accent + bi/co-accents (no bg fill) */
     a,
     .link {
       color: @accent;
-      text-decoration-color: @accent;
+      /* Let co-accent guide the underline for harmony */
+      text-decoration-color: @co-accent1;
       text-decoration-thickness: 1.5px;
       text-underline-offset: 2px;
       transition: color 0.2s ease, text-decoration-color 0.2s ease, background 0.25s ease;
 
       &:hover,
       &:focus-visible {
-        color: @accent;
-        text-decoration-color: @bi-accent1;
+        /* Text-only gradient: accent → bi-accent → co-accent for a balanced hue flow */
         background: linear-gradient(90deg,
-          fade(@accent, @tint-mid) 0%,
+          fade(@accent, @tint-strong) 0%,
           fade(@bi-accent1, @tint-mid) 50%,
-          fade(@bi-accent2, @tint-mid) 100%
+          fade(@co-accent1, @tint-mid) 100%
         );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        color: transparent;
+        /* Underline shifts toward co-accent for extra harmony */
+        text-decoration-color: @co-accent1;
         border-radius: 6px;
+      }
+
+      &:active,
+      &.active,
+      &[aria-current="page"] {
+        background: linear-gradient(90deg,
+          fade(@accent, @tint-strong) 0%,
+          fade(@bi-accent1, @tint-strong) 45%,
+          fade(@co-accent2, @tint-mid) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        color: transparent;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 3px;
+        text-decoration-color: @co-accent2;
+      }
+
+      &:visited {
+        /* Slightly different underline to hint visited state without loud color changes */
+        text-decoration-color: fade(@co-accent2, @tint-mid);
       }
     }
 
