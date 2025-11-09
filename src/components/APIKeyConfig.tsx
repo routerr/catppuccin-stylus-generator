@@ -17,11 +17,13 @@ export function APIKeyConfig({ aiProvider, onKeyChange, onPickModel, onModelsDis
   const [ollamaStatus, setOllamaStatus] = useState<'idle'|'testing'|'ok'|'error'>('idle');
   const [ollamaError, setOllamaError] = useState('');
   const [ollamaModels, setOllamaModels] = useState<string[]>([]);
+  const [ollamaBase, setOllamaBase] = useState('');
 
   useEffect(() => {
     // Load saved keys
     const keys = loadAPIKeys();
     setAIKey(keys[aiProvider] || '');
+    setOllamaBase(keys.ollamaBase || '');
   }, [aiProvider]);
 
   useEffect(() => {
@@ -34,6 +36,7 @@ export function APIKeyConfig({ aiProvider, onKeyChange, onPickModel, onModelsDis
     saveAPIKeys({
       ...keys,
       [aiProvider]: aiKey,
+      ollamaBase,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -49,11 +52,19 @@ export function APIKeyConfig({ aiProvider, onKeyChange, onPickModel, onModelsDis
     setOllamaError('');
     setOllamaModels([]);
 
-    const bases = ['/ollama', 'http://localhost:11434'];
+    const bases = [ollamaBase?.trim()].filter(Boolean) as string[];
+    // If cloud key is present and provider is ollama, try cloud host too
+    if (aiProvider === 'ollama' && aiKey) {
+      bases.unshift('https://ollama.com');
+    }
+    bases.push('/ollama', 'http://localhost:11434');
     let lastErr: any = null;
     for (const base of bases) {
       try {
-        const res = await fetch(`${base}/api/tags`, { method: 'GET' });
+        const res = await fetch(`${base}/api/tags`, {
+          method: 'GET',
+          headers: base.startsWith('https://ollama.com') && aiKey ? { 'Authorization': `Bearer ${aiKey}` } : undefined,
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const models: string[] = (data?.models || data?.tags || [])
@@ -141,38 +152,66 @@ export function APIKeyConfig({ aiProvider, onKeyChange, onPickModel, onModelsDis
         </div>
       )}
 
-      {/* AI Provider API Key */}
-      {aiProvider !== 'ollama' ? (
+      {/* AI Provider API Key (includes Ollama Cloud) */}
+      <div>
+        <label className="block text-sm font-medium text-ctp-subtext1 mb-2">
+          {aiProvider === 'openrouter'
+            ? 'OpenRouter API Key'
+            : aiProvider === 'chutes'
+            ? 'Chutes AI API Key'
+            : 'Ollama Cloud API Key'}
+        </label>
+        <div className="relative">
+          <input
+            type={showAIKey ? 'text' : 'password'}
+            value={aiKey}
+            onChange={(e) => setAIKey(e.target.value)}
+            placeholder={`Enter your ${aiProvider === 'openrouter' ? 'OpenRouter' : aiProvider === 'chutes' ? 'Chutes' : 'Ollama Cloud'} API key`}
+            className="block w-full pr-10 px-3 py-2 border border-ctp-surface2 rounded-lg bg-ctp-surface1/50 text-ctp-text placeholder-ctp-overlay0 hover:border-ctp-surface2 hover:shadow-none focus:outline-none focus:ring-2 focus:ring-ctp-accent focus:border-transparent"
+          />
+          <button
+            type="button"
+            onClick={() => setShowAIKey(!showAIKey)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-ctp-overlay1 hover:text-ctp-text"
+          >
+            {showAIKey ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-ctp-subtext0">
+          {aiProvider === 'openrouter' && (
+            <>
+              Get your API key at{' '}
+              <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-ctp-lavender hover:text-ctp-mauve underline transition-colors">openrouter.ai/keys</a>
+            </>
+          )}
+          {aiProvider === 'chutes' && (
+            <>
+              Get your API key at{' '}
+              <a href="https://chutes.ai" target="_blank" rel="noopener noreferrer" className="text-ctp-lavender hover:text-ctp-mauve underline transition-colors">chutes.ai</a>
+            </>
+          )}
+          {aiProvider === 'ollama' && (
+            <>
+              Get your API key at{' '}
+              <a href="https://ollama.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-ctp-lavender hover:text-ctp-mauve underline transition-colors">ollama.com/settings/keys</a>
+            </>
+          )}
+        </p>
+      </div>
+
+      {/* Ollama base URL (when provider is ollama) */}
+      {aiProvider === 'ollama' ? (
         <div>
-          <label className="block text-sm font-medium text-ctp-subtext1 mb-2">
-            {aiProvider === 'openrouter' ? 'OpenRouter' : 'Chutes AI'} API Key
-          </label>
-          <div className="relative">
-            <input
-              type={showAIKey ? 'text' : 'password'}
-              value={aiKey}
-              onChange={(e) => setAIKey(e.target.value)}
-              placeholder={`Enter your ${aiProvider === 'openrouter' ? 'OpenRouter' : 'Chutes'} API key`}
-              className="block w-full pr-10 px-3 py-2 border border-ctp-surface2 rounded-lg bg-ctp-surface1/50 text-ctp-text placeholder-ctp-overlay0 focus:outline-none focus:ring-2 focus:ring-ctp-accent focus:border-transparent"
-            />
-            <button
-              type="button"
-              onClick={() => setShowAIKey(!showAIKey)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-ctp-overlay1 hover:text-ctp-text"
-            >
-              {showAIKey ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
+          <label className="block text-sm font-medium text-ctp-subtext1 mb-2">Custom Ollama URL (HTTPS recommended)</label>
+          <input
+            type="text"
+            value={ollamaBase}
+            onChange={(e) => setOllamaBase(e.target.value)}
+            placeholder="e.g., https://your-tunnel.example.com"
+            className="block w-full px-3 py-2 border border-ctp-surface2 rounded-lg bg-ctp-surface1/50 text-ctp-text placeholder-ctp-overlay0 hover:border-ctp-surface2 hover:shadow-none focus:outline-none focus:ring-ctp-accent"
+          />
           <p className="mt-2 text-xs text-ctp-subtext0">
-            Get your free API key at{' '}
-            <a
-              href={aiProvider === 'openrouter' ? 'https://openrouter.ai/keys' : 'https://chutes.ai'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-ctp-lavender hover:text-ctp-mauve underline transition-colors"
-            >
-              {aiProvider === 'openrouter' ? 'openrouter.ai/keys' : 'chutes.ai'}
-            </a>
+            On GitHub Pages (HTTPS), direct access to http://localhost is blocked. Use an HTTPS tunnel (ngrok/Cloudflare) or a proxy.
           </p>
         </div>
       ) : null}

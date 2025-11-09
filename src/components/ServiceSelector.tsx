@@ -1,6 +1,7 @@
 import { Brain } from 'lucide-react';
 import type { AIProvider } from '../types/theme';
 import { getModelsByProvider } from '../services/ai';
+import { loadAPIKeys } from '../utils/storage';
 
 interface ServiceSelectorProps {
   aiProvider: AIProvider;
@@ -58,14 +59,36 @@ export function ServiceSelector({
           AI Provider
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {AI_PROVIDERS.map((provider) => (
+          {AI_PROVIDERS.map((provider) => {
+            const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+            const keys = loadAPIKeys();
+            const hasHttpsOllama = keys.ollamaBase?.startsWith('https://');
+            const hasOllamaCloudKey = !!keys.ollama;
+            const disabled = provider.value === 'ollama' && isHttps && !(hasHttpsOllama || hasOllamaCloudKey);
+            return (
             <button
               key={provider.value}
-              onClick={() => onAIProviderChange(provider.value)}
+              onClick={() => {
+                // Change provider
+                onAIProviderChange(provider.value);
+                // Pick first model for the newly selected provider
+                let list = getModelsByProvider(provider.value);
+                if (provider.value === 'ollama') {
+                  const discovered = (ollamaModels || []).map(id => ({ id, name: id, provider: 'ollama' as const, isFree: true }));
+                  const byId = new Map<string, typeof discovered[number]>();
+                  [...list, ...discovered].forEach(m => byId.set(m.id, m as any));
+                  list = Array.from(byId.values());
+                }
+                if (list && list.length > 0) {
+                  onAIModelChange(list[0].id);
+                }
+              }}
+              disabled={disabled}
+              title={disabled ? 'On HTTPS, set a Custom Ollama URL or provide an Ollama Cloud API key in the API Key section.' : undefined}
               className={`p-4 rounded-lg border-2 text-left transition-all ${
                 aiProvider === provider.value
                   ? 'border-ctp-accent bg-ctp-accent/10'
-                  : 'border-ctp-surface2 bg-ctp-surface1/30 hover:border-ctp-overlay0'
+                  : (disabled ? 'border-ctp-surface2 bg-ctp-surface1/30 opacity-50 cursor-not-allowed' : 'border-ctp-surface2 bg-ctp-surface1/30 hover:border-ctp-overlay0')
               }`}
             >
               <div className="font-semibold text-ctp-text">{provider.label}</div>
@@ -73,8 +96,23 @@ export function ServiceSelector({
                 <div className="text-sm text-ctp-subtext0 mt-1">{provider.description}</div>
               )}
             </button>
-          ))}
+            );
+          })}
         </div>
+        {/* HTTPS notice */}
+        {(() => {
+          const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+          const keys = loadAPIKeys();
+          const hasHttpsOllama = keys.ollamaBase?.startsWith('https://');
+          if (isHttps && !hasHttpsOllama) {
+            return (
+              <div className="mt-2 text-xs text-ctp-yellow">
+                To use Ollama on GitHub Pages (HTTPS), set a custom HTTPS Ollama URL in API Key Configuration.
+              </div>
+            );
+          }
+          return null;
+        })()}
       </div>
 
       {/* AI Model Selection */}
@@ -86,7 +124,7 @@ export function ServiceSelector({
           id="ai-model"
           value={aiModel}
           onChange={(e) => onAIModelChange(e.target.value)}
-          className="block w-full px-3 py-2 border border-ctp-surface2 rounded-lg bg-ctp-surface1/50 text-ctp-text focus:outline-none focus:ring-2 focus:ring-ctp-accent focus:border-transparent"
+          className="block w-full px-3 py-2 border border-ctp-surface2 rounded-lg bg-ctp-surface1/50 text-ctp-text hover:border-ctp-surface2 hover:shadow-none focus:outline-none focus:ring-2 focus:ring-ctp-accent focus:border-transparent"
         >
           {modelsForRender.map((model) => (
             <option key={model.id} value={model.id}>

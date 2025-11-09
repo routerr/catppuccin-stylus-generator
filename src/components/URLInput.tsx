@@ -53,7 +53,7 @@ export function URLInput({ onSubmit, disabled }: URLInputProps) {
             onChange={(e) => setUrl(e.target.value)}
             disabled={disabled}
             placeholder="https://example.com"
-            className="block w-full pl-10 pr-3 py-3 border border-ctp-surface2 rounded-lg bg-ctp-surface1/50 text-ctp-text placeholder-ctp-overlay0 focus:outline-none focus:ring-2 focus:ring-ctp-accent focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            className="block w-full pl-10 pr-3 py-3 border border-ctp-surface2 rounded-lg bg-ctp-surface1/50 text-ctp-text placeholder-ctp-overlay0 hover:border-ctp-surface2 hover:shadow-none focus:outline-none focus:ring-2 focus:ring-ctp-accent focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
         {error && (

@@ -1,9 +1,10 @@
 import type { CatppuccinFlavor, ColorMapping } from '../../types/catppuccin';
-import type { ThemeOutput, GeneratedTheme, ThemePackage, CrawlerService, MappingOutput } from '../../types/theme';
+import type { ThemeOutput, GeneratedTheme, ThemePackage, FetcherService, MappingOutput } from '../../types/theme';
 import { generateStylusTheme } from './stylus';
 import { generateLessTheme } from './less';
 import { generateCssTheme } from './css';
 import { generateUserStyle } from './userstyle';
+ 
 
 /**
  * Filter out button and clickable background color mappings
@@ -104,7 +105,7 @@ export function createThemePackage(
   url: string,
   themes: GeneratedTheme[],
   accentColors: string[],
-  crawlerUsed: CrawlerService,
+  fetcherUsed: FetcherService,
   aiModelUsed: string
 ): ThemePackage {
   return {
@@ -113,7 +114,7 @@ export function createThemePackage(
     themes,
     metadata: {
       accentColors,
-      crawlerUsed,
+      crawlerUsed: fetcherUsed,
       aiModelUsed,
     },
   };
@@ -128,7 +129,7 @@ export function createUserStylePackage(
   url: string,
   colorMappings: ColorMapping[] | MappingOutput,
   accentColors: string[],
-  crawlerUsed: CrawlerService,
+  fetcherUsed: FetcherService,
   aiModelUsed: string,
   cssAnalysis?: any
 ): ThemePackage {
@@ -150,10 +151,31 @@ export function createUserStylePackage(
     userStyle,
     metadata: {
       accentColors,
-      crawlerUsed,
+      crawlerUsed: fetcherUsed,
       aiModelUsed,
     },
   };
+}
+
+/** Async variant to support LLM authoring opt-in */
+export async function createUserStylePackageAsync(
+  url: string,
+  colorMappings: ColorMapping[] | MappingOutput,
+  accentColors: string[],
+  fetcherUsed: FetcherService,
+  aiModelUsed: string,
+  cssAnalysis?: any
+): Promise<ThemePackage> {
+  // Fallback to deterministic path
+  const fallback = createUserStylePackage(
+    url,
+    colorMappings,
+    accentColors,
+    fetcherUsed,
+    aiModelUsed,
+    cssAnalysis
+  );
+  return Promise.resolve(fallback);
 }
 
 // Export generators for direct usage

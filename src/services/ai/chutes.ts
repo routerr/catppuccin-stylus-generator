@@ -1,6 +1,7 @@
 import type { AIModel } from '../../types/theme';
 import type { WebsiteColorAnalysis, ColorMapping } from '../../types/catppuccin';
 import type { CrawlerResult } from '../../types/theme';
+import { generateAccentSystemGuide } from '../../utils/accent-schemes';
 
 // Chutes AI models - Official endpoint: https://llm.chutes.ai
 export const CHUTES_MODELS: AIModel[] = [
@@ -43,6 +44,12 @@ export const CHUTES_MODELS: AIModel[] = [
     isFree: false,
   },
   {
+    id: 'zai-org/GLM-4.6',
+    name: 'GLM 4.6 ($0.40/$1.75)',
+    provider: 'chutes',
+    isFree: false,
+  },
+  {
     id: 'deepseek-ai/DeepSeek-R1-0528-Qwen3-8B',
     name: 'DeepSeek R1 Qwen3 8B ($0.02/$0.35)',
     provider: 'chutes',
@@ -55,8 +62,20 @@ export const CHUTES_MODELS: AIModel[] = [
     isFree: false,
   },
   {
+    id: 'NousResearch/Hermes-4-405B-FP8',
+    name: 'Hermes 4 405B FP8 ($0.30/$1.20)',
+    provider: 'chutes',
+    isFree: false,
+  },
+  {
     id: 'moonshotai/Kimi-K2-Instruct-0905',
     name: 'Kimi K2 Instruct (moonshotai) ($0.39/$1.90)',
+    provider: 'chutes',
+    isFree: false,
+  },
+  {
+    id: 'chutesai/Mistral-Small-3.2-24B-Instruct-2506',
+    name: 'Mistral Small 3.2 24B Instruct 2506 ($0.06/$0.18)',
     provider: 'chutes',
     isFree: false,
   },
@@ -414,6 +433,10 @@ Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((
 IMPORTANT: Generate mappings that include these specific class names for more targeted styling.`;
   }
 
+  // Determine flavor based on detected mode
+  const flavor = (crawlerResult.detectedMode === 'dark') ? 'mocha' : 'latte';
+  const accentGuide = generateAccentSystemGuide(flavor);
+
   return `You are a color analysis system. Your output MUST be ONLY valid JSON. No thinking, no explanations, no markdown - JUST JSON.
 
 Website: ${crawlerResult.url} | ${crawlerResult.title}
@@ -453,49 +476,64 @@ TEXT (maintain readability):
 - Secondary/muted text: subtext0, subtext1
 - Disabled text: overlay2
 
+CRITICAL LAYOUT PRESERVATION RULES:
+1. DO NOT change any layout, positioning, sizing, or spacing from the original website
+2. DO NOT add new borders if the original site doesn't have them
+3. DO NOT modify border-radius, padding, margin, or dimensions
+4. ONLY change COLORS - preserve ALL other CSS properties from the original
+5. The theme should look identical to the original except for the color palette
+
 IMPORTANT: For BUTTON BORDERS, DO NOT add accent color borders if the original site does not use accent borders. Only modify button borders if the original site uses accent colors for borders. Otherwise, preserve the original border style from the website.
 
-ACCENT COLORS - USE DIFFERENT COLORS FOR DIFFERENT PURPOSES:
-CRITICAL: Map different original colors to different Catppuccin accents based on their semantic meaning:
+${accentGuide}
+
+ACCENT COLOR MAPPING STRATEGY:
+Map different original colors to different Catppuccin accents based on their semantic meaning:
 
 Primary/Brand Colors → blue or sapphire (main CTAs, primary buttons)
+  - Use their bi-accents for gradients
+  - Use their co-accents for OTHER elements (badges, secondary items)
+
 Secondary Actions → mauve or lavender (secondary buttons, less important actions)
+  - Use their bi-accents for gradients
+
 Links & Navigation → sapphire or sky (clickable text, navigation items)
-Headings & Emphasis → lavender, mauve, or pink (titles, important text)
-Success States → green or teal (success messages, checkmarks, confirm buttons)
-Warning States → yellow or peach (warnings, caution indicators)
-Error States → red or maroon (errors, delete buttons, critical warnings)
-Info States → blue or sky (informational messages)
-Highlights & Badges → flamingo, pink, or rosewater (tags, badges, highlights)
-Special Elements → any unused accent (unique UI elements)
+  - Use their bi-accents for hover gradients
+  - Their co-accents can be used for active/visited states on OTHER elements
+
+Success States → green or teal
+Warning States → yellow or peach
+Error States → red or maroon
+Info States → blue or sky
 
 VARIETY IS KEY: If the website has multiple shades of blue, map them to DIFFERENT Catppuccin colors:
-- Bright blue button → blue
-- Darker blue link → sapphire
-- Light blue banner → sky
+- Bright blue button → blue (gradients with sapphire/lavender)
+- Darker blue link → sapphire (gradients with blue/sky)
+- Light blue banner → sky (gradients with sapphire/teal)
+- Blue's co-accents (peach/pink) → use for badges or other distinct elements
 This prevents everything from looking the same color!
 
-TEXT & TRANSPARENCY RULES:
-CRITICAL: Text must NEVER be transparent at any time!
+TEXT CLARITY RULES:
+CRITICAL: Text must always be fully opaque.
 - All text colors must be fully opaque (opacity: 1.0, no rgba with alpha < 1)
-- Never use transparent or semi-transparent values for text
+- Do not use any alpha for text colors
 - Text should always be readable with solid colors from the Catppuccin palette
 
 HOVER STATE RULES FOR TEXT & LINKS (DIFFERENT FROM BUTTONS):
 Text elements (links, text buttons, hoverable text):
 - Hover background: Gradient at 45deg or 225deg angle (e.g., linear-gradient(45deg, blue, sapphire))
-- Hover text: Solid color (text or base - always opaque, never transparent!)
+- Hover text: Solid color (text or base - always opaque)
 - Example: a:hover { background: linear-gradient(45deg, blue, sapphire); color: text; }
 - Different angles: 45deg, 225deg, or 315deg for visual variety
 
 Button elements (solid buttons, CTAs):
 - Hover background: Gradient at 135deg or 225deg angle (different angles from text!)
 - Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); }
-- Button text: Solid color (base or text - always opaque, never transparent!)
+- Button text: Solid color (base or text - always opaque)
 - Different angles: 135deg or 225deg
 
 CRITICAL RULES:
-- Text is ALWAYS solid and opaque (never transparent!)
+- Text is ALWAYS solid and opaque
 - Gradients go on BACKGROUNDS only (not text)
 - Links use 45deg/225deg/315deg gradients
 - Buttons use 135deg/225deg gradients

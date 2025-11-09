@@ -1,6 +1,6 @@
 import type { CatppuccinFlavor, CatppuccinColor, ColorMapping, AccentColor } from '../../types/catppuccin';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
-import { calculateTriadicAccents, calculateBiAccent, calculateBiAccents } from '../../utils/color-analysis';
+import { PRECOMPUTED_ACCENTS } from '../../utils/accent-schemes';
 
 export function generateCssTheme(
   flavor: CatppuccinFlavor,
@@ -10,8 +10,7 @@ export function generateCssTheme(
   defaultAccent: AccentColor = 'mauve'
 ): string {
   const palette = CATPPUCCIN_PALETTES[flavor];
-  const triadicColors = calculateTriadicAccents(defaultAccent, palette);
-  const biAccents = calculateBiAccents(defaultAccent, palette);
+  const pre = PRECOMPUTED_ACCENTS[flavor][defaultAccent];
   const date = new Date().toISOString().split('T')[0];
 
   let css = `/**
@@ -33,12 +32,12 @@ export function generateCssTheme(
 
   css += `\n  /* Accent Color Scheme Variables */\n`;
   css += `  /* Main accents (used for static colors) */\n`;
-  css += `  --ctp-co-accent1: var(--ctp-${triadicColors.coAccent1});\n`;
-  css += `  --ctp-co-accent2: var(--ctp-${triadicColors.coAccent2});\n`;
+  css += `  --ctp-co-accent1: var(--ctp-${pre.coAccent1});\n`;
+  css += `  --ctp-co-accent2: var(--ctp-${pre.coAccent2});\n`;
   css += `  /* Bi-accents (two nearest to ${defaultAccent}, used for smooth gradients) */\n`;
   css += `  --ctp-accent: var(--ctp-${defaultAccent});\n`;
-  css += `  --ctp-bi-accent1: var(--ctp-${biAccents.biAccent1});\n`;
-  css += `  --ctp-bi-accent2: var(--ctp-${biAccents.biAccent2});\n`;
+  css += `  --ctp-bi-accent1: var(--ctp-${pre.biAccent1});\n`;
+  css += `  --ctp-bi-accent2: var(--ctp-${pre.biAccent2});\n`;
 
   css += `\n  /* Color Mappings */\n`;
   css += `  /* These map the original website colors to Catppuccin colors */\n`;
@@ -61,13 +60,13 @@ export function generateCssTheme(
   css += `/*\n/* Catppuccin Theme with Bi-Accent Gradients - Smooth & Elegant */\nbody {\n  background-color: var(--ctp-base);\n  color: var(--ctp-text);\n}\n\n`;
   css += `/* Links with bi-accent gradient on hover */\n`;
   css += `a, .link {\n  color: var(--ctp-accent);\n  text-decoration-color: var(--ctp-accent);\n  text-decoration: underline;\n}\n\n`;
-  css += `a:hover, .link:hover {\n  color: var(--ctp-accent);\n  text-decoration-color: var(--ctp-bi-accent1);\n  background: linear-gradient(90deg, var(--ctp-accent) 0%, var(--ctp-bi-accent1) 50%, var(--ctp-bi-accent2) 100%);\n  transition: all 0.3s ease;\n}\n\n`;
+  css += `a:hover, .link:hover {\n  color: var(--ctp-accent);\n  background: linear-gradient(90deg, var(--ctp-accent) 0%, var(--ctp-bi-accent1) 50%, var(--ctp-bi-accent2) 100%);\n}\n\n`;
   css += `/* BUTTON STYLES - Bi-accent gradient backgrounds */\n`;
   css += `.btn-primary {\n  background-color: var(--ctp-surface0);\n  color: var(--ctp-blue);\n}\n\n`;
-  css += `.btn-primary:hover {\n  background: linear-gradient(135deg, var(--ctp-accent) 0%, var(--ctp-bi-accent1) 50%, var(--ctp-bi-accent2) 100%);\n  color: var(--ctp-accent);\n  transition: all 0.3s ease;\n}\n\n`;
+  css += `.btn-primary:hover {\n  background: linear-gradient(135deg, var(--ctp-accent) 0%, var(--ctp-bi-accent1) 50%, var(--ctp-bi-accent2) 100%);\n  color: var(--ctp-accent);\n}\n\n`;
   css += `.btn-primary:active {\n  background: var(--ctp-blue);\n}\n\n`;
   css += `.btn-destructive {\n  background-color: var(--ctp-surface0);\n  color: var(--ctp-red);\n}\n\n`;
-  css += `.btn-destructive:hover {\n  background: linear-gradient(135deg, var(--ctp-red) 0%, var(--ctp-maroon) 100%);\n  color: var(--ctp-base);\n  transition: all 0.3s ease;\n}\n\n`;
+  css += `.btn-destructive:hover {\n  background: linear-gradient(135deg, var(--ctp-red) 0%, var(--ctp-maroon) 100%);\n  color: var(--ctp-base);\n}\n\n`;
   css += `/* Using RGB values for overlays */\n`;
   css += `.overlay {\n  background-color: rgba(var(--ctp-base-rgb), 0.8);\n}\n*/\n`;
 

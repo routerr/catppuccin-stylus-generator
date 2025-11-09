@@ -7,6 +7,10 @@ interface StoredKeys {
   brave?: string;
   openrouter?: string;
   chutes?: string;
+  // Ollama Cloud API key
+  ollama?: string;
+  // Custom base URL for Ollama (e.g., https://your-tunnel.example.com)
+  ollamaBase?: string;
 }
 
 const STORAGE_KEY = 'catppuccin-theme-gen-keys';
@@ -35,6 +39,18 @@ export function loadAPIKeys(): StoredKeys {
 
 export function clearAPIKeys(): void {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+// Convenience helpers specifically for Ollama base URL
+export function getOllamaBaseFromStorage(): string | undefined {
+  const keys = loadAPIKeys();
+  return keys.ollamaBase;
+}
+
+export function setOllamaBaseInStorage(url: string | undefined): void {
+  const keys = loadAPIKeys();
+  const next = { ...keys, ollamaBase: url } as any;
+  saveAPIKeys(next);
 }
 
 export function downloadJSON(data: any, filename: string): void {

@@ -1,7 +1,7 @@
 import type { CatppuccinFlavor, CatppuccinColor, ColorMapping, AccentColor } from '../../types/catppuccin';
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
-import { calculateTriadicAccents, calculateBiAccent, calculateBiAccents } from '../../utils/color-analysis';
+import { PRECOMPUTED_ACCENTS } from '../../utils/accent-schemes';
 
 /**
  * generateStylusTheme
@@ -18,8 +18,10 @@ export function generateStylusTheme(
   defaultAccent: AccentColor = 'mauve'
 ): string {
   const palette = CATPPUCCIN_PALETTES[flavor];
-  const triadicColors = calculateTriadicAccents(defaultAccent, palette);
-  const biAccents = calculateBiAccents(defaultAccent, palette);
+  const pre = PRECOMPUTED_ACCENTS[flavor][defaultAccent];
+  const co1Set = PRECOMPUTED_ACCENTS[flavor][pre.coAccent1 as any];
+  const co2Set = PRECOMPUTED_ACCENTS[flavor][pre.coAccent2 as any];
+  const useAltForSecondary = Math.random() < 0.5 ? 'co1' : 'co2';
   const date = new Date().toISOString().split('T')[0];
   // Flavor-based intensity tuning (decimals for Stylus fade())
   const intensity = (() => {
@@ -75,17 +77,28 @@ export function generateStylusTheme(
   // Add accent color scheme variables
   stylus += `\n// Accent Color Scheme Variables\n`;
   stylus += `// Main accents (used for static colors before interactions)\n`;
-  stylus += `$co-accent1 = $${triadicColors.coAccent1}\n`;
-  stylus += `$co-accent2 = $${triadicColors.coAccent2}\n`;
+  stylus += `$co-accent1 = $${pre.coAccent1}\n`;
+  stylus += `$co-accent2 = $${pre.coAccent2}\n`;
   stylus += `// Intensity tuning (decimals)\n`;
   stylus += `$tint_weak = ${intensity.weak}\n`;
   stylus += `$tint_mid = ${intensity.mid}\n`;
   stylus += `$tint_strong = ${intensity.strong}\n`;
   stylus += `$tint_input_hover = ${intensity.inputHover}\n`;
   stylus += `// Bi-accents (two nearest to ${defaultAccent}, used for smooth gradients)\n`;
-  stylus += `$bi-accent1 = $${biAccents.biAccent1}\n`;
-  stylus += `$bi-accent2 = $${biAccents.biAccent2}\n`;
+  stylus += `$bi-accent1 = $${pre.biAccent1}\n`;
+  stylus += `$bi-accent2 = $${pre.biAccent2}\n`;
   stylus += `$bi-accent = $bi-accent1\n`;
+
+  // Decide hover accents for links at generation time (build-time random)
+  // Build-time random angle and percentage stops for gradient text on link hover
+  const hoverAngle = Math.floor(Math.random() * 180); // 0-179deg
+  // Approx 40/20/20 style distribution
+  const hoverMain = 38 + Math.floor(Math.random() * 8); // 38-45%
+  const hoverRemain = 100 - hoverMain; // 55-62%
+  let hoverB1 = Math.max(18, Math.floor(Math.random() * Math.max(18, hoverRemain - 18)));
+  let hoverB2 = hoverRemain - hoverB1;
+  if (hoverB1 > 45) { hoverB2 += (hoverB1 - 45); hoverB1 = 45; }
+  if (hoverB2 > 45) { hoverB1 += (hoverB2 - 45); hoverB2 = 45; }
 
   // If MappingOutput, emit two-level system
   if ((colorMappings as MappingOutput)?.roleMap) {
@@ -136,18 +149,18 @@ export function generateStylusTheme(
 
     // Usage examples prefer role variables
     stylus += `\n/* =========================\n * LINK & BUTTON STYLES\n * Catppuccin Theme with Bi-Accent Gradients - Smooth & Elegant\n * =========================*/\n`;
-    stylus += `a, .link\n  color $${defaultAccent}\n  text-decoration-color $${defaultAccent}\n  text-decoration underline\n  text-decoration-thickness 1.5px\n  text-underline-offset 2px\n  transition color .2s ease, text-decoration-color .2s ease, background .25s ease\n  &:hover, &:focus\n    /* Gradient text effect */\n    background linear-gradient(90deg, fade($${defaultAccent}, $tint_strong), fade($bi-accent1, $tint_strong), fade($bi-accent2, $tint_strong))\n    -webkit-background-clip text\n    -webkit-text-fill-color transparent\n    background-clip text\n    color transparent\n    text-decoration-color $bi-accent1\n    border-radius 6px\n\n`;
-    stylus += `.text-link\n  color $${defaultAccent}\n  text-decoration-color $${defaultAccent}\n  text-decoration underline\n  text-decoration-thickness 1.5px\n  text-underline-offset 2px\n  transition color .2s ease, text-decoration-color .2s ease, background .25s ease\n  &:hover, &:focus\n    /* Gradient text effect */\n    background linear-gradient(90deg, fade($${defaultAccent}, $tint_strong), fade($bi-accent1, $tint_strong), fade($bi-accent2, $tint_strong))\n    -webkit-background-clip text\n    -webkit-text-fill-color transparent\n    background-clip text\n    color transparent\n    text-decoration-color $bi-accent1\n    border-radius 6px\n\n`;
+    stylus += `a, a.link\n  color $${defaultAccent}\n  text-decoration-color $bi-accent1\n  text-decoration underline\n  text-decoration-thickness 1.5px\n  text-underline-offset 2px\n  position relative\n  &:hover, &:focus\n    /* Fallback: Brightened accent color for guaranteed visibility */\n    color $${defaultAccent}\n    filter brightness(1.3) saturate(1.1)\n    /* Modern browsers: Gradient text effect with proper support detection */\n    @supports (background-clip: text) or (-webkit-background-clip: text)\n      filter none\n      background linear-gradient(${hoverAngle}deg, $${defaultAccent} 0%, $bi-accent1 100%)\n      -webkit-background-clip text\n      background-clip text\n      -webkit-text-fill-color transparent\n      color transparent\n  &:active, &.active\n    color $co-accent1\n    text-decoration-color $co-accent2\n\n`;
+    stylus += `.text-link\n  color $${defaultAccent}\n  text-decoration-color $bi-accent1\n  text-decoration underline\n  text-decoration-thickness 1.5px\n  text-underline-offset 2px\n  position relative\n  &:hover, &:focus\n    /* Fallback: Simple color change for browsers without gradient text support */\n    color $${hoverBi}\n    /* Modern browsers: Gradient text effect with proper support detection */\n    @supports (background-clip: text) or (-webkit-background-clip: text)\n      background linear-gradient(${hoverAngle}deg, $${defaultAccent} 0%, $${hoverBi} 100%)\n      -webkit-background-clip text\n      background-clip text\n      -webkit-text-fill-color transparent\n      color transparent\n  &:active, &.active\n    color $co-accent1\n    text-decoration-color $co-accent2\n\n`;
 
-    stylus += `.btn-primary\n  background-color $surface_0\n  color $${defaultAccent}\n  border 1px solid $${defaultAccent}\n  &:hover\n    background linear-gradient(135deg, fade($${defaultAccent}, $tint_strong) 0%, fade($bi-accent1, $tint_strong) 50%, fade($bi-accent2, $tint_strong) 100%)\n    color $${defaultAccent}\n    transition background .25s ease, color .2s ease\n  &:active\n    background linear-gradient(135deg, fade($bi-accent2, $tint_strong + .02) 0%, fade($bi-accent1, $tint_strong + .02) 50%, fade($${defaultAccent}, $tint_strong + .02) 100%)\n    border-color $${defaultAccent}\n\n`;
-    stylus += `.btn-secondary\n  background-color $surface_0\n  color $${defaultAccent}\n  border 1px solid $${defaultAccent}\n  &:hover\n    background linear-gradient(135deg, fade($${defaultAccent}, $tint_strong) 0%, fade($bi-accent1, $tint_strong) 50%, fade($bi-accent2, $tint_strong) 100%)\n    color $${defaultAccent}\n    transition background .25s ease, color .2s ease\n\n`;
-    stylus += `.btn-outline\n  background-color transparent\n  border 1px solid $border-default\n  color $text-primary\n  &:hover\n    background-color $surface_0\n\n`;
-    stylus += `.btn-subtle\n  background-color transparent\n  color $text-primary\n  &:hover\n    background-color $surface_0\n\n`;
-    stylus += `.btn-destructive\n  background-color $surface_0\n  color $${defaultAccent}\n  border 1px solid $${defaultAccent}\n  &:hover\n    background linear-gradient(135deg, fade($${defaultAccent}, $tint_strong) 0%, fade($bi-accent1, $tint_strong) 50%, fade($bi-accent2, $tint_strong) 100%)\n    color $${defaultAccent}\n    transition background .25s ease, color .2s ease\n\n`;
+    stylus += `.btn-primary\n  background $surface_0\n  color $${defaultAccent}\n  border-color fade($${defaultAccent}, 0.25)\n  &:hover\n    background $surface_0\n    background-image linear-gradient(135deg, $${defaultAccent} 0%, $bi-accent1 50%, $bi-accent2 100%)\n    border-color $bi-accent1\n    box-shadow 0 4px 12px fade($${defaultAccent}, 0.25), 0 0 0 1px fade($bi-accent1, 0.35)\n  &:active\n    background $surface_0\n    background-image linear-gradient(135deg, $bi-accent2 0%, $${defaultAccent} 50%, $bi-accent1 100%)\n    border-color $${defaultAccent}\n  &:focus-visible\n    /* Co-accent focus ring for harmonious accessibility */\n    outline 2px solid $co-accent1\n    outline-offset 2px\n    box-shadow 0 0 0 4px fade($co-accent2, 0.25)\n\n`;
+    stylus += `.btn-secondary\n  background $surface_0\n  color ${useAltForSecondary === 'co1' ? `$${pre.coAccent1}` : `$${pre.coAccent2}`}\n  border-color fade(${useAltForSecondary === 'co1' ? `$${pre.coAccent1}` : `$${pre.coAccent2}`}, 0.25)\n  &:hover\n    background $surface_0\n    background-image linear-gradient(135deg, ${useAltForSecondary === 'co1' ? `$${pre.coAccent1}` : `$${pre.coAccent2}`} 0%, ${useAltForSecondary === 'co1' ? `$${pre.coAccent1}` : `$${pre.coAccent2}`} ${hoverMain}%, ${useAltForSecondary === 'co1' ? `$${co1Set.biAccent1}` : `$${co2Set.biAccent1}`} ${hoverMain}%, ${useAltForSecondary === 'co1' ? `$${co1Set.biAccent1}` : `$${co2Set.biAccent1}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'co1' ? `$${co1Set.biAccent2}` : `$${co2Set.biAccent2}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'co1' ? `$${co1Set.biAccent2}` : `$${co2Set.biAccent2}`} 100%)\n    border-color ${useAltForSecondary === 'co1' ? `$${co1Set.biAccent1}` : `$${co2Set.biAccent1}`}\n\n`;
+    stylus += `.btn-outline\n  background $surface_0\n  border 1px solid $overlay0\n  color $text\n  &:hover\n    background $surface_0\n\n`;
+    stylus += `.btn-subtle\n  background $surface_0\n  color $text\n  &:hover\n    background $surface_0\n\n`;
+    stylus += `.btn-destructive\n  background $surface_0\n  color $red\n  border-color fade($red, 0.25)\n  &:hover\n    background $surface_0\n    background-image linear-gradient(135deg, $red 0%, $maroon 50%, $peach 100%)\n\n`;
 
-    // Inputs - transparent backgrounds for text fields
-    stylus += `/* INPUTS - Transparent backgrounds + subtle focus */\n`;
-    stylus += `input, textarea, select, input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input[type="tel"], input[type="number"]\n  background-color transparent\n  color $text\n  border-color $overlay0\n  caret-color $mauve\n  &::placeholder\n    color $subtext0\n    opacity .75\n  &:hover\n    background-color fade($surface0, $tint_input_hover)\n  &:focus\n    border-color $overlay1\n    outline 2px solid rgba($mauve, .35)\n    outline-offset 2px\n    box-shadow 0 0 0 2px rgba($mauve, .2)\n    background-color transparent\n\n`;
+    // Inputs - subtle surface backgrounds for text fields
+    stylus += `/* INPUTS - Subtle backgrounds + focus */\n`;
+    stylus += `input, textarea, select, input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input[type="tel"], input[type="number"]\n  background-color fade($surface0, $tint_weak)\n  color $text\n  border-color $overlay0\n  caret-color $mauve\n  &::placeholder\n    color $subtext0\n    opacity .75\n  &:hover\n    border-color $overlay0\n    box-shadow none\n    background-color fade($surface0, $tint_weak)\n  &:focus\n    border-color $overlay1\n    outline 2px solid rgba($mauve, .35)\n    outline-offset 2px\n    box-shadow 0 0 0 2px rgba($mauve, .2)\n    background-color fade($surface0, $tint_input_hover)\n\n`;
 
   } else {
     // Legacy: fallback to mapping map / reasons
@@ -170,9 +183,9 @@ export function generateStylusTheme(
     }
   }
 
-  // Ensure inputs are transparent in legacy as well
-  stylus += `\n/* INPUTS - Transparent backgrounds + subtle focus */\n`;
-  stylus += `input, textarea, select, input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input[type="tel"], input[type="number"]\n  background-color transparent\n  color $text\n  border-color $overlay0\n  caret-color $mauve\n  &::placeholder\n    color $subtext0\n    opacity .75\n  &:hover\n    background-color fade($surface0, $tint_input_hover)\n  &:focus\n    border-color $overlay1\n    outline 2px solid rgba($mauve, .35)\n    outline-offset 2px\n    box-shadow 0 0 0 2px rgba($mauve, .2)\n    background-color transparent\n`;
+  // Ensure inputs use subtle surface backgrounds in legacy as well
+  stylus += `\n/* INPUTS - Subtle backgrounds + focus */\n`;
+  stylus += `input, textarea, select, input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input[type="tel"], input[type="number"]\n  background-color fade($surface0, $tint_weak)\n  color $text\n  border-color $overlay0\n  caret-color $mauve\n  &::placeholder\n    color $subtext0\n    opacity .75\n  &:hover\n    border-color $overlay0\n    box-shadow none\n    background-color fade($surface0, $tint_weak)\n  &:focus\n    border-color $overlay1\n    outline 2px solid rgba($mauve, .35)\n    outline-offset 2px\n    box-shadow 0 0 0 2px rgba($mauve, .2)\n    background-color fade($surface0, $tint_input_hover)\n`;
 
   // Global polish: selection, scrollbar, focus, components
   stylus += `\n/* Text selection */\n`;
@@ -189,7 +202,7 @@ export function generateStylusTheme(
   stylus += `:focus-visible\n  outline 2px solid rgba($mauve, .35)\n  outline-offset 2px\n  box-shadow 0 0 0 2px rgba($mauve, .2)\n`;
 
   stylus += `\n/* Checkboxes / radios / switches */\n`;
-  stylus += `input[type="checkbox"], input[type="radio"]\n  accent-color $mauve\n  background transparent\n  border-color $overlay0\n`;
+  stylus += `input[type="checkbox"], input[type="radio"]\n  accent-color $mauve\n  background $surface_0\n  border-color $overlay0\n`;
   stylus += `[role="switch"]\n  accent-color $mauve\n`;
 
   stylus += `\n/* Disabled states */\n`;
@@ -201,10 +214,10 @@ export function generateStylusTheme(
   stylus += `\n/* Horizontal rules */\n`;
   stylus += `hr\n  border-color $overlay1\n  opacity .6\n`;
 
-  stylus += `\n/* Tables (base) */\n`;
-  stylus += `table\n  background $base\n  border 1px solid $overlay1\n  border-collapse separate\n  border-spacing 0\n  box-shadow 0 2px 8px rgba($overlay2, .15)\n`;
+  stylus += `\n/* Tables (base) - color only, no layout changes */\n`;
+  stylus += `table\n  background $base\n`;
   stylus += `thead\n  background $surface0\n  color $text\n`;
-  stylus += `th, td\n  border-bottom 1px solid $overlay1\n  padding .65rem .9rem\n`;
+  // Do not set padding, border width, spacing, or collapse to avoid affecting layout
   stylus += `tbody tr:nth-child(even)\n  background fade($surface0, .6)\n`;
   stylus += `tbody tr:hover\n  background fade($mauve, .08)\n`;
 
@@ -233,10 +246,7 @@ export function generateStylusTheme(
   stylus += `\n/* Badges / chips */\n`;
   stylus += `.badge, .tag, .chip\n  background fade($mauve, .2)\n  color $mauve\n  border 1px solid rgba($mauve, .35)\n  border-radius 999px\n`;
 
-  // Tables - Dense variant
-  stylus += `\n// Tables - Dense variant\n`;
-  stylus += `.table--dense, .table.dense, table.table-dense\n  font-size .95em\n`;
-  stylus += `.table--dense th, .table--dense td, .table.dense th, .table.dense td, table.table-dense th, table.table-dense td\n  padding .35rem .6rem\n`;
+  // Tables - Dense variant removed to prevent spacing changes
 
   return stylus;
 }

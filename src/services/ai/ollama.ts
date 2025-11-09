@@ -1,6 +1,8 @@
 import type { AIModel } from '../../types/theme';
 import type { WebsiteColorAnalysis, ColorMapping } from '../../types/catppuccin';
 import type { CrawlerResult } from '../../types/theme';
+import { getOllamaBaseFromStorage, loadAPIKeys } from '../../utils/storage';
+import { generateAccentSystemGuide } from '../../utils/accent-schemes';
 
 // Ollama models (local). These are common tags; your local install may vary.
 export const OLLAMA_MODELS: AIModel[] = [
@@ -22,18 +24,82 @@ export const OLLAMA_MODELS: AIModel[] = [
     provider: 'ollama',
     isFree: true,
   },
+  // Cloud examples (require Ollama Cloud API key)
+  {
+    id: 'gpt-oss:120b-cloud',
+    name: 'GPT-OSS 120B (cloud)',
+    provider: 'ollama',
+    isFree: false,
+  },
+  {
+    id: 'deepseek-v3.1:671b-cloud',
+    name: 'Deepseek V3.1 671B (cloud)',
+    provider: 'ollama',
+    isFree: false,
+  },
+  {
+    id: 'glm-4.6:cloud',
+    name: 'GLM 4.6 (cloud)',
+    provider: 'ollama',
+    isFree: false,
+  },
+  {
+    id: 'gpt-oss:20b-cloud',
+    name: 'GPT-OSS 20B (cloud)',
+    provider: 'ollama',
+    isFree: false,
+  },
+  {
+    id: 'kimi-k2:1t-cloud',
+    name: 'Kimi K2 1T (cloud)',
+    provider: 'ollama',
+    isFree: false,
+  },
+  {
+    id: 'qwen3-coder:480b-cloud',
+    name: 'Qwen3 Coder 480B (cloud)',
+    provider: 'ollama',
+    isFree: false,
+  },
+  {
+    id: 'minimax-m2:cloud',
+    name: 'MiniMax M2 (cloud)',
+    provider: 'ollama',
+    isFree: false,
+  },
 ];
 
-// Base URL for Ollama. We try a relative proxy first (dev), then fallback to localhost.
-const OLLAMA_BASES = ['/ollama', 'http://localhost:11434'];
+// Base URL(s) for Ollama. Prefer custom (from storage), then relative proxy, then localhost.
+function getOllamaBases(): string[] {
+  const bases: string[] = [];
+  const { ollama: cloudKey } = loadAPIKeys();
+  // If cloud key is present, prefer Ollama Cloud API host
+  if (cloudKey) {
+    bases.push('https://ollama.com');
+  }
+  const custom = getOllamaBaseFromStorage();
+  if (custom && typeof custom === 'string' && custom.trim()) {
+    bases.push(custom.trim());
+  }
+  bases.push('/ollama');
+  bases.push('http://localhost:11434');
+  return bases;
+}
 
 async function postOllama(path: string, body: any) {
   let lastErr: any = null;
-  for (const base of OLLAMA_BASES) {
+  const bases = getOllamaBases();
+  const { ollama: cloudKey } = loadAPIKeys();
+  for (const base of bases) {
     try {
-      const res = await fetch(`${base}${path}`, {
+      const url = `${base}${path}`;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (base.startsWith('https://ollama.com') && cloudKey) {
+        headers['Authorization'] = `Bearer ${cloudKey}`;
+      }
+      const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -204,8 +270,46 @@ function extractJSONManually(text: string): { analysis: WebsiteColorAnalysis; ma
 }
 
 function createColorAnalysisPrompt(crawler: CrawlerResult & { detectedMode?: 'dark' | 'light' }) {
-  const modeText = crawler.detectedMode ? `The site appears to be ${crawler.detectedMode} mode.` : '';
-  return `You are a color analysis expert specializing in mapping website colors to the Catppuccin palette.\n\n${modeText}\n\nAnalyze the website content and colors, then output a JSON object with:\n- analysis.primaryColors: an array of prominent hex colors (strings)\n- analysis.accentColors: an array of 2-4 accent hex colors\n- analysis.neutralColors: an array of background/neutral hex colors\n- mappings: an array of objects mapping UI roles to Catppuccin roles/colors with reasons\n\nWebsite: ${crawler.url} | ${crawler.title}\nColors: ${(crawler.colors || []).slice(0, 30).join(', ')}\nContent snippet: ${crawler.content.slice(0, 1500)}\n\nCRITICAL: Output ONLY the JSON object. No markdown, no commentary. If you are a reasoning model, put your thinking before the JSON and then output ONLY the JSON object.`;
+  const modeText = crawler.detectedMode ? `MODE DETECTED: ${crawler.detectedMode}` : '';
+
+  // Determine flavor based on detected mode
+  const flavor = (crawler.detectedMode === 'dark') ? 'mocha' : 'latte';
+  const accentGuide = generateAccentSystemGuide(flavor);
+
+  return `You are a color analysis expert specializing in mapping website colors to the Catppuccin palette.
+
+Website: ${crawler.url} | ${crawler.title}
+${modeText}
+Detected colors: ${(crawler.colors || []).slice(0, 30).join(', ')}
+Content snippet: ${crawler.content.slice(0, 1500)}
+
+${accentGuide}
+
+TASK: Analyze the website's color usage and map to Catppuccin colors.
+
+KEY RULES:
+1. Map PRIMARY buttons/CTAs to main-accents (e.g., blue, sapphire)
+2. Use bi-accents for gradients WITH their main-accent
+3. Use co-accents as main-accents on DIFFERENT elements (never with their originating main-accent)
+4. Create diverse mappings - don't use same accent for everything
+5. Preserve semantic meaning (green=success, red=error, etc.)
+
+OUTPUT FORMAT (JSON only, no markdown):
+{
+  "analysis": {
+    "primaryColors": ["#HEX1", "#HEX2"],
+    "accentColors": ["#HEX3", "#HEX4"],
+    "backgroundColor": "#HEX5",
+    "textColor": "#HEX6"
+  },
+  "mappings": [
+    {"originalColor": "#HEX1", "catppuccinColor": "blue", "reason": "Primary CTA buttons"},
+    {"originalColor": "#HEX2", "catppuccinColor": "peach", "reason": "Secondary badges (co-accent from blue)"},
+    {"originalColor": "#HEX3", "catppuccinColor": "sapphire", "reason": "Links (bi-accent gradient with blue)"}
+  ]
+}
+
+CRITICAL: Output ONLY the JSON object. No markdown, no commentary. If you are a reasoning model, put your thinking before the JSON and then output ONLY the JSON object.`;
 }
 
 function parseColorAnalysisResponse(content: string): { analysis: WebsiteColorAnalysis; mappings: ColorMapping[] } {
@@ -231,4 +335,3 @@ function parseColorAnalysisResponse(content: string): { analysis: WebsiteColorAn
   if (!Array.isArray(parsed.mappings) || parsed.mappings.length === 0) throw new Error('Invalid mappings');
   return { analysis: parsed.analysis, mappings: parsed.mappings };
 }
-

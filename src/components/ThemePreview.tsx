@@ -117,7 +117,11 @@ export function ThemePreview({ themePackage }: ThemePreviewProps) {
         <div className="bg-ctp-surface0/50 rounded-lg p-4 border border-ctp-surface2">
           <h4 className="text-sm font-semibold text-ctp-subtext1 mb-2">Generation Info</h4>
           <div className="text-sm text-ctp-subtext0 space-y-1">
-            <p>Fetcher: <span className="text-ctp-text">{themePackage.metadata.crawlerUsed}</span></p>
+            <p>Source: <span className="text-ctp-text">
+              {themePackage.metadata.crawlerUsed === 'direct-fetch' && 'Direct HTTP Fetch'}
+              {themePackage.metadata.crawlerUsed === 'mhtml-upload' && 'MHTML File Upload'}
+              {themePackage.metadata.crawlerUsed === 'directory-upload' && 'Directory Upload'}
+            </span></p>
             <p>AI Model: <span className="text-ctp-text">{themePackage.metadata.aiModelUsed}</span></p>
             <p>Generated: <span className="text-ctp-text">{new Date(themePackage.timestamp).toLocaleString()}</span></p>
             <p>Accent Colors Detected: <span className="text-ctp-text">{themePackage.metadata.accentColors.join(', ')}</span></p>

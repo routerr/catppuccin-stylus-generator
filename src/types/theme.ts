@@ -1,12 +1,7 @@
 import type { CatppuccinFlavor } from './catppuccin';
 
-// Crawler service types
-export type CrawlerService = 'browserbase' | 'exa' | 'firecrawl' | 'brave';
-
-export interface CrawlerConfig {
-  service: CrawlerService;
-  apiKey: string;
-}
+// Content fetch service types (direct HTTP/HTTPS fetching)
+export type FetcherService = 'direct-fetch' | 'mhtml-upload' | 'directory-upload';
 
 export interface CrawlerResult {
   url: string;
@@ -54,7 +49,7 @@ export interface ThemePackage {
   userStyle?: string; // New single UserStyle format
   metadata: {
     accentColors: string[];
-    crawlerUsed: CrawlerService;
+    crawlerUsed: FetcherService;
     aiModelUsed: string;
   };
 }

@@ -1,7 +1,7 @@
 import type { CatppuccinFlavor, CatppuccinColor, ColorMapping, AccentColor } from '../../types/catppuccin';
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
-import { calculateTriadicAccents, calculateBiAccent, calculateBiAccents } from '../../utils/color-analysis';
+import { PRECOMPUTED_ACCENTS } from '../../utils/accent-schemes';
 
 /**
  * generateLessTheme
@@ -22,8 +22,16 @@ export function generateLessTheme(
   defaultAccent: AccentColor = 'mauve'
 ): string {
   const palette = CATPPUCCIN_PALETTINOTE(flaworCheck(flavor)) || CATPPUCCIN_PALETTES[flavor];
-  const triadicColors = calculateTriadicAccents(defaultAccent, palette);
-  const biAccents = calculateBiAccents(defaultAccent, palette);
+  const pre = PRECOMPUTED_ACCENTS[flavor][defaultAccent];
+  const hoverAngle = Math.floor(Math.random() * 180); // 0-179deg
+  // Approx 40/20/20 style distribution (summing to 100 across 3 segments)
+  const hoverMain = 38 + Math.floor(Math.random() * 8); // 38-45%
+  const hoverRemain = 100 - hoverMain; // 55-62%
+  // split remainder across two parts, each <=45%
+  let hoverB1 = Math.max(18, Math.floor(Math.random() * Math.max(18, hoverRemain - 18)));
+  let hoverB2 = hoverRemain - hoverB1;
+  if (hoverB1 > 45) { hoverB2 += (hoverB1 - 45); hoverB1 = 45; }
+  if (hoverB2 > 45) { hoverB1 += (hoverB2 - 45); hoverB2 = 45; }
   const date = new Date().toISOString().split('T')[0];
 
   // Header
@@ -45,14 +53,34 @@ export function generateLessTheme(
   // Add accent color scheme variables
   less += `\n// Accent Color Scheme Variables\n`;
   less += `// Main accents (used for static colors before interactions)\n`;
-  less += `@co-accent1: @${triadicColors.coAccent1};\n`;
-  less += `@co-accent2: @${triadicColors.coAccent2};\n`;
+  less += `@co-accent1: @${pre.coAccent1};\n`;
+  less += `@co-accent2: @${pre.coAccent2};\n`;
   less += `// Bi-accent (most similar to ${defaultAccent}, used for smooth gradients)\n`;
   // Accent family variables
   less += `@accent: @${defaultAccent};\n`;
-  less += `@bi-accent1: @${biAccents.biAccent1};\n`;
-  less += `@bi-accent2: @${biAccents.biAccent2};\n`;
+  less += `@bi-accent1: @${pre.biAccent1};\n`;
+  less += `@bi-accent2: @${pre.biAccent2};\n`;
   less += `@bi-accent: @bi-accent1;\n`;
+  // Alt accent sets (from co-accents, with their own bi-accents)
+  const co1Set = PRECOMPUTED_ACCENTS[flavor][pre.coAccent1];
+  const co2Set = PRECOMPUTED_ACCENTS[flavor][pre.coAccent2];
+  const useAltForSecondary = Math.random() < 0.5 ? 'alt1' : 'alt2';
+  less += `@alt1-main: @${pre.coAccent1};\n`;
+  less += `@alt1-bi1: @${co1Set.biAccent1};\n`;
+  less += `@alt1-bi2: @${co1Set.biAccent2};\n`;
+  less += `@alt2-main: @${pre.coAccent2};\n`;
+  less += `@alt2-bi1: @${co2Set.biAccent1};\n`;
+  less += `@alt2-bi2: @${co2Set.biAccent2};\n`;
+  // Link hover gradient parameters (build-time random)
+  less += `@hover-angle: ${hoverAngle}deg;\n`;
+  less += `@hover-bi: @${Math.random() < 0.5 ? pre.biAccent1 : pre.biAccent2};\n`;
+  const ALT = (useAltForSecondary === 'alt1')
+    ? { main: '@alt1-main', bi1: '@alt1-bi1', bi2: '@alt1-bi2' }
+    : { main: '@alt2-main', bi1: '@alt2-bi1', bi2: '@alt2-bi2' };
+  less += `@ALT_MAIN: ${ALT.main};\n`;
+  less += `@ALT_BI1: ${ALT.bi1};\n`;
+  less += `@ALT_BI2: ${ALT.bi2};\n`;
+  less += `@ALT_BI: ${Math.random() < 0.5 ? ALT.bi1 : ALT.bi2};\n`;
 
   // If MappingOutput provided, prefer roleMap/derivedScales path
   if ((colorMappings as MappingOutput)?.roleMap) {
@@ -116,142 +144,154 @@ export function generateLessTheme(
  */
 a, .link {
   color: @accent;
-  text-decoration-color: @accent;
+  text-decoration-color: @bi-accent1;
   text-decoration: underline;
   text-decoration-thickness: 1.5px;
   text-underline-offset: 2px;
-  transition: color 0.2s ease, text-decoration-color 0.2s ease, background 0.25s ease;
+  
+  position: relative;
 
   &:hover,
   &:focus {
-    /* Gradient text effect */
-    background: linear-gradient(90deg,
-      fade(@accent, @tint-strong),
-      fade(@bi-accent1, @tint-strong),
-      fade(@bi-accent2, @tint-strong)
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    color: transparent;
-    text-decoration-color: @bi-accent1;
-    border-radius: 6px;
+    /* Fallback: Brightened accent color for guaranteed visibility */
+    color: @accent;
+    filter: brightness(1.3) saturate(1.1);
+
+    /* Modern browsers: Gradient text effect with proper support detection */
+    @supports (background-clip: text) or (-webkit-background-clip: text) {
+      filter: none;
+      background-image: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+  }
+
+  &:active,
+  &.active {
+    color: @co-accent1;
   }
 }
 
 .text-link {
   color: @accent;
-  text-decoration-color: @accent;
+  text-decoration-color: @bi-accent1;
   text-decoration: underline;
   text-decoration-thickness: 1.5px;
   text-underline-offset: 2px;
-  transition: color 0.2s ease, text-decoration-color 0.2s ease, background 0.25s ease;
+  
+  position: relative;
 
   &:hover,
   &:focus {
-    /* Gradient text effect */
-    background: linear-gradient(90deg,
-      fade(@accent, @tint-strong),
-      fade(@bi-accent1, @tint-strong),
-      fade(@bi-accent2, @tint-strong)
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    color: transparent;
-    text-decoration-color: @bi-accent1;
-    border-radius: 6px;
+    /* Fallback: Brightened accent color for guaranteed visibility */
+    color: @accent;
+    filter: brightness(1.3) saturate(1.1);
+
+    /* Modern browsers: Gradient text effect with proper support detection */
+    @supports (background-clip: text) or (-webkit-background-clip: text) {
+      filter: none;
+      background-image: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+  }
+
+  &:active,
+  &.active {
+    color: @co-accent1;
   }
 }
 
 .btn-primary {
-  background: @surface_0;
-  color: @primary-base;
-  // Keep original borders; avoid accent border override
+  background: @surface0;
+  color: @accent;
 
   &:hover {
-    background: linear-gradient(135deg,
-      fade(@accent, @tint-strong) 0%,
-      fade(@bi-accent1, @tint-strong) 50%,
-      fade(@bi-accent2, @tint-strong) 100%
+    /* Solid background with gradient background */
+    background: @surface0;
+    background-image: linear-gradient(135deg,
+      @accent 0%,
+      @bi-accent1 50%,
+      @bi-accent2 100%
     );
-    color: @accent;
-    transition: background 0.25s ease, color 0.2s ease;
+    filter: brightness(1.1);
   }
 
   &:active {
-    background: fade(@primary-base, 26%);
+    /* Solid background with reversed gradient */
+    background: @surface0;
+    background-image: linear-gradient(135deg,
+      @bi-accent2 0%,
+      @accent 50%,
+      @bi-accent1 100%
+    );
   }
 }
 
 .btn-secondary {
-  background: @surface_0;
-  color: @secondary-base;
-  // Keep original borders
+  background: @surface0;
+  color: @accent;
 
   &:hover {
-    background: linear-gradient(135deg,
-      fade(@accent, @tint-strong) 0%,
-      fade(@bi-accent1, @tint-strong) 50%,
-      fade(@bi-accent2, @tint-strong) 100%
-    );
-    color: @accent;
-    transition: background 0.25s ease, color 0.2s ease;
+    background: @surface0;
+    background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%);
   }
 }
 
 .btn-outline {
-  background: transparent;
-  color: @text-primary;
+  background: @surface0;
+  color: @text;
 
   &:hover {
-    background: @surface_0;
+    background: @surface0;
   }
 }
 
 .btn-subtle {
-  background: transparent;
-  color: @text-primary;
+  background: @surface0;
+  color: @text;
 
   &:hover {
-    background-color: @surface_0;
+    background: @surface0;
   }
 }
 
 .btn-destructive {
-  background: @surface_0;
-  color: @danger-base;
-  // Keep original borders
+  background: @surface0;
+  color: @red;
 
   &:hover {
-    background: linear-gradient(135deg,
-      fade(@accent, @tint-strong) 0%,
-      fade(@bi-accent1, @tint-strong) 50%,
-      fade(@bi-accent2, @tint-strong) 100%
+    background: @surface0;
+    background-image: linear-gradient(135deg,
+      @red 0%,
+      @maroon 50%,
+      @peach 100%
     );
-    color: @accent;
-    transition: background 0.25s ease, color 0.2s ease;
+
   }
 }
 
 .btn-success {
-  background: @surface_0;
-  color: @success-base;
-  // Keep original borders
+  background: @surface0;
+  color: @green;
 
   &:hover {
-    background: linear-gradient(135deg,
-      fade(@accent, @tint-strong) 0%,
-      fade(@bi-accent1, @tint-strong) 50%,
-      fade(@bi-accent2, @tint-strong) 100%
+    background: @surface0;
+    background-image: linear-gradient(135deg,
+      @green 0%,
+      @teal 50%,
+      @sky 100%
     );
-    color: @accent;
-    transition: background 0.25s ease, color 0.2s ease;
+
   }
 }
 */
 
-// INPUTS - Transparent backgrounds for text fields
+// INPUTS - Subtle backgrounds for text fields
 input,
 textarea,
 select,
@@ -262,13 +302,13 @@ input[type="password"],
 input[type="url"],
 input[type="tel"],
 input[type="number"] {
-  background-color: transparent !important;
+  background-color: fade(@surface0, 12%) !important;
   color: @text;
-  border-color: @overlay0;
   caret-color: @co-accent1;
-  
+
   &:hover {
-    background-color: fade(@surface0, 28%);
+    /* Neutralize hover: keep default border/background */
+    background-color: fade(@surface0, 12%) !important;
   }
 
   &::placeholder { color: @subtext0; opacity: .75; }
@@ -277,21 +317,22 @@ input[type="number"] {
   &:-ms-input-placeholder { color: @subtext0; opacity: .75; }
 
   &:focus {
-    border-color: @overlay1;
-    outline: 2px solid fade(@co-accent1, 35%);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 2px fade(@co-accent1, 20%);
-    background-color: transparent;
+    /* Co-accent focus background with bi-accent gradient */
+    background: linear-gradient(135deg,
+      fade(@accent, 8%) 0%,
+      fade(@bi-accent1, 12%) 100%
+    ) !important;
+    caret-color: @bi-accent1;
   }
 }
 
 // Text selection
 ::selection {
-  background: fade(@co-accent1, 35%);
+  background: fade(@accent, 35%);
   color: @base;
 }
 ::-moz-selection {
-  background: fade(@co-accent1, 35%);
+  background: fade(@accent, 35%);
   color: @base;
 }
 
@@ -301,24 +342,15 @@ input[type="number"] {
 ::-webkit-scrollbar-thumb {
   background: fade(@overlay2, 35%);
   border-radius: 8px;
-  border: 2px solid @base;
 }
 ::-webkit-scrollbar-thumb:hover { background: fade(@overlay2, 50%); }
 
-// Global focus ring
-:focus-visible {
-  outline: 2px solid fade(@co-accent1, 35%);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 2px fade(@co-accent1, 20%);
-}
-
 // Checkboxes / radios / switches
 input[type="checkbox"], input[type="radio"] {
-  accent-color: @co-accent1;
-  background: transparent;
-  border-color: @overlay0;
+  accent-color: @accent;
+  background: @surface0;
 }
-[role="switch"] { accent-color: @co-accent1; }
+[role="switch"] { accent-color: @accent; }
 
 // Disabled states
 input:disabled,
@@ -334,89 +366,65 @@ button:disabled,
 select, option { background: @base; color: @text; }
 
 // Horizontal rules
-hr { border-color: @overlay1; opacity: .6; }
+hr { opacity: .6; }
 
 // Tables (base)
 table {
-  background: @base;
-  border: 1px solid @overlay1;
-  border-collapse: separate;
-  border-spacing: 0;
-  box-shadow: 0 2px 8px fade(@overlay2, 15%);
+  background: @base; // color only
 }
 thead { background: @surface0; color: @text; }
-th, td { border-bottom: 1px solid @overlay1; padding: .65rem .9rem; }
+// Avoid setting th/td padding or borders to preserve layout
 tbody tr:nth-child(even) { background: fade(@surface0, 60%); }
-tbody tr:hover { background: fade(@co-accent1, 8%); }
+tbody tr:hover {
+  /* Solid background for table row hover */
+  background: fade(@surface0, 80%);
 
-// Tables - Dense variant
-.table--dense,
-.table.dense,
-table.table-dense {
-  font-size: 0.95em;
 }
-.table--dense th, .table--dense td,
-.table.dense th, .table.dense td,
-table.table-dense th, table.table-dense td {
-  padding: 0.35rem 0.6rem;
-}
+
+// Tables - Dense variant removed to avoid spacing changes
 
 // Cards / panels / containers
 .card, .panel, .box, .container, .paper, .well {
   background: fade(@surface0, 90%);
-  border: 1px solid @surface2;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px fade(@overlay2, 18%);
-  backdrop-filter: blur(4px);
 }
 
 // Tooltips & popovers
 [role="tooltip"], .tooltip, .popover {
   background: @mantle;
   color: @text;
-  border: 1px solid @overlay1;
-  box-shadow: 0 6px 18px fade(@overlay2, 20%);
 }
 
 // Dropdown menus
 .menu, .dropdown-menu, [role="menu"] {
   background: @base;
-  border: 1px solid @overlay1;
-  box-shadow: 0 10px 24px fade(@overlay2, 18%);
 }
-.menu-item, [role="menuitem"], .dropdown-item { color: @text; }
-.menu-item:hover, [role="menuitem"]:hover, .dropdown-item:hover {
-  background: fade(@co-accent1, 10%);
+.menu-item, [role="menuitem"], .dropdown-item {
   color: @text;
+  
+}
+.menu-item:hover, [role="menuitem"]:hover, .dropdown-item:hover {
+  /* Solid background with accent text */
+  background: @surface0;
+  color: @bi-accent1;
 }
 
 // Modals & dialogs
 .modal, .dialog, [role="dialog"], [aria-modal="true"] {
   background: @base;
   color: @text;
-  border: 1px solid @overlay1;
-  box-shadow: 0 20px 48px fade(@overlay2, 25%);
 }
 .modal-backdrop, .overlay, .backdrop { background: fade(@crust, 70%); }
 
 // Alerts / banners
 .alert, .banner, .notice {
   background: fade(@surface0, 90%);
-  border: 1px solid @surface2;
-  border-left: 4px solid @co-accent1;
   color: @text;
 }
-.alert-success { border-left-color: @green; }
-.alert-warning { border-left-color: @yellow; }
-.alert-danger, .alert-error { border-left-color: @red; }
-.alert-info { border-left-color: @blue; }
 
 // Badges / chips
 .badge, .tag, .chip {
-  background: fade(@co-accent1, 20%);
-  color: @co-accent1;
-  border: 1px solid fade(@co-accent1, 35%);
-  border-radius: 999px;
+  background: fade(@accent, 20%);
+  color: @accent;
 }
 `;
 

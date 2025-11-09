@@ -31,6 +31,7 @@ function App() {
   const [lastAIConfig, setLastAIConfig] = useState<{ provider: AIProvider; model: string; apiKey: string } | null>(null);
   const [lastUrl, setLastUrl] = useState<string | null>(null);
   const [hasCompleted, setHasCompleted] = useState(false);
+  
 
   const aiChangedSinceLast = !!(
     lastAIConfig && (
@@ -399,6 +400,7 @@ function App() {
 
             <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
               <h2 className="text-2xl font-bold mb-6 text-ctp-accent">Generate Theme</h2>
+              
               <InputSelector
                 onURLSubmit={handleGenerate}
                 onFileSelect={handleFileUpload}
@@ -414,6 +416,8 @@ function App() {
             {(isProcessing || thinkingSteps.length > 0) && (
               <ThinkingProcess steps={thinkingSteps} />
             )}
+
+            
 
             {error && (
               <div className="bg-ctp-red/20 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-red/50">
