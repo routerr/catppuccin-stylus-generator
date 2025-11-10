@@ -1,7 +1,42 @@
 import type { CatppuccinFlavor, CatppuccinColor, ColorMapping, AccentColor } from '../../types/catppuccin';
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
-import { PRECOMPUTED_ACCENTS } from '../../utils/accent-schemes';
+import { computeAccentSetFor } from '../../utils/accent-schemes';
+
+// Contrast calculation functions
+function hexToRgb(hex: string): number[] {
+  // Remove # if present
+  const h = hex.replace(/#/, '');
+  // Split the string into 2-digit pairs
+  const rgb = h.match(/../g) || [];
+  // Convert each pair into a number and divide by 255
+  return rgb.map((v) => parseInt(v, 16) / 255);
+}
+
+function luminance(rgb: number[]): number {
+  // Scale to 0-1
+  const r = rgb[0] / 255;
+  const g = rgb[1] / 255;
+  const b = rgb[2] / 255;
+  // Convert to XYZ using D65 white point
+  const x = r * 0.4124 + g * 0.3576 + b * 0.1805;
+  const y = r * 0.3993 + g * 0.3685 + b * 0.1855;
+  const z = r * 0.2101 + g * 0.1140 + b * 0.9500;
+  // Calculate luminance (perceived brightness)
+  return (0.2126 * x + 0.7152 * y + 0.0722 * z) / (1 - 0.05); // Adjusting for relative luminance
+}
+
+function contrastRatio(hex1: string, hex2: string): number {
+  // Convert hex colors to RGB
+  const rgb1 = hexToRgb(hex1);
+  const rgb2 = hexToRgb(hex2);
+  // Calculate relative luminance for each color
+  const lum1 = luminance(rgb1);
+  const lum2 = luminance(rgb2);
+  // Calculate contrast ratio
+  const contrast = (Math.max(lum1, lum2) + 0.05) / (Math.min(lum1, lum2) + 0.05);
+  return contrast;
+}
 
 /**
  * generateLessTheme
@@ -22,7 +57,7 @@ export function generateLessTheme(
   defaultAccent: AccentColor = 'mauve'
 ): string {
   const palette = CATPPUCCIN_PALETTINOTE(flaworCheck(flavor)) || CATPPUCCIN_PALETTES[flavor];
-  const pre = PRECOMPUTED_ACCENTS[flavor][defaultAccent];
+  const pre = computeAccentSetFor(palette, defaultAccent);
   const hoverAngle = Math.floor(Math.random() * 180); // 0-179deg
   // Approx 40/20/20 style distribution (summing to 100 across 3 segments)
   const hoverMain = 38 + Math.floor(Math.random() * 8); // 38-45%
@@ -62,8 +97,8 @@ export function generateLessTheme(
   less += `@bi-accent2: @${pre.biAccent2};\n`;
   less += `@bi-accent: @bi-accent1;\n`;
   // Alt accent sets (from co-accents, with their own bi-accents)
-  const co1Set = PRECOMPUTED_ACCENTS[flavor][pre.coAccent1];
-  const co2Set = PRECOMPUTED_ACCENTS[flavor][pre.coAccent2];
+  const co1Set = computeAccentSetFor(palette, pre.coAccent1);
+  const co2Set = computeAccentSetFor(palette, pre.coAccent2);
   const useAltForSecondary = Math.random() < 0.5 ? 'alt1' : 'alt2';
   less += `@alt1-main: @${pre.coAccent1};\n`;
   less += `@alt1-bi1: @${co1Set.biAccent1};\n`;
@@ -153,8 +188,21 @@ a, .link {
 
   &:hover,
   &:focus {
+    // Calculate contrast ratio for hover state
+    @accentHex: @accent;
+    @bgHex: @bi-accent1;
+    
+    // Check if contrast is below WCAG AA (4.5:1) for normal text
+    & when (contrast(@accentHex, @bgHex) < 4.5) {
+      // Fallback to a high contrast color (white) for better visibility
+      color: @base; // White or light color for better contrast on dark backgrounds
+    }
+    & when not (contrast(@accentHex, @bgHex) < 4.5) {
+      // Keep the accent color if contrast is sufficient
+      color: @accent;
+    }
+    
     /* Fallback: Brightened accent color for guaranteed visibility */
-    color: @accent;
     filter: brightness(1.3) saturate(1.1);
 
     /* Modern browsers: Gradient text effect with proper support detection */
@@ -185,8 +233,21 @@ a, .link {
 
   &:hover,
   &:focus {
+    // Calculate contrast ratio for hover state
+    @accentHex: @accent;
+    @bgHex: @bi-accent1;
+    
+    // Check if contrast is below WCAG AA (4.5:1) for normal text
+    & when (contrast(@accentHex, @bgHex) < 4.5) {
+      // Fallback to a high contrast color (white) for better visibility
+      color: @base; // White or light color for better contrast on dark backgrounds
+    }
+    & when not (contrast(@accentHex, @bgHex) < 4.5) {
+      // Keep the accent color if contrast is sufficient
+      color: @accent;
+    }
+    
     /* Fallback: Brightened accent color for guaranteed visibility */
-    color: @accent;
     filter: brightness(1.3) saturate(1.1);
 
     /* Modern browsers: Gradient text effect with proper support detection */
@@ -211,6 +272,20 @@ a, .link {
   color: @accent;
 
   &:hover {
+    // Calculate contrast ratio for button hover state
+    @textHex: @accent;
+    @bgHex: @surface0;
+    
+    // Check if contrast is below WCAG AA (4.5:1) for normal text
+    & when (contrast(@textHex, @bgHex) < 4.5) {
+      // Fallback to a high contrast color (white) for better visibility
+      color: @base; // White or light color for better contrast on dark backgrounds
+    }
+    & when not (contrast(@textHex, @bgHex) < 4.5) {
+      // Keep the accent color if contrast is sufficient
+      color: @accent;
+    }
+    
     /* Solid background with gradient background */
     background: @surface0;
     background-image: linear-gradient(135deg,
@@ -265,6 +340,20 @@ a, .link {
   color: @red;
 
   &:hover {
+    // Calculate contrast ratio for destructive button hover state
+    @textHex: @red;
+    @bgHex: @surface0;
+    
+    // Check if contrast is below WCAG AA (4.5:1) for normal text
+    & when (contrast(@textHex, @bgHex) < 4.5) {
+      // Fallback to a high contrast color (white) for better visibility
+      color: @base; // White or light color for better contrast on dark backgrounds
+    }
+    & when not (contrast(@textHex, @bgHex) < 4.5) {
+      // Keep the red color if contrast is sufficient
+      color: @red;
+    }
+    
     background: @surface0;
     background-image: linear-gradient(135deg,
       @red 0%,
@@ -289,8 +378,9 @@ a, .link {
 
   }
 }
-*/
+*/`;
 
+less += `
 // INPUTS - Subtle backgrounds for text fields
 input,
 textarea,
@@ -426,20 +516,21 @@ tbody tr:hover {
   background: fade(@accent, 20%);
   color: @accent;
 }
+
 `;
 
   } else {
     // Legacy behavior (preserve)
-    less += `\n// Color Mappings\n// These map the original website colors to Catppuccin colors\n\n`;
+    less += '\n// Color Mappings\n// These map the original website colors to Catppuccin colors\n\n';
 
     // Add mapped colors (legacy map)
     const map = colorMappings as Map<string, CatppuccinColor>;
     for (const [originalColor, catppuccinColor] of map.entries()) {
       const varName = generateVarName(originalColor);
-      less += `@${varName}: @${catppuccinColor}; // Original: ${originalColor}\n`;
+      less += '@' + varName + ': @' + catppuccinColor + '; // Original: ' + originalColor + '\n';
     }
 
-    less += `\n// Example Usage\n/*\nbody {\n  background-color: @base;\n  color: @text;\n}\n*/\n`;
+    less += '\n// Example Usage\n/*\nbody {\n  background-color: @base;\n  color: @text;\n}\n*/\n';
   }
 
   return less;

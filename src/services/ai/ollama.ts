@@ -278,38 +278,53 @@ function createColorAnalysisPrompt(crawler: CrawlerResult & { detectedMode?: 'da
 
   return `You are a color analysis expert specializing in mapping website colors to the Catppuccin palette.
 
-Website: ${crawler.url} | ${crawler.title}
-${modeText}
-Detected colors: ${(crawler.colors || []).slice(0, 30).join(', ')}
-Content snippet: ${crawler.content.slice(0, 1500)}
+  Website: ${crawler.url} | ${crawler.title}
+  ${modeText}
+  Detected colors: ${(crawler.colors || []).slice(0, 30).join(', ')}
+  Content snippet: ${crawler.content.slice(0, 1500)}
 
-${accentGuide}
+  ${accentGuide}
 
-TASK: Analyze the website's color usage and map to Catppuccin colors.
+  TASK: Analyze the website's color usage and map to Catppuccin colors.
 
-KEY RULES:
-1. Map PRIMARY buttons/CTAs to main-accents (e.g., blue, sapphire)
-2. Use bi-accents for gradients WITH their main-accent
-3. Use co-accents as main-accents on DIFFERENT elements (never with their originating main-accent)
-4. Create diverse mappings - don't use same accent for everything
-5. Preserve semantic meaning (green=success, red=error, etc.)
+  KEY RULES:
+  1. Map PRIMARY buttons/CTAs to main-accents (e.g., blue, sapphire)
+  2. Use bi-accents for gradients WITH their main-accent
+  3. Use co-accents as main-accents on DIFFERENT elements (never with their originating main-accent)
+  4. Create diverse mappings - don't use same accent for everything
+  5. Preserve semantic meaning (green=success, red=error, etc.)
 
-OUTPUT FORMAT (JSON only, no markdown):
-{
-  "analysis": {
-    "primaryColors": ["#HEX1", "#HEX2"],
-    "accentColors": ["#HEX3", "#HEX4"],
-    "backgroundColor": "#HEX5",
-    "textColor": "#HEX6"
-  },
-  "mappings": [
-    {"originalColor": "#HEX1", "catppuccinColor": "blue", "reason": "Primary CTA buttons"},
-    {"originalColor": "#HEX2", "catppuccinColor": "peach", "reason": "Secondary badges (co-accent from blue)"},
-    {"originalColor": "#HEX3", "catppuccinColor": "sapphire", "reason": "Links (bi-accent gradient with blue)"}
-  ]
-}
+  HOVER STATE RULES FOR TEXT & LINKS (DIFFERENT FROM BUTTONS):
+  Text elements (links, text buttons, hoverable text):
+  - Hover background: Gradient at 45deg or 225deg angle (e.g., linear-gradient(45deg, blue, sapphire))
+  - Hover text: Solid color (text or base - always opaque)
+  - Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
+  - Example: a:hover { background: linear-gradient(45deg, blue, sapphire); color: text; }
+  - Different angles: 45deg, 225deg, or 315deg for visual variety
 
-CRITICAL: Output ONLY the JSON object. No markdown, no commentary. If you are a reasoning model, put your thinking before the JSON and then output ONLY the JSON object.`;
+  Button elements (solid buttons, CTAs):
+  - Hover background: Gradient at 135deg or 225deg angle (different angles from text!)
+  - Hover text: Solid color (text or base - always opaque)
+  - Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
+  - Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); }
+  - Different angles: 135deg or 225deg
+
+  OUTPUT FORMAT (JSON only, no markdown):
+  {
+    "analysis": {
+      "primaryColors": ["#HEX1", "#HEX2"],
+      "accentColors": ["#HEX3", "#HEX4"],
+      "backgroundColor": "#HEX5",
+      "textColor": "#HEX6"
+    },
+    "mappings": [
+      {"originalColor": "#HEX1", "catppuccinColor": "blue", "reason": "Primary CTA buttons"},
+      {"originalColor": "#HEX2", "catppuccinColor": "peach", "reason": "Secondary badges (co-accent from blue)"},
+      {"originalColor": "#HEX3", "catppuccinColor": "sapphire", "reason": "Links (bi-accent gradient with blue)"}
+    ]
+  }
+
+  CRITICAL: Output ONLY the JSON object. No markdown, no commentary. If you are a reasoning model, put your thinking before the JSON and then output ONLY the JSON object.`;
 }
 
 function parseColorAnalysisResponse(content: string): { analysis: WebsiteColorAnalysis; mappings: ColorMapping[] } {

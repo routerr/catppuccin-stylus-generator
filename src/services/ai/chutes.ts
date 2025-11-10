@@ -523,13 +523,15 @@ HOVER STATE RULES FOR TEXT & LINKS (DIFFERENT FROM BUTTONS):
 Text elements (links, text buttons, hoverable text):
 - Hover background: Gradient at 45deg or 225deg angle (e.g., linear-gradient(45deg, blue, sapphire))
 - Hover text: Solid color (text or base - always opaque)
+- Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
 - Example: a:hover { background: linear-gradient(45deg, blue, sapphire); color: text; }
 - Different angles: 45deg, 225deg, or 315deg for visual variety
 
 Button elements (solid buttons, CTAs):
 - Hover background: Gradient at 135deg or 225deg angle (different angles from text!)
+- Hover text: Solid color (text or base - always opaque)
+- Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
 - Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); }
-- Button text: Solid color (base or text - always opaque)
 - Different angles: 135deg or 225deg
 
 CRITICAL RULES:

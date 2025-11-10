@@ -1,7 +1,42 @@
 import type { CatppuccinFlavor, CatppuccinColor, ColorMapping, AccentColor } from '../../types/catppuccin';
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
-import { PRECOMPUTED_ACCENTS } from '../../utils/accent-schemes';
+import { computeAccentSetFor } from '../../utils/accent-schemes';
+
+// Contrast calculation functions
+function hexToRgb(hex: string): number[] {
+  // Remove # if present
+  const h = hex.replace(/#/, '');
+  // Split the string into 2-digit pairs
+  const rgb = h.match(/../g) || [];
+  // Convert each pair into a number and divide by 255
+  return rgb.map((v) => parseInt(v, 16) / 255);
+}
+
+function luminance(rgb: number[]): number {
+  // Scale to 0-1
+  const r = rgb[0] / 255;
+  const g = rgb[1] / 255;
+  const b = rgb[2] / 255;
+  // Convert to XYZ using D65 white point
+  const x = r * 0.4124 + g * 0.3576 + b * 0.1805;
+  const y = r * 0.3993 + g * 0.3685 + b * 0.1855;
+  const z = r * 0.2101 + g * 0.1140 + b * 0.9500;
+  // Calculate luminance (perceived brightness)
+  return (0.2126 * x + 0.7152 * y + 0.0722 * z) / (1 - 0.05); // Adjusting for relative luminance
+}
+
+function contrastRatio(hex1: string, hex2: string): number {
+  // Convert hex colors to RGB
+  const rgb1 = hexToRgb(hex1);
+  const rgb2 = hexToRgb(hex2);
+  // Calculate relative luminance for each color
+  const lum1 = luminance(rgb1);
+  const lum2 = luminance(rgb2);
+  // Calculate contrast ratio
+  const contrast = (Math.max(lum1, lum2) + 0.05) / (Math.min(lum1, lum2) + 0.05);
+  return contrast;
+}
 
 /**
  * generateStylusTheme
@@ -18,9 +53,9 @@ export function generateStylusTheme(
   defaultAccent: AccentColor = 'mauve'
 ): string {
   const palette = CATPPUCCIN_PALETTES[flavor];
-  const pre = PRECOMPUTED_ACCENTS[flavor][defaultAccent];
-  const co1Set = PRECOMPUTED_ACCENTS[flavor][pre.coAccent1 as any];
-  const co2Set = PRECOMPUTED_ACCENTS[flavor][pre.coAccent2 as any];
+  const pre = computeAccentSetFor(palette, defaultAccent);
+  const co1Set = computeAccentSetFor(palette, pre.coAccent1);
+  const co2Set = computeAccentSetFor(palette, pre.coAccent2);
   const useAltForSecondary = Math.random() < 0.5 ? 'co1' : 'co2';
   const date = new Date().toISOString().split('T')[0];
   // Flavor-based intensity tuning (decimals for Stylus fade())
@@ -71,22 +106,22 @@ export function generateStylusTheme(
   stylus += `// Palette reference\n`;
   [...baseColors, ...surfaceColors, ...overlayColors, ...textColors, ...accentColors].forEach(colorName => {
     const c = palette[colorName as CatppuccinColor];
-    if (c) stylus += `$${colorName} = ${c.hex}\n`;
+    if (c) stylus += `${colorName} = ${c.hex}\n`;
   });
 
   // Add accent color scheme variables
   stylus += `\n// Accent Color Scheme Variables\n`;
   stylus += `// Main accents (used for static colors before interactions)\n`;
-  stylus += `$co-accent1 = $${pre.coAccent1}\n`;
-  stylus += `$co-accent2 = $${pre.coAccent2}\n`;
+  stylus += `$co-accent1 = ${pre.coAccent1}\n`;
+  stylus += `$co-accent2 = ${pre.coAccent2}\n`;
   stylus += `// Intensity tuning (decimals)\n`;
   stylus += `$tint_weak = ${intensity.weak}\n`;
   stylus += `$tint_mid = ${intensity.mid}\n`;
   stylus += `$tint_strong = ${intensity.strong}\n`;
   stylus += `$tint_input_hover = ${intensity.inputHover}\n`;
   stylus += `// Bi-accents (two nearest to ${defaultAccent}, used for smooth gradients)\n`;
-  stylus += `$bi-accent1 = $${pre.biAccent1}\n`;
-  stylus += `$bi-accent2 = $${pre.biAccent2}\n`;
+  stylus += `$bi-accent1 = ${pre.biAccent1}\n`;
+  stylus += `$bi-accent2 = ${pre.biAccent2}\n`;
   stylus += `$bi-accent = $bi-accent1\n`;
 
   // Decide hover accents for links at generation time (build-time random)
@@ -119,7 +154,7 @@ export function generateStylusTheme(
       if (!seen.has(hex)) {
         const cp = cpNameForKey(role);
         seen.set(hex, cp);
-        stylus += `$${cp} = ${hex} // from role ${role}\n`;
+        stylus += `${cp} = ${hex} // from role ${role}\n`;
       }
     }
 
@@ -129,7 +164,7 @@ export function generateStylusTheme(
       if (!seen.has(hex)) {
         const cp = cpNameForKey(dkey);
         seen.set(hex, cp);
-        stylus += `$${cp} = ${hex} // derived ${dkey}\n`;
+        stylus += `${cp} = ${hex} // derived ${dkey}\n`;
       }
     }
 
@@ -138,25 +173,131 @@ export function generateStylusTheme(
       if (!cv) continue;
       const cp = seen.get(cv.hex) || cpNameForKey(role);
       const roleVar = roleToVar(role);
-      stylus += `$${roleVar} = $${cp}\n`;
+      stylus += `${roleVar} = ${cp}\n`;
     }
     for (const [dkey, cv] of Object.entries(derived)) {
       if (!cv) continue;
       const cp = seen.get(cv.hex) || cpNameForKey(dkey);
       const roleVar = roleToVar(dkey);
-      stylus += `$${roleVar} = $${cp}\n`;
+      stylus += `${roleVar} = ${cp}\n`;
     }
 
     // Usage examples prefer role variables
-    stylus += `\n/* =========================\n * LINK & BUTTON STYLES\n * Catppuccin Theme with Bi-Accent Gradients - Smooth & Elegant\n * =========================*/\n`;
-    stylus += `a, a.link\n  color $${defaultAccent}\n  text-decoration-color $bi-accent1\n  text-decoration underline\n  text-decoration-thickness 1.5px\n  text-underline-offset 2px\n  position relative\n  &:hover, &:focus\n    /* Fallback: Brightened accent color for guaranteed visibility */\n    color $${defaultAccent}\n    filter brightness(1.3) saturate(1.1)\n    /* Modern browsers: Gradient text effect with proper support detection */\n    @supports (background-clip: text) or (-webkit-background-clip: text)\n      filter none\n      background linear-gradient(${hoverAngle}deg, $${defaultAccent} 0%, $bi-accent1 100%)\n      -webkit-background-clip text\n      background-clip text\n      -webkit-text-fill-color transparent\n      color transparent\n  &:active, &.active\n    color $co-accent1\n    text-decoration-color $co-accent2\n\n`;
-    stylus += `.text-link\n  color $${defaultAccent}\n  text-decoration-color $bi-accent1\n  text-decoration underline\n  text-decoration-thickness 1.5px\n  text-underline-offset 2px\n  position relative\n  &:hover, &:focus\n    /* Fallback: Simple color change for browsers without gradient text support */\n    color $${hoverBi}\n    /* Modern browsers: Gradient text effect with proper support detection */\n    @supports (background-clip: text) or (-webkit-background-clip: text)\n      background linear-gradient(${hoverAngle}deg, $${defaultAccent} 0%, $${hoverBi} 100%)\n      -webkit-background-clip text\n      background-clip text\n      -webkit-text-fill-color transparent\n      color transparent\n  &:active, &.active\n    color $co-accent1\n    text-decoration-color $co-accent2\n\n`;
+    stylus += `\n/* =========================
+ * LINK & BUTTON STYLES
+ * Catppuccin Theme with Bi-Accent Gradients - Smooth & Elegant
+ * =========================*/\n`;
+    
+    // Calculate contrast for link hover state
+    const accentHex = palette[defaultAccent].hex;
+    const bgHex = palette[pre.biAccent1].hex;
+    const contrast = contrastRatio(accentHex, bgHex);
+    
+    stylus += `a, a.link
+  color ${defaultAccent}
+  text-decoration-color $bi-accent1
+  text-decoration underline
+  text-decoration-thickness 1.5px
+  text-underline-offset 2px
+  position relative
+  &:hover, &:focus
+    // Apply contrast-aware text color
+    if (${contrast} < 4.5)
+      color $base  // White for better contrast
+    else
+      color ${defaultAccent}
+    
+    // Fallback: Brightened accent color for guaranteed visibility
+    filter brightness(1.3) saturate(1.1)
+    // Modern browsers: Gradient text effect with proper support detection
+    @supports (background-clip: text) or (-webkit-background-clip: text)
+      filter none
+      background linear-gradient(${hoverAngle}deg, ${defaultAccent} 0%, $bi-accent1 100%)
+      -webkit-background-clip text
+      background-clip text
+      -webkit-text-fill-color transparent
+      color transparent
+  &:active, &.active
+    color $co-accent1
+    text-decoration-color $co-accent2
 
-    stylus += `.btn-primary\n  background $surface_0\n  color $${defaultAccent}\n  border-color fade($${defaultAccent}, 0.25)\n  &:hover\n    background $surface_0\n    background-image linear-gradient(135deg, $${defaultAccent} 0%, $bi-accent1 50%, $bi-accent2 100%)\n    border-color $bi-accent1\n    box-shadow 0 4px 12px fade($${defaultAccent}, 0.25), 0 0 0 1px fade($bi-accent1, 0.35)\n  &:active\n    background $surface_0\n    background-image linear-gradient(135deg, $bi-accent2 0%, $${defaultAccent} 50%, $bi-accent1 100%)\n    border-color $${defaultAccent}\n  &:focus-visible\n    /* Co-accent focus ring for harmonious accessibility */\n    outline 2px solid $co-accent1\n    outline-offset 2px\n    box-shadow 0 0 0 4px fade($co-accent2, 0.25)\n\n`;
-    stylus += `.btn-secondary\n  background $surface_0\n  color ${useAltForSecondary === 'co1' ? `$${pre.coAccent1}` : `$${pre.coAccent2}`}\n  border-color fade(${useAltForSecondary === 'co1' ? `$${pre.coAccent1}` : `$${pre.coAccent2}`}, 0.25)\n  &:hover\n    background $surface_0\n    background-image linear-gradient(135deg, ${useAltForSecondary === 'co1' ? `$${pre.coAccent1}` : `$${pre.coAccent2}`} 0%, ${useAltForSecondary === 'co1' ? `$${pre.coAccent1}` : `$${pre.coAccent2}`} ${hoverMain}%, ${useAltForSecondary === 'co1' ? `$${co1Set.biAccent1}` : `$${co2Set.biAccent1}`} ${hoverMain}%, ${useAltForSecondary === 'co1' ? `$${co1Set.biAccent1}` : `$${co2Set.biAccent1}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'co1' ? `$${co1Set.biAccent2}` : `$${co2Set.biAccent2}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'co1' ? `$${co1Set.biAccent2}` : `$${co2Set.biAccent2}`} 100%)\n    border-color ${useAltForSecondary === 'co1' ? `$${co1Set.biAccent1}` : `$${co2Set.biAccent1}`}\n\n`;
-    stylus += `.btn-outline\n  background $surface_0\n  border 1px solid $overlay0\n  color $text\n  &:hover\n    background $surface_0\n\n`;
-    stylus += `.btn-subtle\n  background $surface_0\n  color $text\n  &:hover\n    background $surface_0\n\n`;
-    stylus += `.btn-destructive\n  background $surface_0\n  color $red\n  border-color fade($red, 0.25)\n  &:hover\n    background $surface_0\n    background-image linear-gradient(135deg, $red 0%, $maroon 50%, $peach 100%)\n\n`;
+`;
+
+    // Calculate contrast for button hover state
+    const btnTextHex = palette.blue.hex;
+    const btnBgHex = palette.surface0.hex;
+    const btnContrast = contrastRatio(btnTextHex, btnBgHex);
+    
+    stylus += `.btn-primary
+  background $surface_0
+  color ${defaultAccent}
+  border-color fade(${defaultAccent}, 0.25)
+  &:hover
+    // Apply contrast-aware text color
+    if (${btnContrast} < 4.5)
+      color $base  // White for better contrast
+    else
+      color ${defaultAccent}
+      
+    background $surface_0
+    background-image linear-gradient(135deg, ${defaultAccent} 0%, $bi-accent1 50%, $bi-accent2 100%)
+    border-color $bi-accent1
+    box-shadow 0 4px 12px fade(${defaultAccent}, 0.25), 0 0 0 1px fade($bi-accent1, 0.35)
+  &:active
+    background $surface_0
+    background-image linear-gradient(135deg, $bi-accent2 0%, ${defaultAccent} 50%, $bi-accent1 100%)
+    border-color ${defaultAccent}
+  &:focus-visible
+    // Co-accent focus ring for harmonious accessibility
+    outline 2px solid $co-accent1
+    outline-offset 2px
+    box-shadow 0 0 0 4px fade($co-accent2, 0.25)
+
+`;
+
+    // Calculate contrast for secondary button hover state
+    const secondaryBtnTextHex = useAltForSecondary === 'co1' ? 
+      palette[pre.coAccent1].hex : palette[pre.coAccent2].hex;
+    const secondaryBtnBgHex = palette.surface0.hex;
+    const secondaryBtnContrast = contrastRatio(secondaryBtnTextHex, secondaryBtnBgHex);
+    
+    stylus += `.btn-secondary
+  background $surface_0
+  color ${useAltForSecondary === 'co1' ? `${pre.coAccent1}` : `${pre.coAccent2}`}
+  border-color fade(${useAltForSecondary === 'co1' ? `${pre.coAccent1}` : `${pre.coAccent2}`}, 0.25)
+  &:hover
+    // Apply contrast-aware text color
+    if (${secondaryBtnContrast} < 4.5)
+      color $base  // White for better contrast
+    else
+      color ${useAltForSecondary === 'co1' ? `${pre.coAccent1}` : `${pre.coAccent2}`}
+      
+    background $surface_0
+    background-image linear-gradient(135deg, ${useAltForSecondary === 'co1' ? `${pre.coAccent1}` : `${pre.coAccent2}`} 0%, ${useAltForSecondary === 'co1' ? `${pre.coAccent1}` : `${pre.coAccent2}`} ${hoverMain}%, ${useAltForSecondary === 'co1' ? `${co1Set.biAccent1}` : `${co2Set.biAccent1}`} ${hoverMain}%, ${useAltForSecondary === 'co1' ? `${co1Set.biAccent1}` : `${co2Set.biAccent1}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'co1' ? `${co1Set.biAccent2}` : `${co2Set.biAccent2}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'co1' ? `${co1Set.biAccent2}` : `${co2Set.biAccent2}`} 100%)
+    border-color ${useAltForSecondary === 'co1' ? `${co1Set.biAccent1}` : `${co2Set.biAccent1}`}
+
+`;
+
+    // Calculate contrast for destructive button hover state
+    const destructiveBtnTextHex = palette.red.hex;
+    const destructiveBtnBgHex = palette.surface0.hex;
+    const destructiveBtnContrast = contrastRatio(destructiveBtnTextHex, destructiveBtnBgHex);
+    
+    stylus += `.btn-destructive
+  background $surface_0
+  color $red
+  border-color fade($red, 0.25)
+  &:hover
+    // Apply contrast-aware text color
+    if (${destructiveBtnContrast} < 4.5)
+      color $base  // White for better contrast
+    else
+      color $red
+      
+    background $surface_0
+    background-image linear-gradient(135deg, $red 0%, $maroon 50%, $peach 100%)
+
+`;
 
     // Inputs - subtle surface backgrounds for text fields
     stylus += `/* INPUTS - Subtle backgrounds + focus */\n`;
@@ -170,7 +311,7 @@ export function generateStylusTheme(
         stylus += `// ${category}\n`;
         mappings.forEach(mapping => {
           const varName = generateVarName(mapping.originalColor);
-          stylus += `$${varName} = $${mapping.catppuccinColor} // ${mapping.reason}\n`;
+          stylus += `${varName} = ${mapping.catppuccinColor} // ${mapping.reason}\n`;
         });
         stylus += `\n`;
       }
@@ -178,7 +319,7 @@ export function generateStylusTheme(
       const map = colorMappings as Map<string, CatppuccinColor>;
       for (const [originalColor, catppuccinColor] of map.entries()) {
         const varName = generateVarName(originalColor);
-        stylus += `$${varName} = $${catppuccinColor} // Original: ${originalColor}\n`;
+        stylus += `${varName} = ${catppuccinColor} // Original: ${originalColor}\n`;
       }
     }
   }

@@ -1,9 +1,11 @@
-import type { CatppuccinFlavor, ColorMapping } from '../../types/catppuccin';
+import type { CatppuccinFlavor, ColorMapping, AccentColor } from '../../types/catppuccin';
 import type { ThemeOutput, GeneratedTheme, ThemePackage, FetcherService, MappingOutput } from '../../types/theme';
 import { generateStylusTheme } from './stylus';
 import { generateLessTheme } from './less';
 import { generateCssTheme } from './css';
 import { generateUserStyle } from './userstyle';
+import { hexToRgb, nearestAccentByRGB } from '../../utils/accent-schemes';
+import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
  
 
 /**
@@ -135,14 +137,17 @@ export function createUserStylePackage(
 ): ThemePackage {
   // If MappingOutput provided, generate userStyle from it directly
   let userStyle: string;
+  const primaryAccent = accentColors.length > 0 ? accentColors[0] : '#cba6f7'; // default to mauve hex
+  const defaultAccent = nearestAccentByRGB(hexToRgb(primaryAccent), CATPPUCCIN_PALETTES.mocha);
+
   if ((colorMappings as MappingOutput).roleMap) {
-    userStyle = generateUserStyle(colorMappings as MappingOutput, url, undefined, cssAnalysis);
+    userStyle = generateUserStyle(colorMappings as MappingOutput, url, undefined, cssAnalysis, 'mocha', defaultAccent);
   } else {
     const legacy = colorMappings as ColorMapping[];
     // Filter out button and clickable backgrounds for UserStyle as well
     const filteredMappings = filterButtonAndClickableBackgrounds(legacy);
     console.log(`UserStyle: Filtered ${legacy.length - filteredMappings.length} button/clickable background mappings`);
-    userStyle = generateUserStyle(filteredMappings, url, undefined, cssAnalysis);
+    userStyle = generateUserStyle(filteredMappings, url, undefined, cssAnalysis, 'mocha', defaultAccent);
   }
 
   return {
@@ -180,3 +185,4 @@ export async function createUserStylePackageAsync(
 
 // Export generators for direct usage
 export { generateStylusTheme, generateLessTheme, generateCssTheme };
+

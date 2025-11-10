@@ -1,7 +1,42 @@
 import type { ColorMapping, AccentColor, CatppuccinFlavor } from '../../types/catppuccin';
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
-import { PRECOMPUTED_ACCENTS } from '../../utils/accent-schemes';
+import { PRECOMPUTED_ACCENTS, ACCENT_NAMES } from '../../utils/accent-schemes';
+
+// Contrast calculation functions
+function hexToRgb(hex: string): number[] {
+  // Remove # if present
+  const h = hex.replace(/#/, '');
+  // Split the string into 2-digit pairs
+  const rgb = h.match(/../g) || [];
+  // Convert each pair into a number and divide by 255
+  return rgb.map((v) => parseInt(v, 16) / 255);
+}
+
+function luminance(rgb: number[]): number {
+  // Scale to 0-1
+  const r = rgb[0] / 255;
+  const g = rgb[1] / 255;
+  const b = rgb[2] / 255;
+  // Convert to XYZ using D65 white point
+  const x = r * 0.4124 + g * 0.3576 + b * 0.1805;
+  const y = r * 0.3993 + g * 0.3685 + b * 0.1855;
+  const z = r * 0.2101 + g * 0.1140 + b * 0.9500;
+  // Calculate luminance (perceived brightness)
+  return (0.2126 * x + 0.7152 * y + 0.0722 * z) / (1 - 0.05); // Adjusting for relative luminance
+}
+
+function contrastRatio(hex1: string, hex2: string): number {
+  // Convert hex colors to RGB
+  const rgb1 = hexToRgb(hex1);
+  const rgb2 = hexToRgb(hex2);
+  // Calculate relative luminance for each color
+  const lum1 = luminance(rgb1);
+  const lum2 = luminance(rgb2);
+  // Calculate contrast ratio
+  const contrast = (Math.max(lum1, lum2) + 0.05) / (Math.min(lum1, lum2) + 0.05);
+  return contrast;
+}
 
 export interface UserStyleMetadata {
   name: string;
@@ -63,9 +98,6 @@ export function generateUserStyle(
 
   // Calculate accent colors for harmonious color scheme
   const palette = CATPPUCCIN_PALETTES[flavor];
-  const pre = PRECOMPUTED_ACCENTS[flavor][defaultAccent];
-  const co1Set = PRECOMPUTED_ACCENTS[flavor][pre.coAccent1 as any];
-  const co2Set = PRECOMPUTED_ACCENTS[flavor][pre.coAccent2 as any];
   const useAltForButtons = Math.random() < 0.5 ? 'alt1' : 'alt2';
   const useAltBi = Math.random() < 0.5 ? 'bi1' : 'bi2';
   const hoverAngle = Math.floor(Math.random() * 180); // 0-179deg
@@ -138,6 +170,11 @@ export function generateUserStyle(
     #lib.palette();
     #lib.defaults();
 
+    /* Helper function to convert colors to HSL format */
+    #hslify(@color) {
+      @raw: e(%("%s %s% %s%", hue(@color), saturation(@color), lightness(@color)));
+    }
+
 ${cssVarMappings}
 
     /* ═══════════════════════════════════════════════════════════
@@ -171,38 +208,20 @@ ${cssVarMappings}
 
        ═══════════════════════════════════════════════════════════ */
 
-    /* Main accent and its bi-accents (gradient companions) */
-    @bi-accent1: @${pre.biAccent1};
-    @bi-accent2: @${pre.biAccent2};
-    @bi-accent: @bi-accent1;  /* Back-compat alias */
-
-    /* Co-accents (used as main-accents on OTHER elements) */
-    @co-accent1: @${pre.coAccent1};
-    @co-accent2: @${pre.coAccent2};
-
     /* Link hover gradient parameters (build-time random) */
     @hover-angle: ${hoverAngle}deg;
     @hover-bi: @${hoverBiPick};
-
-    /* CASCADING: Co-accents become main-accents with their own bi-accents */
-    @alt1-main: @${pre.coAccent1};        /* co-accent1 as independent main */
-    @alt1-bi1: @${co1Set.biAccent1};      /* bi-accents for co-accent1 */
-    @alt1-bi2: @${co1Set.biAccent2};
-    @alt2-main: @${pre.coAccent2};        /* co-accent2 as independent main */
-    @alt2-bi1: @${co2Set.biAccent1};      /* bi-accents for co-accent2 */
-    @alt2-bi2: @${co2Set.biAccent2};
-
-    /* Used for buttons (randomly selects alt1 or alt2 for variety) */
-    @ALT_MAIN: @${useAltForButtons === 'alt1' ? 'alt1-main' : 'alt2-main'};
-    @ALT_BI: @${useAltForButtons === 'alt1' ? `alt1-${useAltBi}` : `alt2-${useAltBi}`};
-
-    /* Link hover accents are derived from bi-accents via gradient; no solid accent variables needed */
 
     /* Intensity tuning (flavor-aware) */
     @tint-weak: ${intensity.weak}%;
     @tint-mid: ${intensity.mid}%;
     @tint-strong: ${intensity.strong}%;
     @tint-input-hover: ${intensity.inputHover}%;
+
+    /* Contrast-based color adjustments for WCAG compliance */
+    @link-contrast: ${contrastRatio(palette[defaultAccent].hex, palette[PRECOMPUTED_ACCENTS[flavor][defaultAccent].biAccent1].hex)};
+    @button-contrast: ${contrastRatio(palette.blue.hex, palette.surface0.hex)};
+    @destructive-button-contrast: ${contrastRatio(palette.red.hex, palette.surface0.hex)};
 
     /* ═══════════════════════════════════════════════════════════
        RUNTIME ACCENT DERIVATION
@@ -214,15 +233,13 @@ ${cssVarMappings}
 
        ═══════════════════════════════════════════════════════════ */
 ${(() => {
-      const accentNames = ['rosewater','flamingo','pink','mauve','red','maroon','peach','yellow','green','teal','sky','sapphire','blue','lavender'] as const;
       let out = '';
-      accentNames.forEach((name) => {
+      ACCENT_NAMES.forEach((name) => {
         const mainSet = PRECOMPUTED_ACCENTS[flavor][name];
-        // Get the cascading sets for co-accents
-        const co1Set = PRECOMPUTED_ACCENTS[flavor][mainSet.coAccent1 as any];
-        const co2Set = PRECOMPUTED_ACCENTS[flavor][mainSet.coAccent2 as any];
+        const co1Set = PRECOMPUTED_ACCENTS[flavor][mainSet.coAccent1];
+        const co2Set = PRECOMPUTED_ACCENTS[flavor][mainSet.coAccent2];
 
-        out += `    #derive-accents() when (@accentColor = "${name}") {\n`;
+        out += `    #derive-accents() when (@accentColor = ${name}) {\n`;
         out += `      @accent: @${name};\n`;
         out += `      /* Bi-accents for main accent */\n`;
         out += `      @bi-accent1: @${mainSet.biAccent1};\n`;
@@ -242,6 +259,11 @@ ${(() => {
         out += `      /* Button accent (uses one of the co-accent sets) */\n`;
         out += `      @ALT_MAIN: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-main;\n`;
         out += `      @ALT_BI: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-${useAltBi};\n`;
+        
+        const accentHex = CATPPUCCIN_PALETTES[flavor][name].hex;
+        const biAccent1Hex = CATPPUCCIN_PALETTES[flavor][mainSet.biAccent1].hex;
+        const newLinkContrast = contrastRatio(accentHex, biAccent1Hex);
+        out += `      @link-contrast: ${newLinkContrast};\n`;
         out += `    }\n`;
       });
       out += '    #derive-accents();\n';
@@ -273,8 +295,16 @@ ${(() => {
       &:focus-visible {
         /* Remove underline on hover for clean look */
         text-decoration: none;
+        /* Contrast-aware text color adjustment */
+        & when (@link-contrast < 4.5) {
+          /* Fallback to a high contrast color (white) when contrast is insufficient */
+          color: @base;
+        }
+        & when not (@link-contrast < 4.5) {
+          /* Keep the accent color if contrast is sufficient */
+          color: @accent;
+        }
         /* Fallback: Brightened accent color for guaranteed visibility */
-        color: @accent;
         filter: brightness(1.3) saturate(1.1);
 
         /* Modern browsers: Gradient text effect with proper support detection */
@@ -320,7 +350,16 @@ ${(() => {
         background: @surface0;
         background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%);
         filter: brightness(1.1);
-        color: @ALT_MAIN; /* ensure text stays visible */
+        
+        /* Contrast-aware text color adjustment */
+        & when (@button-contrast < 4.5) {
+          /* Fallback to a high contrast color (white) when contrast is insufficient */
+          color: @base;
+        }
+        & when not (@button-contrast < 4.5) {
+          /* Keep the text color if contrast is sufficient */
+          color: @ALT_MAIN;
+        }
       }
 
       &:active {
@@ -328,7 +367,16 @@ ${(() => {
         background: @surface0;
         background-image: linear-gradient(135deg, @ALT_BI 0%, @ALT_MAIN 100%);
         filter: brightness(1.15);
-        color: @ALT_MAIN; /* ensure text stays visible */
+        
+        /* Contrast-aware text color adjustment */
+        & when (@button-contrast < 4.5) {
+          /* Fallback to a high contrast color (white) when contrast is insufficient */
+          color: @base;
+        }
+        & when not (@button-contrast < 4.5) {
+          /* Keep the text color if contrast is sufficient */
+          color: @ALT_MAIN;
+        }
       }
     }
 
@@ -596,12 +644,11 @@ ${generateClassSpecificRules(cssAnalysis)}
   }
 }
 
-/* Helper function to convert colors to HSL format */
-#hslify(@color) {
-  @raw: e(%("%s %s% %s%", hue(@color), saturation(@color), lightness(@color)));
-}
 `;
 }
+
+
+// (Moved into generated LESS string within #catppuccin block)
 
 /** Generate CSS custom properties from legacy ColorMapping[] (keeps previous behaviour) */
 function generateCSSVariableMappings(mappings: ColorMapping[]): string {
@@ -639,7 +686,7 @@ function generateCSSVariableMappings(mappings: ColorMapping[]): string {
   const hslify = (val: string) => {
     if (!val) return '#hslify(@base)[]';
     // If it's a hex literal, call mixin with the literal (no @)
-    if (val.startsWith('#')) return `#hslify(${val})[]`;
+    if (val.startsWith('#')) return '#hslify(' + val + ')[]';
     // Otherwise, map to known Catppuccin tokens; fall back to @base on unknown
     const safe = val.replace(/[^a-z0-9_-]/gi, '').toLowerCase();
     const allowed = new Set([
@@ -654,47 +701,47 @@ function generateCSSVariableMappings(mappings: ColorMapping[]): string {
     const name = allowed.has(safe)
       ? (safe === 'background' ? 'base' : safe)
       : 'base';
-    return `#hslify(@${name})[]`;
+    return '#hslify(@' + name + ')[]';
   };
 
   lines.push('    /* Accent colors */');
-  lines.push(`    --accent-brand: ${hslify('accent')};`);
-  lines.push(`    --accent-main: ${hslify('accent')};`);
-  lines.push(`    --accent-primary: ${hslify('accent')};`);
-  lines.push(`    --color-accent: ${hslify('accent')};`);
+  lines.push('    --accent-brand: ' + hslify('accent') + ';');
+  lines.push('    --accent-main: ' + hslify('accent') + ';');
+  lines.push('    --accent-primary: ' + hslify('accent') + ';');
+  lines.push('    --color-accent: ' + hslify('accent') + ';');
   lines.push('');
 
   lines.push('    /* Background colors */');
-  lines.push(`    --bg-base: ${hslify(primaryBg)};`);
-  lines.push(`    --bg-primary: ${hslify('base')};`);
-  lines.push(`    --bg-secondary: ${hslify('mantle')};`);
-  lines.push(`    --bg-tertiary: ${hslify('crust')};`);
-  lines.push(`    --background: ${hslify('base')};`);
-  lines.push(`    --background-secondary: ${hslify('mantle')};`);
+  lines.push('    --bg-base: ' + hslify(primaryBg) + ';');
+  lines.push('    --bg-primary: ' + hslify('base') + ';');
+  lines.push('    --bg-secondary: ' + hslify('mantle') + ';');
+  lines.push('    --bg-tertiary: ' + hslify('crust') + ';');
+  lines.push('    --background: ' + hslify('base') + ';');
+  lines.push('    --background-secondary: ' + hslify('mantle') + ';');
   lines.push('');
 
   lines.push('    /* Surface colors */');
-  lines.push(`    --surface-0: ${hslify('surface0')};`);
-  lines.push(`    --surface-1: ${hslify('surface1')};`);
-  lines.push(`    --surface-2: ${hslify('surface2')};`);
+  lines.push('    --surface-0: ' + hslify('surface0') + ';');
+  lines.push('    --surface-1: ' + hslify('surface1') + ';');
+  lines.push('    --surface-2: ' + hslify('surface2') + ';');
   lines.push('');
 
   lines.push('    /* Text colors */');
-  lines.push(`    --text-base: ${hslify(primaryText)};`);
-  lines.push(`    --text-primary: ${hslify('text')};`);
-  lines.push(`    --text-secondary: ${hslify('subtext0')};`);
-  lines.push(`    --text-tertiary: ${hslify('subtext1')};`);
-  lines.push(`    --text-muted: ${hslify('overlay2')};`);
+  lines.push('    --text-base: ' + hslify(primaryText) + ';');
+  lines.push('    --text-primary: ' + hslify('text') + ';');
+  lines.push('    --text-secondary: ' + hslify('subtext0') + ';');
+  lines.push('    --text-tertiary: ' + hslify('subtext1') + ';');
+  lines.push('    --text-muted: ' + hslify('overlay2') + ';');
   lines.push('');
 
   lines.push('    /* Border colors - removed to preserve original borders */');
   lines.push('');
 
   lines.push('    /* Status colors */');
-  lines.push(`    --color-success: ${hslify('green')};`);
-  lines.push(`    --color-warning: ${hslify('yellow')};`);
-  lines.push(`    --color-danger: ${hslify('red')};`);
-  lines.push(`    --color-info: ${hslify('blue')};`);
+  lines.push('    --color-success: ' + hslify('green') + ';');
+  lines.push('    --color-warning: ' + hslify('yellow') + ';');
+  lines.push('    --color-danger: ' + hslify('red') + ';');
+  lines.push('    --color-info: ' + hslify('blue') + ';');
 
   return lines.join('\n');
 }
@@ -707,7 +754,7 @@ function generateCSSFromMappingOutput(mappingOutput: MappingOutput): string {
 
   lines.push('    /* Level 1: cp_ binding */');
   const seen = new Map<string, string>(); // hex -> cpName
-  function cpNameForKey(k: string) { return `cp-${sanitizeKey(k)}`; }
+  function cpNameForKey(k: string) { return 'cp-' + sanitizeKey(k); }
 
   for (const [role, cv] of Object.entries(roleMap)) {
     if (!cv) continue;
@@ -715,7 +762,7 @@ function generateCSSFromMappingOutput(mappingOutput: MappingOutput): string {
     if (!seen.has(hex)) {
       const cp = cpNameForKey(role);
       seen.set(hex, cp);
-      lines.push(`    --${cp}: ${hex}; /* from ${role} */`);
+      lines.push('    --' + cp + ': ' + hex + '; /* from ' + role + ' */');
     }
   }
   for (const [dk, cv] of Object.entries(derived)) {
@@ -724,7 +771,7 @@ function generateCSSFromMappingOutput(mappingOutput: MappingOutput): string {
     if (!seen.has(hex)) {
       const cp = cpNameForKey(dk);
       seen.set(hex, cp);
-      lines.push(`    --${cp}: ${hex}; /* derived ${dk} */`);
+      lines.push('    --' + cp + ': ' + hex + '; /* derived ' + dk + ' */');
     }
   }
 
@@ -734,13 +781,13 @@ function generateCSSFromMappingOutput(mappingOutput: MappingOutput): string {
     if (!cv) continue;
     const cp = seen.get(cv.hex) || cpNameForKey(role);
     const roleVar = roleToCssVar(role);
-    lines.push(`    --${roleVar}: var(--${cp});`);
+    lines.push('    --' + roleVar + ': var(--' + cp + ');');
   }
   for (const [dk, cv] of Object.entries(derived)) {
     if (!cv) continue;
     const cp = seen.get(cv.hex) || cpNameForKey(dk);
     const roleVar = roleToCssVar(dk);
-    lines.push(`    --${roleVar}: var(--${cp});`);
+    lines.push('    --' + roleVar + ': var(--' + cp + ');');
   }
 
   // Provide button usage mapping comment
@@ -780,27 +827,43 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
     lines.push('');
     lines.push('    /* Button classes with vibrant bi-accent gradients */');
     grouped.buttons.slice(0, 20).forEach(btn => {
-      lines.push(`    .${btn.className} {`);
-      lines.push(`      background: @surface0;`);
-      lines.push(`      color: @ALT_MAIN;`);
+      lines.push('    .' + btn.className + ' {');
+      lines.push('      background: @surface0;');
+      lines.push('      color: @ALT_MAIN;');
 
-      lines.push(``);
-      lines.push(`      &:hover {`);
-      lines.push(`        /* Solid background with gradient background */`);
-      lines.push(`        background: @surface0 !important;`);
-      lines.push(`        background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%) !important;`);
-      lines.push(`        color: @ALT_MAIN !important;`);
-      lines.push(`        filter: brightness(1.1);`);
-      lines.push(`      }`);
-      lines.push(``);
-      lines.push(`      &:active {`);
-      lines.push(`        /* Solid background with reversed gradient */`);
-      lines.push(`        background: @surface0 !important;`);
-      lines.push(`        background-image: linear-gradient(135deg, @ALT_BI 0%, @ALT_MAIN 100%) !important;`);
-      lines.push(`        color: @ALT_MAIN !important;`);
-      lines.push(`        filter: brightness(1.15);`);
-      lines.push(`      }`);
-      lines.push(`    }`);
+      lines.push('');
+      lines.push('      &:hover {');
+      lines.push('        /* Solid background with gradient background */');
+      lines.push('        background: @surface0 !important;');
+      lines.push('        background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%) !important;');
+      lines.push('        /* Contrast-aware text color */');
+      lines.push('        & when (@button-contrast < 4.5) {');
+      lines.push('          /* Fallback to a high contrast color (white) when contrast is insufficient */');
+      lines.push('          color: @base !important;');
+      lines.push('        }');
+      lines.push('        & when not (@button-contrast < 4.5) {');
+      lines.push('          /* Keep the text color if contrast is sufficient */');
+      lines.push('          color: @ALT_MAIN !important;');
+      lines.push('        }');
+      lines.push('        filter: brightness(1.1);');
+      lines.push('      }');
+      lines.push('');
+      lines.push('      &:active {');
+      lines.push('        /* Solid background with reversed gradient */');
+      lines.push('        background: @surface0 !important;');
+      lines.push('        background-image: linear-gradient(135deg, @ALT_BI 0%, @ALT_MAIN 100%) !important;');
+      lines.push('        /* Contrast-aware text color */');
+      lines.push('        & when (@button-contrast < 4.5) {');
+      lines.push('          /* Fallback to a high contrast color (white) when contrast is insufficient */');
+      lines.push('          color: @base !important;');
+      lines.push('        }');
+      lines.push('        & when not (@button-contrast < 4.5) {');
+      lines.push('          /* Keep the text color if contrast is sufficient */');
+      lines.push('          color: @ALT_MAIN !important;');
+      lines.push('        }');
+      lines.push('        filter: brightness(1.15);');
+      lines.push('      }');
+      lines.push('    }');
     });
   }
 
@@ -813,29 +876,37 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
       const cls = link.className.trim();
       if (!cls || containerRe.test(cls)) return;
       // anchor with class, and anchor inside element with class
-      lines.push(`    a.${cls}, .${cls} a {`);
-      lines.push(`      color: @accent;`);
-      lines.push(`      text-decoration-color: @bi-accent1;`);
-      lines.push(`      text-decoration-thickness: 1.5px;`);
-      lines.push(`      text-underline-offset: 2px;`);
-      lines.push(`    }`);
-      lines.push(`    a.${cls}:hover, .${cls} a:hover {`);
-      lines.push(`      /* Fallback: Brightened accent color for guaranteed visibility */`);
-      lines.push(`      color: @accent;`);
-      lines.push(`      filter: brightness(1.3) saturate(1.1);`);
-      lines.push(`      /* Modern browsers: Gradient text effect with proper support detection */`);
-      lines.push(`      @supports (background-clip: text) or (-webkit-background-clip: text) {`);
-      lines.push(`        filter: none;`);
-      lines.push(`        background: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);`);
-      lines.push(`        -webkit-background-clip: text;`);
-      lines.push(`        background-clip: text;`);
-      lines.push(`        -webkit-text-fill-color: transparent;`);
-      lines.push(`        color: transparent;`);
-      lines.push(`      }`);
-      lines.push(`    }`);
-      lines.push(`    a.${cls}:active, .${cls} a:active, a.${cls}.active, .${cls} a.active {`);
-      lines.push(`      color: @co-accent1;`);
-      lines.push(`    }`);
+      lines.push('    a.' + cls + ', .' + cls + ' a {');
+      lines.push('      color: @accent;');
+      lines.push('      text-decoration-color: @bi-accent1;');
+      lines.push('      text-decoration-thickness: 1.5px;');
+      lines.push('      text-underline-offset: 2px;');
+      lines.push('    }');
+      lines.push('    a.' + cls + ':hover, .' + cls + ' a:hover {');
+      lines.push('      /* Contrast-aware text color adjustment */');
+      lines.push('      & when (@link-contrast < 4.5) {');
+      lines.push('        /* Fallback to a high contrast color (white) when contrast is insufficient */');
+      lines.push('        color: @base;');
+      lines.push('      }');
+      lines.push('      & when not (@link-contrast < 4.5) {');
+      lines.push('        /* Keep the accent color if contrast is sufficient */');
+      lines.push('        color: @accent;');
+      lines.push('      }');
+      lines.push('      /* Fallback: Brightened accent color for guaranteed visibility */');
+      lines.push('      filter: brightness(1.3) saturate(1.1);');
+      lines.push('      /* Modern browsers: Gradient text effect with proper support detection */');
+      lines.push('      @supports (background-clip: text) or (-webkit-background-clip: text) {');
+      lines.push('        filter: none;');
+      lines.push('        background: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);');
+      lines.push('        -webkit-background-clip: text;');
+      lines.push('        background-clip: text;');
+      lines.push('        -webkit-text-fill-color: transparent;');
+      lines.push('        color: transparent;');
+      lines.push('      }');
+      lines.push('    }');
+      lines.push('    a.' + cls + ':active, .' + cls + ' a:active, a.' + cls + '.active, .' + cls + ' a.active {');
+      lines.push('      color: @co-accent1;');
+      lines.push('    }');
     });
   }
 
@@ -844,9 +915,9 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
     lines.push('');
     lines.push('    /* Background classes */');
     grouped.backgrounds.slice(0, 15).forEach(bg => {
-      lines.push(`    .${bg.className} {`);
-      lines.push(`      background: @surface0 !important;`);
-      lines.push(`    }`);
+      lines.push('    .' + bg.className + ' {');
+      lines.push('      background: @surface0 !important;');
+      lines.push('    }');
     });
   }
 
@@ -855,9 +926,9 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
     lines.push('');
     lines.push('    /* Text classes */');
     grouped.text.slice(0, 15).forEach(txt => {
-      lines.push(`    .${txt.className} {`);
-      lines.push(`      color: @text !important;`);
-      lines.push(`    }`);
+      lines.push('    .' + txt.className + ' {');
+      lines.push('      color: @text !important;');
+      lines.push('    }');
     });
   }
 

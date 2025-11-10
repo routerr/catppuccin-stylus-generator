@@ -12,11 +12,11 @@ export interface AccentSet {
 
 export type PrecomputedAccents = Record<CatppuccinFlavor, Record<AccentColor, AccentSet>>;
 
-const ACCENT_NAMES: AccentColor[] = [
+export const ACCENT_NAMES: AccentColor[] = [
   'rosewater','flamingo','pink','mauve','red','maroon','peach','yellow','green','teal','sky','sapphire','blue','lavender'
 ];
 
-function hexToRgb(hex: string): RGB {
+export function hexToRgb(hex: string): RGB {
   const h = hex.replace('#', '');
   const bigint = parseInt(h, 16);
   return {
@@ -30,7 +30,6 @@ function rgbToHex({ r, g, b }: RGB): string {
   const toHex = (v: number) => v.toString(16).padStart(2, '0');
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
-
 function rgbDistance2(a: RGB, b: RGB): number {
   const dr = a.r - b.r;
   const dg = a.g - b.g;
@@ -72,7 +71,7 @@ function hslToRgb(h: number, s: number, l: number): RGB {
   return { r: Math.round((r1 + m) * 255), g: Math.round((g1 + m) * 255), b: Math.round((b1 + m) * 255) };
 }
 
-function nearestAccentByRGB(target: RGB, palette: Record<CatppuccinColor, { hex: string }>, exclude?: AccentColor[]): AccentColor {
+export function nearestAccentByRGB(target: RGB, palette: Record<CatppuccinColor, { hex: string }>, exclude?: AccentColor[]): AccentColor {
   let best: { name: AccentColor; d2: number } | null = null;
   for (const name of ACCENT_NAMES) {
     if (exclude && exclude.includes(name)) continue;
@@ -84,7 +83,7 @@ function nearestAccentByRGB(target: RGB, palette: Record<CatppuccinColor, { hex:
   return (best?.name || 'mauve') as AccentColor;
 }
 
-function computeAccentSetFor(palette: Record<CatppuccinColor, { hex: string }>, main: AccentColor): AccentSet {
+export function computeAccentSetFor(palette: Record<CatppuccinColor, { hex: string }>, main: AccentColor): AccentSet {
   const mainHex = palette[main]?.hex;
   const { h, s, l } = hexToHsl(mainHex);
   // Pentagonal scheme offsets (nearest: ±72°, farther: ±144°)
@@ -107,15 +106,15 @@ function computeAccentSetFor(palette: Record<CatppuccinColor, { hex: string }>, 
 }
 
 export const PRECOMPUTED_ACCENTS: PrecomputedAccents = (() => {
-  const result: Partial<PrecomputedAccents> = {};
-  for (const [flavor, palette] of Object.entries(CATPPUCCIN_PALETTES) as [CatppuccinFlavor, any][]) {
-    const perAccent: Record<AccentColor, AccentSet> = {} as any;
+  const allAccents: Partial<PrecomputedAccents> = {};
+  for (const flavor of Object.keys(CATPPUCCIN_PALETTES) as CatppuccinFlavor[]) {
+    allAccents[flavor] = {} as Record<AccentColor, AccentSet>;
+    const palette = CATPPUCCIN_PALETTES[flavor];
     for (const accent of ACCENT_NAMES) {
-      perAccent[accent] = computeAccentSetFor(palette, accent);
+      allAccents[flavor]![accent] = computeAccentSetFor(palette, accent);
     }
-    result[flavor] = perAccent as any;
   }
-  return result as PrecomputedAccents;
+  return allAccents as PrecomputedAccents;
 })();
 
 /**
@@ -123,6 +122,7 @@ export const PRECOMPUTED_ACCENTS: PrecomputedAccents = (() => {
  * including main-accents, bi-accents, and co-accents with their usage rules.
  */
 export function generateAccentSystemGuide(flavor: CatppuccinFlavor = 'mocha'): string {
+  const palette = CATPPUCCIN_PALETTES[flavor];
   const examples = [
     { main: 'blue', desc: 'Primary interactive elements (buttons, CTAs)' },
     { main: 'sapphire', desc: 'Links and navigation items' },
@@ -180,7 +180,7 @@ ACCENT SCHEME REFERENCE TABLE (${flavor} flavor):
 
   // Generate table for all accents
   for (const mainAccent of ACCENT_NAMES) {
-    const set = PRECOMPUTED_ACCENTS[flavor][mainAccent];
+    const set = computeAccentSetFor(palette, mainAccent);
     guide += `${mainAccent.padEnd(12)} → bi: [${set.biAccent1}, ${set.biAccent2}] | co: [${set.coAccent1}, ${set.coAccent2}]\n`;
   }
 
@@ -220,7 +220,7 @@ USAGE RULES:
 PRACTICAL MAPPING STRATEGY:
 
 ${examples.map((ex, i) => {
-  const set = PRECOMPUTED_ACCENTS[flavor][ex.main as AccentColor];
+  const set = computeAccentSetFor(palette, ex.main as AccentColor);
   return `${i + 1}. ${ex.desc}
    → main: ${ex.main}
    → gradients: ${ex.main} + ${set.biAccent1} OR ${set.biAccent2}

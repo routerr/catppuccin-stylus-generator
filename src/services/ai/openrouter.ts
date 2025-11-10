@@ -436,11 +436,11 @@ function createColorAnalysisPrompt(crawlerResult: CrawlerResult & { cssAnalysis?
     const grouped = crawlerResult.cssAnalysis.grouped;
     cssClassInfo = `\n\nCSS CLASS ANALYSIS (use this for precise class-specific mappings):
 Button classes (${grouped.buttons.length}): ${grouped.buttons.slice(0, 10).map((c: any) => c.className).join(', ')}
-Link classes (${grouped.links.length}): ${grouped.links.slice(0, 10).map((c: any) => c.className).join(', ')}
+Link classes (${grouped.links.length}): ${grouped.links.slice(0, 0).map((c: any) => c.className).join(', ')}
 Background classes (${grouped.backgrounds.length}): ${grouped.backgrounds.slice(0, 10).map((c: any) => c.className).join(', ')}
 Text classes (${grouped.text.length}): ${grouped.text.slice(0, 10).map((c: any) => c.className).join(', ')}
 Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((c: any) => c.className).join(', ')}
-
+ 
 IMPORTANT: Generate mappings that include these specific class names for more targeted styling.`;
   }
 
@@ -534,13 +534,15 @@ HOVER STATE RULES FOR TEXT & LINKS (DIFFERENT FROM BUTTONS):
 Text elements (links, text buttons, hoverable text):
 - Hover background: Gradient at 45deg or 225deg angle (e.g., linear-gradient(45deg, blue, sapphire))
 - Hover text: Solid color (text or base - always opaque)
+- Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
 - Example: a:hover { background: linear-gradient(45deg, blue, sapphire); color: text; }
 - Different angles: 45deg, 225deg, or 315deg for visual variety
 
 Button elements (solid buttons, CTAs):
 - Hover background: Gradient at 135deg or 225deg angle (different angles from text!)
+- Hover text: Solid color (text or base - always opaque)
+- Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
 - Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); }
-- Button text: Solid color (base or text - always opaque)
 - Different angles: 135deg or 225deg
 
 CRITICAL RULES:
