@@ -490,35 +490,45 @@ ${accentGuide}
 ACCENT COLOR MAPPING STRATEGY:
 Map different original colors to different Catppuccin accents based on their semantic meaning.
 
-MAIN-COLORS (The three analogous colors):
-For any chosen main-accent, the system provides THREE main-colors to distribute across elements:
-  - main-accent: Primary color (e.g., blue)
-  - bi-accent1: Secondary color (e.g., sapphire, ±72° from blue)
-  - bi-accent2: Tertiary color (e.g., lavender, ±72° from blue)
+COLOR DISTRIBUTION STRATEGY:
+CRITICAL: Use main-accent for MOST elements (70-80%), bi-accents for VARIETY (20-30%)
 
-ELEMENT ASSIGNMENT EXAMPLES:
-If main-accent is Blue → main-colors are [blue, sapphire, lavender]:
-  - Primary buttons/CTAs → blue (gradients with sapphire/lavender)
-  - Secondary buttons/badges → sapphire (gradients with sky/blue)
-  - Tertiary elements/tags → lavender (gradients with mauve/pink)
+Main-accent system provides THREE analogous colors:
+  - main-accent: PRIMARY color - use for MOST colored elements (e.g., blue)
+  - bi-accent1: ACCENT color - use for SOME elements for variety (e.g., sapphire, ±72° from blue)
+  - bi-accent2: ACCENT color - use for SOME elements for variety (e.g., lavender, ±72° from blue)
 
-If main-accent is Green → main-colors are [green, teal, yellow]:
-  - Success states → green (gradients with teal/yellow)
-  - Info badges → teal (gradients with sky/sapphire)
-  - Highlights → yellow (gradients with peach/maroon)
+ELEMENT COLOR ASSIGNMENT (70-30 Rule):
 
-SEMANTIC STATES:
-Success States → green (with teal, yellow as related elements)
-Warning States → yellow (with peach, maroon as related elements)
-Error States → red (with maroon, pink as related elements)
-Info States → blue (with sapphire, lavender as related elements)
+CRITICAL - MOST COMMON ELEMENTS (ALWAYS use main-accent):
+  - ALL <a> tags and text links → ALWAYS main-accent (these are the most frequent!)
+  - ALL button text colors → ALWAYS main-accent
+  - Link hover states → main-accent (with gradient background)
 
-VARIETY IS KEY: Distribute the three main-colors across different UI elements:
-- Primary action → blue (gradients with sapphire/lavender)
-- Navigation/links → sapphire (blue's bi-accent1, gradients with sky/blue)
-- Headings/emphasis → lavender (blue's bi-accent2, gradients with mauve/pink)
-- Badges/tags → Can use any of the bi-accents as their main-color
-This creates visual hierarchy while maintaining color harmony!
+MAJORITY of other elements (70-80%) → main-accent:
+  - Primary buttons, CTAs, main interactive elements → main-accent
+  - Navigation links, menu items → main-accent
+  - Primary headings, emphasis text → main-accent
+  - Most accent borders and highlights → main-accent
+  - Active/selected states → main-accent
+
+VARIETY elements (20-30%) → bi-accents (randomly distributed):
+  - SOME secondary buttons/badges → bi-accent1 or bi-accent2 (random choice)
+  - SOME tags, chips, labels → bi-accent1 or bi-accent2 (random choice)
+  - SOME icons or decorative elements → bi-accent1 or bi-accent2 (random choice)
+  - OCCASIONAL navigation items → bi-accent1 or bi-accent2 (for visual interest)
+
+EXAMPLE with Blue as main-accent:
+  - 7-8 out of 10 colored elements → blue
+  - 2-3 out of 10 colored elements → sapphire or lavender (randomly chosen)
+
+SEMANTIC STATES (use appropriate color family, main-accent preferred):
+  - Success → green (main), teal/yellow (accents for variety)
+  - Warning → yellow (main), peach/maroon (accents for variety)
+  - Error → red (main), maroon/pink (accents for variety)
+  - Info → blue (main), sapphire/lavender (accents for variety)
+
+CRITICAL: The main-accent should dominate the color scheme. Bi-accents are for variety and visual interest, NOT as equal alternatives!
 
 TEXT CLARITY RULES:
 CRITICAL: Text must always be fully opaque.
@@ -526,27 +536,44 @@ CRITICAL: Text must always be fully opaque.
 - Do not use any alpha for text colors
 - Text should always be readable with solid colors from the Catppuccin palette
 
-HOVER STATE RULES FOR TEXT & LINKS (DIFFERENT FROM BUTTONS):
-Text elements (links, text buttons, hoverable text):
-- Hover background: Gradient at 45deg or 225deg angle (e.g., linear-gradient(45deg, blue, sapphire))
-- Hover text: Solid color (text or base - always opaque)
-- Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
-- Example: a:hover { background: linear-gradient(45deg, blue, sapphire); color: text; }
-- Different angles: 45deg, 225deg, or 315deg for visual variety
+DEFAULT STATE STYLING RULES:
+CRITICAL: Apply Catppuccin colors to text while preserving or mapping backgrounds/borders:
 
-Button elements (solid buttons, CTAs):
-- Hover background: Gradient at 135deg or 225deg angle (different angles from text!)
-- Hover text: Solid color (text or base - always opaque)
-- Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
-- Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); }
-- Different angles: 135deg or 225deg
+TEXT COLORS (Default State):
+- ALL <a> tags and text links → Use Catppuccin main-accent color
+- Button text → Use Catppuccin main-accent color
+- Navigation links → Use Catppuccin main-accent color
+- Headings, emphasized text → Use Catppuccin accent colors
+- Body text → Use Catppuccin text colors (text, subtext0, subtext1)
 
-CRITICAL RULES:
-- Text is ALWAYS solid and opaque
-- Gradients go on BACKGROUNDS only (not text)
-- Links use 45deg/225deg/315deg gradients
-- Buttons use 135deg/225deg gradients
-- Different angles create visual distinction between text and buttons!
+BACKGROUNDS & BORDERS (Default State):
+- Keep original background colors OR map to Catppuccin base colors (base, surface0, surface1, surface2)
+- If original background is light → map to Catppuccin light base colors
+- If original background is dark → map to Catppuccin dark base colors
+- Match parent/universal background when appropriate
+- Preserve border styles (only change border colors if they were accent colors originally)
+
+HOVER STATE STYLING RULES:
+Apply Catppuccin gradient effects on hover:
+
+TEXT GRADIENTS (for links, text buttons, borderless elements):
+- Apply gradient to TEXT using background-clip: text
+- Gradient angles: 45deg, 225deg, or 315deg
+- Use main-color + bi-accent gradient
+- Example: a:hover { background: linear-gradient(45deg, blue, sapphire); -webkit-background-clip: text; color: transparent; }
+
+BACKGROUND GRADIENTS (for solid buttons, cards, panels):
+- Apply gradient to BACKGROUND
+- Gradient angles: 135deg or 225deg
+- Use main-color + bi-accent gradient
+- CRITICAL: When background changes, adjust text color for readability (use @text, @base, or high contrast color)
+- Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); color: @text; }
+
+READABILITY RULES:
+- ALWAYS ensure minimum contrast ratio of 4.5:1 for normal text
+- When applying background gradient on hover, change text color to ensure readability
+- Test contrast: light gradient → use @text or @crust, dark gradient → use @base or @text
+- Text must ALWAYS be fully opaque (no transparency on text colors)
 
 REQUIRED JSON OUTPUT (no thinking tags, no markdown, just this structure):
 {

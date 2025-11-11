@@ -97,12 +97,28 @@ Element with Lavender (Blue's bi-accent2):
 
 **Layout Preservation**: The AI is instructed to ONLY change colors - no layout, sizing, spacing, borders, or positioning changes. The theme should look identical to the original except for the color palette.
 
+**Color Distribution Strategy (70-30 Rule)**:
+- **70-80% of elements** use the main-accent color
+- **20-30% of elements** use bi-accents for variety and visual interest
+
 **Accent Application Strategy**:
-1. Identify primary interactive elements → assign main-accent (e.g., Blue)
-2. Identify secondary elements → assign bi-accent1 (e.g., Sapphire)
-3. Identify tertiary elements → assign bi-accent2 (e.g., Lavender)
-4. Create gradients: each main-color uses its own bi-accents (8-12% opacity)
-5. Apply cascading: bi-accents get their own bi-accents when used as main-colors
+1. **MAJORITY (70-80%)** → main-accent (e.g., Blue)
+   - Primary buttons, CTAs, main interactive elements
+   - Navigation links, menu items
+   - Primary headings, emphasis text
+   - Most accent borders and highlights
+   - Active/selected states
+
+2. **VARIETY (20-30%)** → bi-accents (e.g., Sapphire, Lavender)
+   - SOME secondary buttons/badges → bi-accent1 or bi-accent2 (randomly)
+   - SOME tags, chips, labels → bi-accent1 or bi-accent2 (randomly)
+   - SOME icons or decorative elements → bi-accent1 or bi-accent2 (randomly)
+   - OCCASIONAL navigation items → for visual interest
+
+3. Create gradients: each main-color uses its own bi-accents (8-12% opacity)
+4. Apply cascading: bi-accents get their own bi-accents when used as main-colors
+
+**CRITICAL**: Main-accent dominates the color scheme. Bi-accents provide variety, not equal distribution.
 
 **Output format**:
 - **UserStyle (.user.less)** - Single comprehensive theme file supporting all 4 Catppuccin flavors with automatic light/dark mode detection and customizable accent colors

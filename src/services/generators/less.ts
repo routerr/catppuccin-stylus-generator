@@ -175,12 +175,8 @@ export function generateLessTheme(
  * Catppuccin Theme with Bi-Accent Gradients - Smooth & Elegant
  */
 a, .link {
+  /* Default state: Apply Catppuccin text color */
   color: @accent;
-  text-decoration-color: @bi-accent1;
-  text-decoration: underline;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 2px;
-  
   position: relative;
 
   &:hover,
@@ -215,18 +211,15 @@ a, .link {
 
   &:active,
   &.active {
-    color: @alt1-main;
+    /* Active state: slightly brighter accent */
+    color: @accent;
+    filter: brightness(1.1);
   }
 }
 
 .text-link {
+  /* Default state: Apply Catppuccin text color */
   color: @accent;
-  text-decoration-color: @bi-accent1;
-  text-decoration: underline;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 2px;
-  
-  position: relative;
 
   &:hover,
   &:focus {
@@ -260,119 +253,102 @@ a, .link {
 
   &:active,
   &.active {
-    color: @alt1-main;
+    /* Active state: slightly brighter */
+    color: @accent;
+    filter: brightness(1.1);
   }
 }
 
+/* Button styles - Catppuccin text colors with preserved or mapped backgrounds */
 .btn-primary {
-  background: @surface0;
+  /* Default: Catppuccin text color, preserve/map background */
   color: @accent;
 
   &:hover {
-    // Calculate contrast ratio for button hover state
-    @textHex: @accent;
-    @bgHex: @surface0;
-    
-    // Check if contrast is below WCAG AA (4.5:1) for normal text
-    & when (contrast(@textHex, @bgHex) < 4.5) {
-      // Fallback to a high contrast color (white) for better visibility
-      color: @base; // White or light color for better contrast on dark backgrounds
-    }
-    & when not (contrast(@textHex, @bgHex) < 4.5) {
-      // Keep the accent color if contrast is sufficient
-      color: @accent;
-    }
-    
-    /* Solid background with gradient background */
-    background: @surface0;
+    /* Apply gradient background on hover ONLY */
     background-image: linear-gradient(135deg,
       @accent 0%,
       @bi-accent1 50%,
       @bi-accent2 100%
     );
+    /* CRITICAL: Text must contrast with gradient - use high-contrast color */
+    color: @text;
     filter: brightness(1.1);
   }
 
   &:active {
-    /* Solid background with reversed gradient */
-    background: @surface0;
+    /* Apply reversed gradient on active */
     background-image: linear-gradient(135deg,
       @bi-accent2 0%,
       @accent 50%,
       @bi-accent1 100%
     );
+    /* CRITICAL: Text must contrast with gradient */
+    color: @text;
   }
 }
 
 .btn-secondary {
-  background: @surface0;
+  /* Default: Catppuccin text color */
   color: @accent;
 
   &:hover {
-    background: @surface0;
     background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%);
+    /* CRITICAL: Text must contrast with gradient */
+    color: @text;
   }
 }
 
 .btn-outline {
-  background: @surface0;
-  color: @text;
+  /* Default: Catppuccin text color, preserve border */
+  color: @accent;
 
   &:hover {
-    background: @surface0;
+    /* Keep original background on hover for outline buttons */
   }
 }
 
 .btn-subtle {
-  background: @surface0;
-  color: @text;
+  /* Default: Catppuccin text color, preserve background */
+  color: @accent;
 
   &:hover {
-    background: @surface0;
+    /* Treat as text link - apply subtle gradient */
+    background-image: linear-gradient(45deg, @accent 0%, @bi-accent1 100%);
+    /* CRITICAL: Text must contrast with gradient */
+    color: @text;
   }
 }
 
 .btn-destructive {
-  background: @surface0;
+  /* Default: Catppuccin red text color */
   color: @red;
 
   &:hover {
-    // Calculate contrast ratio for destructive button hover state
-    @textHex: @red;
-    @bgHex: @surface0;
-    
-    // Check if contrast is below WCAG AA (4.5:1) for normal text
-    & when (contrast(@textHex, @bgHex) < 4.5) {
-      // Fallback to a high contrast color (white) for better visibility
-      color: @base; // White or light color for better contrast on dark backgrounds
-    }
-    & when not (contrast(@textHex, @bgHex) < 4.5) {
-      // Keep the red color if contrast is sufficient
-      color: @red;
-    }
-    
-    background: @surface0;
+    /* Apply gradient background on hover ONLY */
     background-image: linear-gradient(135deg,
       @red 0%,
       @maroon 50%,
       @peach 100%
     );
-
+    /* CRITICAL: Text must contrast with gradient */
+    color: @text;
   }
 }
 
 .btn-success {
-  background: @surface0;
+  /* Default: Catppuccin green text color */
   color: @green;
 
   &:hover {
-    background: @surface0;
+    /* Apply gradient background on hover ONLY */
     background-image: linear-gradient(135deg,
       @green 0%,
       @teal 50%,
       @sky 100%
     );
-
+    /* CRITICAL: Text must contrast with gradient */
+    color: @text;
   }
 }
 */`;

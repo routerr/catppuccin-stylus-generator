@@ -288,23 +288,36 @@ function createColorAnalysisPrompt(crawler: CrawlerResult & { detectedMode?: 'da
   TASK: Analyze the website's color usage and map to Catppuccin colors.
 
   KEY RULES:
-  1. Main-colors = main-accent + bi-accent1 + bi-accent2 (three analogous colors)
-  2. Distribute main-colors across elements: primary buttons (main-accent), secondary buttons (bi-accent1), tertiary elements (bi-accent2)
-  3. Each main-color uses its OWN bi-accents for gradients
-  4. Create diverse mappings - distribute the three main-colors across UI
-  5. Preserve semantic meaning (green=success, red=error, etc.)
+  1. CRITICAL - MOST COMMON ELEMENTS: ALL <a> tags, text links, and button text → ALWAYS main-accent (these are most frequent!)
+  2. COLOR DISTRIBUTION (70-30 Rule): Use main-accent for 70-80% of elements, bi-accents for 20-30% variety
+  3. Main-colors = main-accent (PRIMARY) + bi-accent1 (variety) + bi-accent2 (variety)
+  4. MAJORITY of colored elements → main-accent (buttons, links, headings, borders, active states)
+  5. SOME elements for variety → bi-accent1 or bi-accent2 (randomly: badges, tags, icons)
+  6. Each main-color uses its OWN bi-accents for gradients
+  7. Preserve semantic meaning (green=success, red=error, etc.)
+  8. CRITICAL: Main-accent should DOMINATE. Bi-accents are accents, not equal alternatives!
 
-  HOVER STATE RULES FOR TEXT & LINKS (DIFFERENT FROM BUTTONS):
-  Text elements (links, text buttons, hoverable text):
-  - Hover background: Gradient at 45deg or 225deg angle (e.g., linear-gradient(45deg, blue, sapphire))
-  - Hover text: Solid color (text or base - always opaque)
-  - Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
-  - Example: a:hover { background: linear-gradient(45deg, blue, sapphire); color: text; }
-  - Different angles: 45deg, 225deg, or 315deg for visual variety
+  DEFAULT STATE STYLING:
+  TEXT COLORS: Apply Catppuccin colors
+  - Links, button text, navigation → main-accent color
+  - Headings, emphasized text → accent colors
+  - Body text → Catppuccin text colors
 
-  Button elements (solid buttons, CTAs):
-  - Hover background: Gradient at 135deg or 225deg angle (different angles from text!)
-  - Hover text: Solid color (text or base - always opaque)
+  BACKGROUNDS & BORDERS: Preserve or map to Catppuccin base colors
+  - Keep original OR map to base, surface0, surface1, surface2
+  - Match parent/universal background when appropriate
+
+  HOVER STATE STYLING:
+  TEXT GRADIENTS (links, text buttons):
+  - Apply gradient to TEXT using background-clip: text
+  - Angles: 45deg, 225deg, or 315deg
+  - Example: a:hover { background: linear-gradient(45deg, blue, sapphire); -webkit-background-clip: text; }
+
+  BACKGROUND GRADIENTS (solid buttons, cards):
+  - Apply gradient to BACKGROUND
+  - Angles: 135deg or 225deg
+  - CRITICAL: Adjust text color for readability when background changes
+  - Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); color: @text; }
   - Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
   - Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); }
   - Different angles: 135deg or 225deg

@@ -90,9 +90,9 @@ export function generateCssTheme(
 
   css += `/* Example Usage */\n`;
   css += `/*\n/* Catppuccin Theme with Bi-Accent Gradients - Smooth & Elegant */\nbody {\n  background-color: var(--ctp-base);\n  color: var(--ctp-text);\n}\n\n`;
-  css += `/* Links with bi-accent gradient on hover */\n`;
-  css += `a, .link {\n  color: var(--ctp-accent);\n  text-decoration-color: var(--ctp-accent);\n  text-decoration: underline;\n}\n\n`;
-  
+  css += `/* Links with Catppuccin accent colors */\n`;
+  css += `a, .link {\n  /* Default: Catppuccin text color */\n  color: var(--ctp-accent);\n  position: relative;\n}\n\n`;
+
   // Calculate contrast for hover state
   const accentHex = palette[defaultAccent].hex;
   const bgHex = palette[pre.biAccent1].hex;
@@ -109,8 +109,8 @@ export function generateCssTheme(
   css += `  background: linear-gradient(90deg, var(--ctp-accent) 0%, var(--ctp-bi-accent1) 50%, var(--ctp-bi-accent2) 100%);\n`;
   css += `}\n\n`;
 
-  css += `/* BUTTON STYLES - Bi-accent gradient backgrounds */\n`;
-  css += `.btn-primary {\n  background-color: var(--ctp-surface0);\n  color: var(--ctp-blue);\n}\n\n`;
+  css += `/* BUTTON STYLES - Catppuccin text colors with gradient backgrounds on hover */\n`;
+  css += `.btn-primary {\n  /* Default: Catppuccin text color */\n  color: var(--ctp-accent);\n}\n\n`;
 
   // Apply contrast adjustments for button hover state
   const btnTextHex = palette.blue.hex;
@@ -126,8 +126,8 @@ export function generateCssTheme(
   css += `  background: linear-gradient(135deg, var(--ctp-accent) 0%, var(--ctp-bi-accent1) 50%, var(--ctp-bi-accent2) 100%);\n`;
   css += `}\n\n`;
 
-  css += `.btn-primary:active {\n  background: var(--ctp-blue);\n}\n\n`;
-  css += `.btn-destructive {\n  background-color: var(--ctp-surface0);\n  color: var(--ctp-red);\n}\n\n`;
+  css += `.btn-primary:active {\n  /* Active state: slightly brighter */\n  filter: brightness(1.1);\n}\n\n`;
+  css += `.btn-destructive {\n  /* Default: Catppuccin red text color */\n  color: var(--ctp-red);\n}\n\n`;
 
   // Apply contrast adjustments for destructive button hover state
   const dangerTextHex = palette.red.hex;

@@ -226,27 +226,25 @@ export function generateStylusTheme(
     const btnBgHex = palette.surface0.hex;
     const btnContrast = contrastRatio(btnTextHex, btnBgHex);
     
-    stylus += `.btn-primary
-  background $surface_0
+    stylus += `// Button styles - Catppuccin text colors with preserved or mapped backgrounds
+.btn-primary
+  /* Default: Catppuccin text color, preserve/map background */
   color ${defaultAccent}
-  border-color fade(${defaultAccent}, 0.25)
   &:hover
-    // Apply contrast-aware text color
-    if (${btnContrast} < 4.5)
-      color $base  // White for better contrast
-    else
-      color ${defaultAccent}
-      
-    background $surface_0
+    /* Apply gradient background on hover ONLY */
     background-image linear-gradient(135deg, ${defaultAccent} 0%, $bi-accent1 50%, $bi-accent2 100%)
+    /* CRITICAL: Text must contrast with gradient - use high-contrast color */
+    color $text
     border-color $bi-accent1
     box-shadow 0 4px 12px fade(${defaultAccent}, 0.25), 0 0 0 1px fade($bi-accent1, 0.35)
   &:active
-    background $surface_0
+    /* Apply reversed gradient on active */
     background-image linear-gradient(135deg, $bi-accent2 0%, ${defaultAccent} 50%, $bi-accent1 100%)
+    /* CRITICAL: Text must contrast with gradient */
+    color $text
     border-color ${defaultAccent}
   &:focus-visible
-    // Co-accent focus ring for harmonious accessibility
+    // Bi-accent focus ring for harmonious accessibility
     outline 2px solid $bi-accent1
     outline-offset 2px
     box-shadow 0 0 0 4px fade($bi-accent2, 0.25)
@@ -260,18 +258,13 @@ export function generateStylusTheme(
     const secondaryBtnContrast = contrastRatio(secondaryBtnTextHex, secondaryBtnBgHex);
     
     stylus += `.btn-secondary
-  background $surface_0
+  /* Default: Catppuccin text color */
   color ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`}
-  border-color fade(${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`}, 0.25)
   &:hover
-    // Apply contrast-aware text color
-    if (${secondaryBtnContrast} < 4.5)
-      color $base  // White for better contrast
-    else
-      color ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`}
-      
-    background $surface_0
-    background-image linear-gradient(135deg, ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`} 0%, ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`} ${hoverMain}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`} ${hoverMain}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'bi1' ? `${co1Set.biAccent2}` : `${co2Set.biAccent2}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'bi1' ? `${co1Set.biAccent2}` : `${co2Set.biAccent2}`} 100%)
+    /* Apply gradient background on hover ONLY */
+    background-image linear-gradient(135deg, ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`} 0%, ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`} ${hoverMain}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`} ${hoverMain}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent2}` : `${bi2Set.biAccent2}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent2}` : `${bi2Set.biAccent2}`} 100%)
+    /* CRITICAL: Text must contrast with gradient */
+    color $text
     border-color ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`}
 
 `;
@@ -282,17 +275,12 @@ export function generateStylusTheme(
     const destructiveBtnContrast = contrastRatio(destructiveBtnTextHex, destructiveBtnBgHex);
     
     stylus += `.btn-destructive
-  background $surface_0
+  /* Default: Catppuccin red text color */
   color $red
-  border-color fade($red, 0.25)
   &:hover
-    // Apply contrast-aware text color
-    if (${destructiveBtnContrast} < 4.5)
-      color $base  // White for better contrast
-    else
-      color $red
-      
-    background $surface_0
+    /* Apply gradient background on hover ONLY */
+    /* CRITICAL: Text must contrast with gradient */
+    color $text
     background-image linear-gradient(135deg, $red 0%, $maroon 50%, $peach 100%)
 
 `;

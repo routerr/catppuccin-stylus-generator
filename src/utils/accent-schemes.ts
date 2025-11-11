@@ -181,30 +181,45 @@ Main-Accent   → Bi-Accents (±72°)
 
 USAGE RULES:
 
-1. MAIN-COLORS ASSIGNMENT:
-   - Assign main-accent to primary UI elements (e.g., primary buttons, main CTAs)
-   - Assign bi-accent1 to secondary UI elements (e.g., secondary buttons, badges)
-   - Assign bi-accent2 to tertiary UI elements (e.g., tags, chips, highlights)
+1. COLOR DISTRIBUTION (70-30 Rule):
+   - 70-80% of elements → main-accent (primary color)
+   - 20-30% of elements → bi-accents (variety and visual interest)
 
-2. GRADIENT CREATION:
+2. MAIN-COLORS ASSIGNMENT:
+   - MAJORITY of colored elements → main-accent
+     * Primary buttons, CTAs, main interactive elements
+     * Navigation links, menu items
+     * Primary headings, emphasis text
+     * Most accent borders and highlights
+     * Active/selected states
+
+   - SOME elements for variety → bi-accent1 or bi-accent2 (randomly)
+     * Some secondary buttons/badges
+     * Some tags, chips, labels
+     * Some icons or decorative elements
+     * Occasional navigation items for visual interest
+
+3. GRADIENT CREATION:
    - Each main-color uses its OWN bi-accents for gradients
    - Format: linear-gradient(main-color, gradient-bi-accent)
    - Bi-accents at 8-12% opacity for subtle effect
    - Common angles: 45deg (text/links), 135deg (buttons), 225deg (panels)
 
-3. VISUAL HARMONY EXAMPLES:
+4. VISUAL HARMONY EXAMPLES (Gradients on hover):
 
-   Primary Button (Blue main-color):
-     background: linear-gradient(135deg, blue, sapphire 10%)
-     color: text
+   Most Buttons/Links (Blue main-color) - 70-80% of elements:
+     default: color: blue; (solid color)
+     :hover: background: linear-gradient(135deg, blue, sapphire 10%)
 
-   Secondary Badge (Sapphire main-color, from Blue's bi-accent1):
-     background: linear-gradient(45deg, sapphire, sky 10%)
-     color: text
+   Some Badges (Sapphire - Blue's bi-accent1) - for variety:
+     default: color: sapphire; (solid color)
+     :hover: background: linear-gradient(45deg, sapphire, sky 10%)
 
-   Tertiary Tag (Lavender main-color, from Blue's bi-accent2):
-     background: linear-gradient(45deg, lavender, mauve 10%)
-     color: text
+   Some Tags (Lavender - Blue's bi-accent2) - for variety:
+     default: color: lavender; (solid color)
+     :hover: background: linear-gradient(45deg, lavender, mauve 10%)
+
+   CRITICAL: Default state uses solid colors. Gradients on hover/active only!
 
 ═══════════════════════════════════════════════════════════
 

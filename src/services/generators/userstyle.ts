@@ -279,15 +279,12 @@ ${(() => {
       color: @text;
     }
 
-    /* Links - vibrant bi-accent colors for excellent readability */
+    /* Links - Catppuccin accent colors for excellent readability */
     a,
     a.link {
+      /* Default state: Apply Catppuccin text color */
       color: @accent;
-      /* Bi-accent underline for harmonious look */
-      text-decoration-color: @bi-accent1;
-      text-decoration-thickness: 1.5px;
-      text-underline-offset: 2px;
-      
+
       position: relative;
 
       &:hover,
@@ -323,59 +320,43 @@ ${(() => {
       &:active,
       &.active,
       &[aria-current="page"] {
-        color: @alt1-main;
-        filter: brightness(1.05);
+        /* Active state: slightly brighter accent */
+        color: @accent;
+        filter: brightness(1.1);
       }
 
       &:visited {
-        /* Slightly muted bi-accent for visited links */
-        color: fade(@bi-accent1, 85%);
-        text-decoration-color: fade(@bi-accent2, 70%);
+        /* Visited links: slightly muted */
+        color: fade(@accent, 85%);
       }
     }
 
-    /* Buttons - vibrant bi-accent gradients for excellent readability and visual appeal */
+    /* Buttons - Catppuccin text colors with preserved or mapped backgrounds */
+    /* IMPORTANT: Text gets Catppuccin colors, backgrounds stay original or mapped to base colors */
     button,
     input[type="button"],
     input[type="submit"] {
-      background: @surface0;
-      color: @ALT_MAIN;
-
-      position: relative;
-      overflow: hidden;
+      /* Default state: Apply Catppuccin text color, preserve/map background */
+      color: @accent;
 
       &:hover {
-        /* Solid background with gradient background */
-        background: @surface0;
+        /* Apply gradient background on hover ONLY */
         background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%);
         filter: brightness(1.1);
-        
-        /* Contrast-aware text color adjustment */
-        & when (@button-contrast < 4.5) {
-          /* Fallback to a high contrast color (white) when contrast is insufficient */
-          color: @base;
-        }
-        & when not (@button-contrast < 4.5) {
-          /* Keep the text color if contrast is sufficient */
-          color: @ALT_MAIN;
-        }
+
+        /* CRITICAL: Text must contrast with gradient background */
+        /* Use high-contrast text color to avoid matching gradient */
+        color: @text;
       }
 
       &:active {
-        /* Solid background with reversed gradient */
-        background: @surface0;
+        /* Apply reversed gradient on active state */
         background-image: linear-gradient(135deg, @ALT_BI 0%, @ALT_MAIN 100%);
         filter: brightness(1.15);
-        
-        /* Contrast-aware text color adjustment */
-        & when (@button-contrast < 4.5) {
-          /* Fallback to a high contrast color (white) when contrast is insufficient */
-          color: @base;
-        }
-        & when not (@button-contrast < 4.5) {
-          /* Keep the text color if contrast is sufficient */
-          color: @ALT_MAIN;
-        }
+
+        /* CRITICAL: Text must contrast with gradient background */
+        /* Use high-contrast text color to avoid matching gradient */
+        color: @text;
       }
     }
 
@@ -827,23 +808,15 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
     lines.push('    /* Button classes with vibrant bi-accent gradients */');
     grouped.buttons.slice(0, 20).forEach(btn => {
       lines.push('    .' + btn.className + ' {');
-      lines.push('      background: @surface0;');
-      lines.push('      color: @ALT_MAIN;');
-
+      lines.push('      /* Default state: Catppuccin text color */');
+      lines.push('      color: @accent;');
       lines.push('');
       lines.push('      &:hover {');
       lines.push('        /* Solid background with gradient background */');
       lines.push('        background: @surface0 !important;');
       lines.push('        background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%) !important;');
-      lines.push('        /* Contrast-aware text color */');
-      lines.push('        & when (@button-contrast < 4.5) {');
-      lines.push('          /* Fallback to a high contrast color (white) when contrast is insufficient */');
-      lines.push('          color: @base !important;');
-      lines.push('        }');
-      lines.push('        & when not (@button-contrast < 4.5) {');
-      lines.push('          /* Keep the text color if contrast is sufficient */');
-      lines.push('          color: @ALT_MAIN !important;');
-      lines.push('        }');
+      lines.push('        /* CRITICAL: Text must contrast with gradient - use high-contrast color */');
+      lines.push('        color: @text !important;');
       lines.push('        filter: brightness(1.1);');
       lines.push('      }');
       lines.push('');
@@ -851,15 +824,8 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
       lines.push('        /* Solid background with reversed gradient */');
       lines.push('        background: @surface0 !important;');
       lines.push('        background-image: linear-gradient(135deg, @ALT_BI 0%, @ALT_MAIN 100%) !important;');
-      lines.push('        /* Contrast-aware text color */');
-      lines.push('        & when (@button-contrast < 4.5) {');
-      lines.push('          /* Fallback to a high contrast color (white) when contrast is insufficient */');
-      lines.push('          color: @base !important;');
-      lines.push('        }');
-      lines.push('        & when not (@button-contrast < 4.5) {');
-      lines.push('          /* Keep the text color if contrast is sufficient */');
-      lines.push('          color: @ALT_MAIN !important;');
-      lines.push('        }');
+      lines.push('        /* CRITICAL: Text must contrast with gradient - use high-contrast color */');
+      lines.push('        color: @text !important;');
       lines.push('        filter: brightness(1.15);');
       lines.push('      }');
       lines.push('    }');
@@ -876,10 +842,8 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
       if (!cls || containerRe.test(cls)) return;
       // anchor with class, and anchor inside element with class
       lines.push('    a.' + cls + ', .' + cls + ' a {');
+      lines.push('      /* Default state: Catppuccin accent color */');
       lines.push('      color: @accent;');
-      lines.push('      text-decoration-color: @bi-accent1;');
-      lines.push('      text-decoration-thickness: 1.5px;');
-      lines.push('      text-underline-offset: 2px;');
       lines.push('    }');
       lines.push('    a.' + cls + ':hover, .' + cls + ' a:hover {');
       lines.push('      /* Contrast-aware text color adjustment */');
