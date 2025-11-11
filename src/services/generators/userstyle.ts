@@ -99,9 +99,9 @@ export function generateUserStyle(
   // Calculate accent colors for harmonious color scheme
   const palette = CATPPUCCIN_PALETTES[flavor];
   const useAltForButtons = Math.random() < 0.5 ? 'alt1' : 'alt2';
-  const useAltBi = Math.random() < 0.5 ? 'bi1' : 'bi2';
-  const hoverAngle = Math.floor(Math.random() * 180); // 0-179deg
-  const hoverBiPick = Math.random() < 0.5 ? 'bi-accent1' : 'bi-accent2';
+  const useAltBi = 'bi1'; // deterministic: pair main-accent with bi-accent1
+  const hoverAngle = Math.floor(Math.random() * 180); // subtle randomness retained
+  const hoverBiPick = 'bi-accent1'; // deterministic: gradient pairs with bi-accent1
 
   // Flavor-based intensity tuning for subtle gradients and tints
   const intensity = (() => {
@@ -221,8 +221,27 @@ ${cssVarMappings}
     @tint-input-hover: ${intensity.inputHover}%;
 
     /* Contrast-based color adjustments for WCAG compliance */
-    @link-contrast: ${contrastRatio(palette[defaultAccent].hex, palette[PRECOMPUTED_ACCENTS[flavor][defaultAccent].biAccent1].hex)};
-    @button-contrast: ${contrastRatio(palette.blue.hex, palette.surface0.hex)};
+    /* Default/min contrast for links computed across common surfaces */
+    @link-contrast: ${(() => {
+      const surfaces = [palette.base.hex, palette.surface0.hex, palette.surface1.hex, palette.surface2.hex];
+      const acc = palette[defaultAccent].hex;
+      let m = 99;
+      for (const s of surfaces) m = Math.min(m, contrastRatio(acc, s));
+      return m;
+    })()};
+    /* Fallback link color (prefer text over base) */
+    @link-fallback: ${(() => {
+      const surfaces = [palette.base.hex, palette.surface0.hex, palette.surface1.hex, palette.surface2.hex];
+      const t = palette.text.hex; const b = palette.base.hex;
+      const minT = surfaces.reduce((m, s) => Math.min(m, contrastRatio(t, s)), 99);
+      const minB = surfaces.reduce((m, s) => Math.min(m, contrastRatio(b, s)), 99);
+      return minT >= minB ? '@text' : '@base';
+    })()};
+    /* Button contrast (ALT main text against surface0) */
+    @button-contrast: ${(() => {
+      const altMain = useAltForButtons === 'alt1' ? PRECOMPUTED_ACCENTS[flavor][defaultAccent].biAccent1 : PRECOMPUTED_ACCENTS[flavor][defaultAccent].biAccent2;
+      return contrastRatio(palette[altMain].hex, palette.surface0.hex);
+    })()};
     @destructive-button-contrast: ${contrastRatio(palette.red.hex, palette.surface0.hex)};
 
     /* ═══════════════════════════════════════════════════════════
@@ -257,12 +276,23 @@ ${(() => {
         out += `      @alt2-bi2: @${bi2Set.biAccent2};\n`;
         out += `      /* Button accent (uses one of the bi-accent sets) */\n`;
         out += `      @ALT_MAIN: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-main;\n`;
-        out += `      @ALT_BI: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-${useAltBi};\n`;
+        out += `      @ALT_BI: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-bi1;\n`;
 
+        // Recompute per-accent link contrast across common surfaces
         const accentHex = CATPPUCCIN_PALETTES[flavor][name].hex;
-        const biAccent1Hex = CATPPUCCIN_PALETTES[flavor][mainSet.biAccent1].hex;
-        const newLinkContrast = contrastRatio(accentHex, biAccent1Hex);
-        out += `      @link-contrast: ${newLinkContrast};\n`;
+        const surfaces = [
+          CATPPUCCIN_PALETTES[flavor].base.hex,
+          CATPPUCCIN_PALETTES[flavor].surface0.hex,
+          CATPPUCCIN_PALETTES[flavor].surface1.hex,
+          CATPPUCCIN_PALETTES[flavor].surface2.hex,
+        ];
+        const minLink = surfaces.reduce((m, s) => Math.min(m, contrastRatio(accentHex, s)), 99);
+        out += `      @link-contrast: ${minLink};\n`;
+        // Button contrast for chosen ALT main (deterministic bi-accent pairing)
+        const altChoice: AccentColor = (useAltForButtons === 'alt1' ? mainSet.biAccent1 : mainSet.biAccent2) as AccentColor;
+        const altHex = CATPPUCCIN_PALETTES[flavor][altChoice].hex;
+        const btnC = contrastRatio(altHex, CATPPUCCIN_PALETTES[flavor].surface0.hex);
+        out += `      @button-contrast: ${btnC};\n`;
         out += `    }\n`;
       });
       out += '    #derive-accents();\n';
@@ -279,7 +309,7 @@ ${(() => {
       color: @text;
     }
 
-    /* Links - Catppuccin accent colors for excellent readability */
+    /* Links - prefer solid text; enable gradient text only when supported */
     a,
     a.link {
       /* Default state: Apply Catppuccin text color */
@@ -293,19 +323,14 @@ ${(() => {
         text-decoration: none;
         /* Contrast-aware text color adjustment */
         & when (@link-contrast < 4.5) {
-          /* Fallback to a high contrast color (white) when contrast is insufficient */
-          color: @base;
+          color: @link-fallback;
         }
         & when not (@link-contrast < 4.5) {
-          /* Keep the accent color if contrast is sufficient */
           color: @accent;
         }
-        /* Fallback: Brightened accent color for guaranteed visibility */
-        filter: brightness(1.3) saturate(1.1);
 
         /* Modern browsers: Gradient text effect with proper support detection */
         @supports (background-clip: text) or (-webkit-background-clip: text) {
-          filter: none;
           background: linear-gradient(@hover-angle,
             @accent 0%,
             @hover-bi 100%
@@ -320,9 +345,8 @@ ${(() => {
       &:active,
       &.active,
       &[aria-current="page"] {
-        /* Active state: slightly brighter accent */
+        /* Active state: keep accent without filters for predictability */
         color: @accent;
-        filter: brightness(1.1);
       }
 
       &:visited {
@@ -331,32 +355,26 @@ ${(() => {
       }
     }
 
-    /* Buttons - Catppuccin text colors with preserved or mapped backgrounds */
-    /* IMPORTANT: Text gets Catppuccin colors, backgrounds stay original or mapped to base colors */
+    /* Buttons - gradients on backgrounds; solid readable text */
     button,
     input[type="button"],
     input[type="submit"] {
-      /* Default state: Apply Catppuccin text color, preserve/map background */
-      color: @accent;
+      /* Default state: Use ALT main color for emphasis */
+      color: @ALT_MAIN;
 
       &:hover {
         /* Apply gradient background on hover ONLY */
         background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%);
-        filter: brightness(1.1);
-
-        /* CRITICAL: Text must contrast with gradient background */
-        /* Use high-contrast text color to avoid matching gradient */
-        color: @text;
+        /* Prefer ALT_MAIN; fallback to @text if contrast fails */
+        & when (@button-contrast < 4.5) { color: @text; }
+        & when not (@button-contrast < 4.5) { color: @ALT_MAIN; }
       }
 
       &:active {
         /* Apply reversed gradient on active state */
         background-image: linear-gradient(135deg, @ALT_BI 0%, @ALT_MAIN 100%);
-        filter: brightness(1.15);
-
-        /* CRITICAL: Text must contrast with gradient background */
-        /* Use high-contrast text color to avoid matching gradient */
-        color: @text;
+        & when (@button-contrast < 4.5) { color: @text; }
+        & when not (@button-contrast < 4.5) { color: @ALT_MAIN; }
       }
     }
 
@@ -805,28 +823,27 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
   // Button classes
   if (grouped.buttons && grouped.buttons.length > 0) {
     lines.push('');
-    lines.push('    /* Button classes with vibrant bi-accent gradients */');
+    lines.push('    /* Button classes with bi-accent gradients and readable text */');
     grouped.buttons.slice(0, 20).forEach(btn => {
       lines.push('    .' + btn.className + ' {');
-      lines.push('      /* Default state: Catppuccin text color */');
-      lines.push('      color: @accent;');
+      lines.push('      /* Default state: emphasize ALT main on text */');
+      lines.push('      color: @ALT_MAIN;');
       lines.push('');
       lines.push('      &:hover {');
       lines.push('        /* Solid background with gradient background */');
       lines.push('        background: @surface0 !important;');
       lines.push('        background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%) !important;');
-      lines.push('        /* CRITICAL: Text must contrast with gradient - use high-contrast color */');
-      lines.push('        color: @text !important;');
-      lines.push('        filter: brightness(1.1);');
+      lines.push('        /* Prefer ALT_MAIN; fallback to @text if contrast fails */');
+      lines.push('        & when (@button-contrast < 4.5) { color: @text !important; }');
+      lines.push('        & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }');
       lines.push('      }');
       lines.push('');
       lines.push('      &:active {');
       lines.push('        /* Solid background with reversed gradient */');
       lines.push('        background: @surface0 !important;');
       lines.push('        background-image: linear-gradient(135deg, @ALT_BI 0%, @ALT_MAIN 100%) !important;');
-      lines.push('        /* CRITICAL: Text must contrast with gradient - use high-contrast color */');
-      lines.push('        color: @text !important;');
-      lines.push('        filter: brightness(1.15);');
+      lines.push('        & when (@button-contrast < 4.5) { color: @text !important; }');
+      lines.push('        & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }');
       lines.push('      }');
       lines.push('    }');
     });
@@ -835,7 +852,7 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
   // Link classes (anchor-scoped to avoid affecting containers)
   if (grouped.links && grouped.links.length > 0) {
     lines.push('');
-    lines.push('    /* Link classes – anchor-scoped gradient text hover (no background change) */');
+    lines.push('    /* Link classes – solid text by default; gradient text only when supported */');
     const containerRe = /^(prose|container|panel|card|box|paper|content|wrapper|section|row|col|grid|flex|list|menu|nav|tabs|tab|toolbar|header|footer|main|button|btn)$/i;
     grouped.links.slice(0, 20).forEach((link) => {
       const cls = link.className.trim();
@@ -848,18 +865,13 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
       lines.push('    a.' + cls + ':hover, .' + cls + ' a:hover {');
       lines.push('      /* Contrast-aware text color adjustment */');
       lines.push('      & when (@link-contrast < 4.5) {');
-      lines.push('        /* Fallback to a high contrast color (white) when contrast is insufficient */');
-      lines.push('        color: @base;');
+      lines.push('        color: @link-fallback;');
       lines.push('      }');
       lines.push('      & when not (@link-contrast < 4.5) {');
-      lines.push('        /* Keep the accent color if contrast is sufficient */');
       lines.push('        color: @accent;');
       lines.push('      }');
-      lines.push('      /* Fallback: Brightened accent color for guaranteed visibility */');
-      lines.push('      filter: brightness(1.3) saturate(1.1);');
       lines.push('      /* Modern browsers: Gradient text effect with proper support detection */');
       lines.push('      @supports (background-clip: text) or (-webkit-background-clip: text) {');
-      lines.push('        filter: none;');
       lines.push('        background: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);');
       lines.push('        -webkit-background-clip: text;');
       lines.push('        background-clip: text;');

@@ -105,14 +105,14 @@ export function generateLessTheme(
   less += `@alt2-bi2: @${bi2Set.biAccent2};\n`;
   // Link hover gradient parameters (build-time random)
   less += `@hover-angle: ${hoverAngle}deg;\n`;
-  less += `@hover-bi: @${Math.random() < 0.5 ? pre.biAccent1 : pre.biAccent2};\n`;
+  less += `@hover-bi: @${pre.biAccent1};\n`;
   const ALT = (useAltForSecondary === 'alt1')
     ? { main: '@alt1-main', bi1: '@alt1-bi1', bi2: '@alt1-bi2' }
     : { main: '@alt2-main', bi1: '@alt2-bi1', bi2: '@alt2-bi2' };
   less += `@ALT_MAIN: ${ALT.main};\n`;
   less += `@ALT_BI1: ${ALT.bi1};\n`;
   less += `@ALT_BI2: ${ALT.bi2};\n`;
-  less += `@ALT_BI: ${Math.random() < 0.5 ? ALT.bi1 : ALT.bi2};\n`;
+  less += `@ALT_BI: ${ALT.bi1};\n`;
 
   // If MappingOutput provided, prefer roleMap/derivedScales path
   if ((colorMappings as MappingOutput)?.roleMap) {
@@ -176,7 +176,7 @@ export function generateLessTheme(
  */
 a, .link {
   /* Default state: Apply Catppuccin text color */
-  color: @accent;
+  color: @ALT_MAIN;
   position: relative;
 
   &:hover,
@@ -187,20 +187,16 @@ a, .link {
     
     // Check if contrast is below WCAG AA (4.5:1) for normal text
     & when (contrast(@accentHex, @bgHex) < 4.5) {
-      // Fallback to a high contrast color (white) for better visibility
-      color: @base; // White or light color for better contrast on dark backgrounds
+      // Prefer readable solid text
+      color: @text;
     }
     & when not (contrast(@accentHex, @bgHex) < 4.5) {
       // Keep the accent color if contrast is sufficient
       color: @accent;
     }
     
-    /* Fallback: Brightened accent color for guaranteed visibility */
-    filter: brightness(1.3) saturate(1.1);
-
     /* Modern browsers: Gradient text effect with proper support detection */
     @supports (background-clip: text) or (-webkit-background-clip: text) {
-      filter: none;
       background-image: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);
       -webkit-background-clip: text;
       background-clip: text;
@@ -229,20 +225,16 @@ a, .link {
     
     // Check if contrast is below WCAG AA (4.5:1) for normal text
     & when (contrast(@accentHex, @bgHex) < 4.5) {
-      // Fallback to a high contrast color (white) for better visibility
-      color: @base; // White or light color for better contrast on dark backgrounds
+      // Prefer readable solid text
+      color: @text;
     }
     & when not (contrast(@accentHex, @bgHex) < 4.5) {
       // Keep the accent color if contrast is sufficient
       color: @accent;
     }
     
-    /* Fallback: Brightened accent color for guaranteed visibility */
-    filter: brightness(1.3) saturate(1.1);
-
     /* Modern browsers: Gradient text effect with proper support detection */
     @supports (background-clip: text) or (-webkit-background-clip: text) {
-      filter: none;
       background-image: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);
       -webkit-background-clip: text;
       background-clip: text;
@@ -255,7 +247,7 @@ a, .link {
   &.active {
     /* Active state: slightly brighter */
     color: @accent;
-    filter: brightness(1.1);
+    // remove brightness filters for predictability
   }
 }
 
@@ -271,9 +263,13 @@ a, .link {
       @bi-accent1 50%,
       @bi-accent2 100%
     );
-    /* CRITICAL: Text must contrast with gradient - use high-contrast color */
-    color: @text;
-    filter: brightness(1.1);
+    /* Prefer ALT_MAIN; fallback to readable text */
+    & when (contrast(@ALT_MAIN, @surface0) < 4.5) {
+      color: @text;
+    }
+    & when not (contrast(@ALT_MAIN, @surface0) < 4.5) {
+      color: @ALT_MAIN;
+    }
   }
 
   &:active {
@@ -283,25 +279,33 @@ a, .link {
       @accent 50%,
       @bi-accent1 100%
     );
-    /* CRITICAL: Text must contrast with gradient */
-    color: @text;
+    & when (contrast(@ALT_MAIN, @surface0) < 4.5) {
+      color: @text;
+    }
+    & when not (contrast(@ALT_MAIN, @surface0) < 4.5) {
+      color: @ALT_MAIN;
+    }
   }
 }
 
 .btn-secondary {
   /* Default: Catppuccin text color */
-  color: @accent;
+  color: @ALT_MAIN;
 
   &:hover {
     background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%);
-    /* CRITICAL: Text must contrast with gradient */
-    color: @text;
+    & when (contrast(@ALT_MAIN, @surface0) < 4.5) {
+      color: @text;
+    }
+    & when not (contrast(@ALT_MAIN, @surface0) < 4.5) {
+      color: @ALT_MAIN;
+    }
   }
 }
 
 .btn-outline {
   /* Default: Catppuccin text color, preserve border */
-  color: @accent;
+  color: @ALT_MAIN;
 
   &:hover {
     /* Keep original background on hover for outline buttons */
@@ -392,11 +396,11 @@ input[type="number"] {
 // Text selection
 ::selection {
   background: fade(@accent, 35%);
-  color: @base;
+  color: @text;
 }
 ::-moz-selection {
   background: fade(@accent, 35%);
-  color: @base;
+  color: @text;
 }
 
 // Scrollbar (WebKit)

@@ -201,15 +201,11 @@ export function generateStylusTheme(
   &:hover, &:focus
     // Apply contrast-aware text color
     if (${contrast} < 4.5)
-      color $base  // White for better contrast
+      color $text
     else
       color ${defaultAccent}
-    
-    // Fallback: Brightened accent color for guaranteed visibility
-    filter brightness(1.3) saturate(1.1)
     // Modern browsers: Gradient text effect with proper support detection
     @supports (background-clip: text) or (-webkit-background-clip: text)
-      filter none
       background linear-gradient(${hoverAngle}deg, ${defaultAccent} 0%, $bi-accent1 100%)
       -webkit-background-clip text
       background-clip text
@@ -228,20 +224,23 @@ export function generateStylusTheme(
     
     stylus += `// Button styles - Catppuccin text colors with preserved or mapped backgrounds
 .btn-primary
-  /* Default: Catppuccin text color, preserve/map background */
+  /* Default: emphasize main accent on text */
   color ${defaultAccent}
   &:hover
     /* Apply gradient background on hover ONLY */
-    background-image linear-gradient(135deg, ${defaultAccent} 0%, $bi-accent1 50%, $bi-accent2 100%)
-    /* CRITICAL: Text must contrast with gradient - use high-contrast color */
-    color $text
-    border-color $bi-accent1
-    box-shadow 0 4px 12px fade(${defaultAccent}, 0.25), 0 0 0 1px fade($bi-accent1, 0.35)
+    background-image linear-gradient(135deg, ${defaultAccent} 0%, $bi-accent1 100%)
+    // Prefer accent text; fallback to text if needed
+    if (${btnContrast} < 4.5)
+      color $text
+    else
+      color ${defaultAccent}
   &:active
     /* Apply reversed gradient on active */
-    background-image linear-gradient(135deg, $bi-accent2 0%, ${defaultAccent} 50%, $bi-accent1 100%)
-    /* CRITICAL: Text must contrast with gradient */
-    color $text
+    background-image linear-gradient(135deg, $bi-accent1 0%, ${defaultAccent} 100%)
+    if (${btnContrast} < 4.5)
+      color $text
+    else
+      color ${defaultAccent}
     border-color ${defaultAccent}
   &:focus-visible
     // Bi-accent focus ring for harmonious accessibility
@@ -262,9 +261,12 @@ export function generateStylusTheme(
   color ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`}
   &:hover
     /* Apply gradient background on hover ONLY */
-    background-image linear-gradient(135deg, ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`} 0%, ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`} ${hoverMain}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`} ${hoverMain}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent2}` : `${bi2Set.biAccent2}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent2}` : `${bi2Set.biAccent2}`} 100%)
-    /* CRITICAL: Text must contrast with gradient */
-    color $text
+    background-image linear-gradient(135deg, ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`} 0%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`} 100%)
+    // Prefer ALT main; fallback to text
+    if (${secondaryBtnContrast} < 4.5)
+      color $text
+    else
+      color ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`}
     border-color ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`}
 
 `;

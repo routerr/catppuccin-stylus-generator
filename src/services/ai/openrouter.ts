@@ -546,6 +546,8 @@ CRITICAL: Text must always be fully opaque.
 - All text colors must be fully opaque (opacity: 1.0, no rgba with alpha < 1)
 - Do not use any alpha for text colors
 - Text should always be readable with solid colors from the Catppuccin palette
+ - Prefer SOLID text colors first; only use gradient text when supported by background-clip: text
+ - Never switch text color to 'base' unless it provides strictly higher contrast than 'text'
 
 DEFAULT STATE STYLING RULES:
 CRITICAL: Apply Catppuccin colors to text while preserving or mapping backgrounds/borders:

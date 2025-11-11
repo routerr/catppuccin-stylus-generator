@@ -308,6 +308,9 @@ function createColorAnalysisPrompt(crawler: CrawlerResult & { detectedMode?: 'da
   - Match parent/universal background when appropriate
 
   HOVER STATE STYLING:
+  TEXT CLARITY:
+  - Prefer SOLID text colors first; only use gradient text when supported by background-clip: text
+  - Never switch text color to 'base' unless it provides strictly higher contrast than 'text'
   TEXT GRADIENTS (links, text buttons):
   - Apply gradient to TEXT using background-clip: text
   - Angles: 45deg, 225deg, or 315deg

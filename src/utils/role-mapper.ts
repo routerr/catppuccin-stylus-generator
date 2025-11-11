@@ -31,7 +31,8 @@ import {
   contrastRatio, 
   passesContrast, 
   hexToRgb, 
-  rgbToHsl 
+  rgbToHsl,
+  relativeLuminance
 } from './color-analysis';
 
 // ============================================================================
@@ -201,17 +202,28 @@ function textOnAccent(
   flavor: CatppuccinFlavor,
   contrastMode: 'strict' | 'normal' | 'relaxed' = 'normal'
 ): ColorValue {
-  // For latte (light theme), use base as default
+  // For latte (light theme), prefer text over base when base is very light
   if (flavor === 'latte') {
-    const baseContrast = contrastRatio(accentHex, tokenHex(palette, 'base'));
-    if (passesContrast(tokenHex(palette, 'base'), accentHex, contrastMode)) {
-      return palette.base;
+    const baseHex = tokenHex(palette, 'base');
+    const baseRgb = hexToRgb(baseHex);
+    const baseLum = baseRgb ? relativeLuminance(baseRgb) : 1;
+    const baseContrast = contrastRatio(accentHex, baseHex);
+    const textHex = tokenHex(palette, 'text');
+    const textContrast = contrastRatio(accentHex, textHex);
+
+    // If base background is extremely light, favor text when it performs better
+    if (baseLum > 0.85) {
+      if (textContrast >= baseContrast && textContrast >= 3.0) {
+        return palette.text;
+      }
+      if (baseContrast >= 3.0) {
+        return palette.base;
+      }
     }
-    // If base fails, try text
-    const textContrast = contrastRatio(accentHex, tokenHex(palette, 'text'));
-    if (textContrast > baseContrast) {
-      return palette.text;
-    }
+
+    // Otherwise follow contrast checks
+    if (passesContrast(baseHex, accentHex, contrastMode)) return palette.base;
+    if (textContrast >= baseContrast) return palette.text;
     return palette.base;
   }
   
