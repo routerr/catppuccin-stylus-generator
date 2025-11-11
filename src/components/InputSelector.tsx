@@ -9,9 +9,10 @@ interface InputSelectorProps {
   onFileSelect: (file: File) => void;
   onDirectorySelect: (files: FileList) => void;
   disabled?: boolean;
+  canRegenerate?: boolean;
 }
 
-export function InputSelector({ onURLSubmit, onFileSelect, onDirectorySelect, disabled }: InputSelectorProps) {
+export function InputSelector({ onURLSubmit, onFileSelect, onDirectorySelect, disabled, canRegenerate }: InputSelectorProps) {
   const [activeTab, setActiveTab] = useState<'url' | 'file' | 'directory'>('url');
 
   return (
@@ -73,11 +74,11 @@ export function InputSelector({ onURLSubmit, onFileSelect, onDirectorySelect, di
       {/* Tab Content */}
       <div className="mt-4">
         {activeTab === 'url' ? (
-          <URLInput onSubmit={onURLSubmit} disabled={disabled} />
+          <URLInput onSubmit={onURLSubmit} disabled={disabled} canRegenerate={canRegenerate} />
         ) : activeTab === 'file' ? (
-          <FileUpload onFileSelect={onFileSelect} disabled={disabled} />
+          <FileUpload onFileSelect={onFileSelect} disabled={disabled} canRegenerate={canRegenerate} />
         ) : (
-          <DirectoryUpload onDirectorySelect={onDirectorySelect} disabled={disabled} />
+          <DirectoryUpload onDirectorySelect={onDirectorySelect} disabled={disabled} canRegenerate={canRegenerate} />
         )}
       </div>
     </div>

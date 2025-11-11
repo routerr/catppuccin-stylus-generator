@@ -487,6 +487,19 @@ IMPORTANT: For BUTTON BORDERS, DO NOT add accent color borders if the original s
 
 ${accentGuide}
 
+COLOR DISTRIBUTION STRATEGY:
+CRITICAL: Use main-accent for MOST elements (70-80%), bi-accents for VARIETY (20-30%)
+
+Main-accent system provides THREE analogous colors:
+  - main-accent: PRIMARY color - use for MOST colored elements
+  - bi-accent1: ACCENT color - use for SOME elements for variety
+  - bi-accent2: ACCENT color - use for SOME elements for variety
+
+ELEMENT COLOR ASSIGNMENT (70-30 Rule):
+  - ALL <a> and link text → main-accent
+  - Button text → main-accent
+  - Some badges/tags/icons → bi-accent1 or bi-accent2
+
 ACCENT COLOR MAPPING STRATEGY:
 Map different original colors to different Catppuccin accents based on their semantic meaning.
 
@@ -558,11 +571,11 @@ BACKGROUNDS & BORDERS (Default State):
 HOVER STATE STYLING RULES:
 Apply Catppuccin gradient effects on hover:
 
-TEXT GRADIENTS (for links, text buttons, borderless elements):
-- Apply gradient to TEXT using background-clip: text
+TEXT GRADIENTS (progressive enhancement on WebKit only):
+- Apply gradient to TEXT only when both -webkit-background-clip: text and -webkit-text-fill-color: transparent are supported
 - Gradient angles: 45deg, 225deg, or 315deg
 - Use main-color + bi-accent gradient
-- Example: a:hover { background: linear-gradient(45deg, blue, sapphire); -webkit-background-clip: text; color: transparent; }
+- Example: a:hover { background: linear-gradient(45deg, blue, sapphire); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
 BACKGROUND GRADIENTS (for solid buttons, cards, panels):
 - Apply gradient to BACKGROUND

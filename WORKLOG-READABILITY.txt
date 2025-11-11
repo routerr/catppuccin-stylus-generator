@@ -1,0 +1,37 @@
+Summary of recent changes to improve hover readability and better reflect AI mappings
+
+1) Hover text invisibility fixes
+- Restricted gradient text to WebKit-only with both -webkit-background-clip: text and -webkit-text-fill-color: transparent supported.
+- Removed non-WebKit gradient text path that relied on color: transparent to avoid invisibility in partially supported engines.
+- Kept solid text as the default; gradients are purely progressive enhancement.
+
+2) Contrast-aware fallbacks
+- Links: use @accent normally; on hover, if computed min contrast < 4.5, fall back to @text.
+- Buttons: gradients on background; text prefers @ALT_MAIN and falls back to @text if contrast < 4.5.
+- Removed brightness/saturation filters for predictability.
+
+3) Class-specific coverage
+- Expanded class-based rules (from cssAnalysis) in UserStyle, LESS, and Stylus:
+  - Buttons, Links, Backgrounds, Text, Borders (color-only).
+- Increased per-group class caps from 15–20 to 100 and removed restrictive filters blocking anchors.
+
+4) Keep AI mappings intact
+- Disabled pre-filtering of button/clickable background mappings before generation. Generators enforce readability.
+
+5) Prompt alignment across providers
+- Added CSS class analysis blocks to prompt (Ollama) and improved mapping guidance (Chutes); OpenRouter prompt class listing fixed.
+
+Files touched (high level)
+- src/services/generators/userstyle.ts (hover guards, class coverage, gradient gating)
+- src/services/generators/less.ts (added class coverage, hover guards, gradient gating)
+- src/services/generators/stylus.ts (added class coverage, hover guards, gradient gating)
+- src/services/generators/index.ts (stop discarding AI mappings; pass cssAnalysis to less/stylus)
+- src/services/ai/openrouter.ts (class listing bug fix earlier)
+- src/services/ai/chutes.ts (distribution guidance and clarity rules)
+- src/services/ai/ollama.ts (added css class analysis section)
+
+Rationale
+- Favor guaranteed readability over decorative gradients.
+- Maximize the chance AI’s class-level suggestions are reflected.
+- Keep harmony within Catppuccin palette using main-accent + bi-accent system.
+

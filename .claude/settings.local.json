@@ -5,7 +5,8 @@
       "Bash(npm run build:*)",
       "WebFetch(domain:openrouter.ai)",
       "Bash(npm run dev)",
-      "Bash(git rev-list:*)"
+      "Bash(git rev-list:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

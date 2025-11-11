@@ -269,8 +269,21 @@ function extractJSONManually(text: string): { analysis: WebsiteColorAnalysis; ma
   return { analysis: parsed.analysis, mappings: parsed.mappings };
 }
 
-function createColorAnalysisPrompt(crawler: CrawlerResult & { detectedMode?: 'dark' | 'light' }) {
+function createColorAnalysisPrompt(crawler: CrawlerResult & { cssAnalysis?: any; detectedMode?: 'dark' | 'light' }) {
   const modeText = crawler.detectedMode ? `MODE DETECTED: ${crawler.detectedMode}` : '';
+  // Enhanced CSS class information if available
+  let cssClassInfo = '';
+  const anyCrawler: any = crawler as any;
+  if (anyCrawler.cssAnalysis && anyCrawler.cssAnalysis.grouped) {
+    const grouped = anyCrawler.cssAnalysis.grouped;
+    cssClassInfo = `\n\nCSS CLASS ANALYSIS (use this for precise class-specific mappings):
+Button classes (${grouped.buttons.length}): ${grouped.buttons.slice(0, 10).map((c: any) => c.className).join(', ')}
+Link classes (${grouped.links.length}): ${grouped.links.slice(0, 10).map((c: any) => c.className).join(', ')}
+Background classes (${grouped.backgrounds.length}): ${grouped.backgrounds.slice(0, 10).map((c: any) => c.className).join(', ')}
+Text classes (${grouped.text.length}): ${grouped.text.slice(0, 10).map((c: any) => c.className).join(', ')}
+Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((c: any) => c.className).join(', ')}
+\nIMPORTANT: Generate mappings that include these specific class names for more targeted styling.`;
+  }
 
   // Determine flavor based on detected mode
   const flavor = (crawler.detectedMode === 'dark') ? 'mocha' : 'latte';
@@ -281,6 +294,7 @@ function createColorAnalysisPrompt(crawler: CrawlerResult & { detectedMode?: 'da
   Website: ${crawler.url} | ${crawler.title}
   ${modeText}
   Detected colors: ${(crawler.colors || []).slice(0, 30).join(', ')}
+  ${cssClassInfo}
   Content snippet: ${crawler.content.slice(0, 1500)}
 
   ${accentGuide}

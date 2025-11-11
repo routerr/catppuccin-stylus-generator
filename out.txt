@@ -205,15 +205,16 @@ export function generateStylusTheme(
       color $text
     else
       color ${defaultAccent}
-    // Gradient text is opt-in via .cp-gradient-text; keep solid here
+    // Gradient text only on WebKit with full support; otherwise keep solid
+    @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent))
+      background linear-gradient(${hoverAngle}deg, ${defaultAccent} 0%, $bi-accent1 100%)
+      -webkit-background-clip text
+      -webkit-text-fill-color transparent
   &:active, &.active
     color $bi-accent1
     text-decoration-color $bi-accent2
 
 `;
-
-    // Opt-in gradient text (WebKit only)
-    stylus += `.cp-gradient-text a:hover, .cp-gradient-text a:focus\n  @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent))\n    background linear-gradient(${hoverAngle}deg, ${defaultAccent} 0%, $bi-accent1 100%)\n    -webkit-background-clip text\n    -webkit-text-fill-color transparent\n`;
 
     // Calculate contrast for button hover state
     const btnTextHex = palette.blue.hex;
@@ -286,22 +287,8 @@ export function generateStylusTheme(
 `;
 
     // Inputs - subtle surface backgrounds for text fields
-    stylus += `/* INPUTS - Transparent by default, subtle on focus */\n`;
-    stylus += `input, textarea, select, input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input[type="tel"], input[type="number"]\n  background-color transparent\n  color $text\n  border-color $overlay0\n  caret-color $mauve\n  &::placeholder\n    color $subtext0\n    opacity .75\n  &:hover\n    border-color $overlay0\n    box-shadow none\n    background-color transparent\n  &:focus\n    border-color $overlay1\n    outline 2px solid rgba($mauve, .35)\n    outline-offset 2px\n    box-shadow 0 0 0 2px rgba($mauve, .2)\n    background-color fade($surface0, $tint_input_hover)\n\n`;
-  stylus += `
-.copy-code, .code-toolbar, .copy-button, button[class*="copy"], textarea.copyable, .clipboard, .copy-to-clipboard, .copy-snippet
-  background-color transparent
-  border none
-  color $text
-
-.ql-editor, .textarea.new-input-ui, .new-input-ui, .textarea, .new-input-ui .ql-editor
-  background-color transparent
-  border none
-  color $text
-  box-shadow none
-  background: none
-`;
-
+    stylus += `/* INPUTS - Subtle backgrounds + focus */\n`;
+    stylus += `input, textarea, select, input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input[type="tel"], input[type="number"]\n  background-color fade($surface0, $tint_weak)\n  color $text\n  border-color $overlay0\n  caret-color $mauve\n  &::placeholder\n    color $subtext0\n    opacity .75\n  &:hover\n    border-color $overlay0\n    box-shadow none\n    background-color fade($surface0, $tint_weak)\n  &:focus\n    border-color $overlay1\n    outline 2px solid rgba($mauve, .35)\n    outline-offset 2px\n    box-shadow 0 0 0 2px rgba($mauve, .2)\n    background-color fade($surface0, $tint_input_hover)\n\n`;
 
   } else {
     // Legacy: fallback to mapping map / reasons
@@ -325,8 +312,8 @@ export function generateStylusTheme(
   }
 
   // Ensure inputs use subtle surface backgrounds in legacy as well
-  stylus += `\n/* INPUTS - Transparent by default, subtle on focus */\n`;
-  stylus += `input, textarea, select, input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input[type="tel"], input[type="number"]\n  background-color transparent\n  color $text\n  border-color $overlay0\n  caret-color $mauve\n  &::placeholder\n    color $subtext0\n    opacity .75\n  &:hover\n    border-color $overlay0\n    box-shadow none\n    background-color transparent\n  &:focus\n    border-color $overlay1\n    outline 2px solid rgba($mauve, .35)\n    outline-offset 2px\n    box-shadow 0 0 0 2px rgba($mauve, .2)\n    background-color fade($surface0, $tint_input_hover)\n`;
+  stylus += `\n/* INPUTS - Subtle backgrounds + focus */\n`;
+  stylus += `input, textarea, select, input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input[type="tel"], input[type="number"]\n  background-color fade($surface0, $tint_weak)\n  color $text\n  border-color $overlay0\n  caret-color $mauve\n  &::placeholder\n    color $subtext0\n    opacity .75\n  &:hover\n    border-color $overlay0\n    box-shadow none\n    background-color fade($surface0, $tint_weak)\n  &:focus\n    border-color $overlay1\n    outline 2px solid rgba($mauve, .35)\n    outline-offset 2px\n    box-shadow 0 0 0 2px rgba($mauve, .2)\n    background-color fade($surface0, $tint_input_hover)\n`;
 
   // Global polish: selection, scrollbar, focus, components
   stylus += `\n/* Text selection */\n`;
@@ -388,15 +375,6 @@ export function generateStylusTheme(
   stylus += `.badge, .tag, .chip\n  background fade($mauve, .2)\n  color $mauve\n  border 1px solid rgba($mauve, .35)\n  border-radius 999px\n`;
 
   // Tables - Dense variant removed to prevent spacing changes
-
-  // Layout-safety overrides: ensure color-only changes (no layout-affecting borders/shadows)
-  stylus += `\n/* Layout-safety overrides (no layout changes) */\n`;
-  stylus += `.card, .panel, .box, .container, .paper, .well\n  border none !important\n  border-radius inherit !important\n  box-shadow none !important\n  backdrop-filter none !important\n`;
-  stylus += `[role="tooltip"], .tooltip, .popover\n  border none !important\n  box-shadow none !important\n`;
-  stylus += `.menu, .dropdown-menu, [role="menu"]\n  border none !important\n  box-shadow none !important\n`;
-  stylus += `.modal, .dialog, [role="dialog"], [aria-modal="true"]\n  border none !important\n  box-shadow none !important\n`;
-  stylus += `.alert, .banner, .notice\n  border none !important\n  border-left none !important\n`;
-  stylus += `.badge, .tag, .chip\n  border none !important\n  border-radius inherit !important\n`;
 
   // Class-specific styling (from CSS analysis)
   if (cssAnalysis && cssAnalysis.grouped) {

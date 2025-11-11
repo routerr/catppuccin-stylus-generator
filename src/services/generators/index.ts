@@ -12,32 +12,11 @@ import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
  * Filter out button and clickable background color mappings
  * to prevent overriding the original theme's button styles
  */
+// Previously filtered out button/clickable background mappings.
+// To better reflect AI results, we now keep all mappings and let the generators
+// handle contrast/readability and hover specifics.
 function filterButtonAndClickableBackgrounds(mappings: ColorMapping[]): ColorMapping[] {
-  return mappings.filter(mapping => {
-    const reason = mapping.reason.toLowerCase();
-
-    // Keywords that indicate button backgrounds or clickable backgrounds
-    const buttonKeywords = [
-      'button',
-      'btn',
-      'cta',
-      'clickable',
-      'interactive background',
-      'hover background',
-      'active background',
-      'pressed background',
-    ];
-
-    // Check if this is a button/clickable background mapping
-    const isButtonOrClickable = buttonKeywords.some(keyword => reason.includes(keyword));
-
-    // Also check if it's specifically about backgrounds (not text or borders)
-    const isBackground = reason.includes('background') || reason.includes('bg');
-
-    // Filter out if it's both a button/clickable AND a background
-    // Keep it if it's button text, button border, etc.
-    return !(isButtonOrClickable && isBackground);
-  });
+  return mappings;
 }
 
 /**
@@ -49,14 +28,15 @@ function filterButtonAndClickableBackgrounds(mappings: ColorMapping[]): ColorMap
 export function generateTheme(
   flavor: CatppuccinFlavor,
   colorMappings: ColorMapping[] | MappingOutput,
-  url: string
+  url: string,
+  cssAnalysis?: any
 ): GeneratedTheme {
   // If caller provided MappingOutput, use RoleMap path and skip legacy filtering.
   if ((colorMappings as MappingOutput).roleMap) {
     const mappingOutput = colorMappings as MappingOutput;
     const output: ThemeOutput = {
-      stylus: generateStylusTheme(flavor, mappingOutput, url),
-      less: generateLessTheme(flavor, mappingOutput, url),
+      stylus: generateStylusTheme(flavor, mappingOutput, url, undefined, 'mauve', cssAnalysis),
+      less: generateLessTheme(flavor, mappingOutput, url, undefined, 'mauve', cssAnalysis),
       css: generateCssTheme(
         flavor,
         new Map(
@@ -72,11 +52,8 @@ export function generateTheme(
   // Legacy path (ColorMapping[])
   const legacyMappings = colorMappings as ColorMapping[];
 
-  // Filter out button and clickable backgrounds
+  // Keep all mappings; generators will ensure readability/contrast.
   const filteredMappings = filterButtonAndClickableBackgrounds(legacyMappings);
-
-  console.log(`Filtered ${legacyMappings.length - filteredMappings.length} button/clickable background mappings`);
-  console.log(`Keeping ${filteredMappings.length} mappings for theme generation`);
 
   // Convert ColorMapping array to Map for generators
   const mappingMap = new Map(
@@ -84,8 +61,8 @@ export function generateTheme(
   );
 
   const output: ThemeOutput = {
-    stylus: generateStylusTheme(flavor, mappingMap, url, filteredMappings),
-    less: generateLessTheme(flavor, mappingMap, url, filteredMappings),
+    stylus: generateStylusTheme(flavor, mappingMap, url, filteredMappings, 'mauve', cssAnalysis),
+    less: generateLessTheme(flavor, mappingMap, url, filteredMappings, 'mauve', cssAnalysis),
     css: generateCssTheme(flavor, mappingMap, url, filteredMappings),
   };
 
@@ -98,9 +75,10 @@ export function generateTheme(
 export function generateAllThemes(
   colorMappings: ColorMapping[] | MappingOutput,
   url: string,
-  flavors: CatppuccinFlavor[] = ['latte', 'frappe', 'macchiato', 'mocha']
+  flavors: CatppuccinFlavor[] = ['latte', 'frappe', 'macchiato', 'mocha'],
+  cssAnalysis?: any
 ): GeneratedTheme[] {
-  return flavors.map(flavor => generateTheme(flavor, colorMappings, url));
+  return flavors.map(flavor => generateTheme(flavor, colorMappings, url, cssAnalysis));
 }
 
 export function createThemePackage(
@@ -144,9 +122,7 @@ export function createUserStylePackage(
     userStyle = generateUserStyle(colorMappings as MappingOutput, url, undefined, cssAnalysis, 'mocha', defaultAccent);
   } else {
     const legacy = colorMappings as ColorMapping[];
-    // Filter out button and clickable backgrounds for UserStyle as well
     const filteredMappings = filterButtonAndClickableBackgrounds(legacy);
-    console.log(`UserStyle: Filtered ${legacy.length - filteredMappings.length} button/clickable background mappings`);
     userStyle = generateUserStyle(filteredMappings, url, undefined, cssAnalysis, 'mocha', defaultAccent);
   }
 
@@ -185,4 +161,3 @@ export async function createUserStylePackageAsync(
 
 // Export generators for direct usage
 export { generateStylusTheme, generateLessTheme, generateCssTheme };
-

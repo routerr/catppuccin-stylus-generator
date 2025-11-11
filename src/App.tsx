@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { InputSelector } from './components/InputSelector';
 import { APIKeyConfig } from './components/APIKeyConfig';
 import { ServiceSelector } from './components/ServiceSelector';
@@ -30,6 +30,8 @@ function App() {
   const [lastSource, setLastSource] = useState<string | null>(null);
   const [lastAIConfig, setLastAIConfig] = useState<{ provider: AIProvider; model: string; apiKey: string } | null>(null);
   const [lastUrl, setLastUrl] = useState<string | null>(null);
+  const [lastUploadedFileName, setLastUploadedFileName] = useState<string>('');
+  const [lastUploadedDirPath, setLastUploadedDirPath] = useState<string>('');
   const [hasCompleted, setHasCompleted] = useState(false);
   
 
@@ -40,7 +42,7 @@ function App() {
       lastAIConfig.apiKey !== aiKey
     )
   );
-  const canRegenerate = (!!error) || (hasCompleted && aiChangedSinceLast);
+  const canRegenerate = hasCompleted && aiChangedSinceLast;
 
   const updateStep = (id: string, updates: Partial<ThinkingStep>) => {
     setThinkingSteps(prev => prev.map(step =>
@@ -64,16 +66,31 @@ function App() {
     setThemePackage(null);
     setHasCompleted(false);
     setLastUrl(url);
-
-    // Initialize thinking steps
-    setThinkingSteps([
-      { id: 'fetch', title: 'Fetching Website', description: 'Downloading website content and extracting colors', status: 'in_progress' },
-      { id: 'analyze', title: 'AI Color Analysis', description: 'Analyzing color scheme with AI', status: 'pending' },
-      { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
-      { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
-    ]);
+    setLastUploadedFileName('');
+    setLastUploadedDirPath('');
 
     try {
+      // Fast regenerate: use cached content if available
+      if (canRegenerate && lastCrawlerResult && lastSource === 'direct-fetch') {
+        // Skip fetching, use cached content
+        setThinkingSteps([
+          { id: 'analyze', title: 'AI Color Analysis', description: 'Re-analyzing color scheme with new AI config', status: 'in_progress' },
+          { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
+          { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
+        ]);
+        setProgress('Using cached content for fast regeneration...');
+        await processContent(lastCrawlerResult, 'direct-fetch');
+        return;
+      }
+
+      // Normal generation: fetch from URL
+      setThinkingSteps([
+        { id: 'fetch', title: 'Fetching Website', description: 'Downloading website content and extracting colors', status: 'in_progress' },
+        { id: 'analyze', title: 'AI Color Analysis', description: 'Analyzing color scheme with AI', status: 'pending' },
+        { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
+        { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
+      ]);
+
       // Step 1: Fetch website content directly
       setProgress('Fetching website content...');
       const fetchResult = await fetchWebsiteContent(url);
@@ -119,16 +136,33 @@ function App() {
     setThemePackage(null);
     setHasCompleted(false);
     setLastUrl(null);
-
-    // Initialize thinking steps
-    setThinkingSteps([
-      { id: 'parse', title: 'Parsing MHTML File', description: 'Extracting website content from file', status: 'in_progress' },
-      { id: 'analyze', title: 'AI Color Analysis', description: 'Analyzing color scheme with AI', status: 'pending' },
-      { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
-      { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
-    ]);
+    setLastUploadedDirPath('');
 
     try {
+      // Check if this is the same file as last time
+      const isSameFile = file.name === lastUploadedFileName;
+
+      // Fast regenerate: use cached content if available AND same file
+      if (canRegenerate && lastCrawlerResult && lastSource === 'mhtml-upload' && isSameFile) {
+        // Skip parsing, use cached content
+        setThinkingSteps([
+          { id: 'analyze', title: 'AI Color Analysis', description: 'Re-analyzing color scheme with new AI config', status: 'in_progress' },
+          { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
+          { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
+        ]);
+        setProgress('Using cached content for fast regeneration...');
+        await processContent(lastCrawlerResult, 'mhtml-upload');
+        return;
+      }
+
+      // Normal generation: parse MHTML file
+      setThinkingSteps([
+        { id: 'parse', title: 'Parsing MHTML File', description: 'Extracting website content from file', status: 'in_progress' },
+        { id: 'analyze', title: 'AI Color Analysis', description: 'Analyzing color scheme with AI', status: 'pending' },
+        { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
+        { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
+      ]);
+
       // Step 1: Parse MHTML file
       setProgress('Parsing MHTML file...');
       const crawlerResult = await MHTMLParser.parseFile(file);
@@ -140,9 +174,13 @@ function App() {
 
       setLastCrawlerResult(crawlerResult);
       setLastSource('mhtml-upload');
+      setLastUploadedFileName(file.name);
       await processContent(crawlerResult, 'mhtml-upload');
     } catch (err) {
-      updateStep('parse', { status: 'error', details: err instanceof Error ? err.message : 'Parse failed' });
+      const currentStep = thinkingSteps.find(s => s.status === 'in_progress');
+      if (currentStep) {
+        updateStep(currentStep.id, { status: 'error', details: err instanceof Error ? err.message : 'Parse failed' });
+      }
       setError(err instanceof Error ? err.message : 'An error occurred');
       setProgress('');
       setIsProcessing(false);
@@ -161,17 +199,35 @@ function App() {
     setThemePackage(null);
     setHasCompleted(false);
     setLastUrl(null);
-
-    // Initialize thinking steps with CSS analysis
-    setThinkingSteps([
-      { id: 'parse', title: 'Analyzing Directory', description: 'Parsing HTML and CSS files from directory', status: 'in_progress' },
-      { id: 'css-analyze', title: 'CSS Class Analysis', description: 'Identifying CSS classes and their usage', status: 'pending' },
-      { id: 'analyze', title: 'AI Color & Class Mapping', description: 'Analyzing colors and generating class-specific mappings', status: 'pending' },
-      { id: 'map', title: 'Mapping to Catppuccin', description: 'Creating detailed color and class mappings', status: 'pending' },
-      { id: 'generate', title: 'Generating Enhanced Theme', description: 'Creating theme with class-specific rules', status: 'pending' },
-    ]);
+    setLastUploadedFileName('');
 
     try {
+      // Check if this is the same directory as last time
+      const dirPath = files[0]?.webkitRelativePath?.split('/')[0] || '';
+      const isSameDirectory = dirPath === lastUploadedDirPath && dirPath !== '';
+
+      // Fast regenerate: use cached content if available AND same directory
+      if (canRegenerate && lastCrawlerResult && lastSource === 'directory-upload' && isSameDirectory) {
+        // Skip parsing, use cached content
+        setThinkingSteps([
+          { id: 'analyze', title: 'AI Color & Class Mapping', description: 'Re-analyzing colors with new AI config', status: 'in_progress' },
+          { id: 'map', title: 'Mapping to Catppuccin', description: 'Creating detailed color mappings', status: 'pending' },
+          { id: 'generate', title: 'Generating Enhanced Theme', description: 'Creating theme with class-specific rules', status: 'pending' },
+        ]);
+        setProgress('Using cached content for fast regeneration...');
+        await processContent(lastCrawlerResult, 'directory-upload');
+        return;
+      }
+
+      // Normal generation: parse directory
+      setThinkingSteps([
+        { id: 'parse', title: 'Analyzing Directory', description: 'Parsing HTML and CSS files from directory', status: 'in_progress' },
+        { id: 'css-analyze', title: 'CSS Class Analysis', description: 'Identifying CSS classes and their usage', status: 'pending' },
+        { id: 'analyze', title: 'AI Color & Class Mapping', description: 'Analyzing colors and generating class-specific mappings', status: 'pending' },
+        { id: 'map', title: 'Mapping to Catppuccin', description: 'Creating detailed color and class mappings', status: 'pending' },
+        { id: 'generate', title: 'Generating Enhanced Theme', description: 'Creating theme with class-specific rules', status: 'pending' },
+      ]);
+
       // Step 1: Parse directory
       setProgress('Analyzing webpage directory...');
       const analysis = await parseWebpageDirectory(files);
@@ -211,6 +267,7 @@ function App() {
 
       setLastCrawlerResult(crawlerResult);
       setLastSource('directory-upload');
+      setLastUploadedDirPath(dirPath);
       await processContent(crawlerResult, 'directory-upload');
     } catch (err) {
       const currentStep = thinkingSteps.find(s => s.status === 'in_progress');
@@ -354,39 +411,6 @@ function App() {
                 onAIModelChange={setAIModel}
                 ollamaModels={discoveredOllamaModels}
               />
-
-              {canRegenerate && (
-                <div className="mt-4 p-3 rounded-lg border border-ctp-surface2 bg-ctp-surface0/60 flex items-center justify-between gap-3">
-                  <div className="text-sm text-ctp-subtext0">
-                    {error
-                      ? 'The previous run ended with an error.'
-                      : 'AI config changed since the last successful generation.'}
-                  </div>
-                  <button
-                    onClick={async () => {
-                      setError('');
-                      setIsProcessing(true);
-                      // Minimal pipeline since we already have content
-                      setThinkingSteps([
-                        { id: 'analyze', title: 'AI Color Analysis', description: 'Analyzing color scheme with AI', status: 'in_progress' },
-                        { id: 'map', title: 'Mapping to Catppuccin', description: 'Creating semantic color mappings', status: 'pending' },
-                        { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
-                      ]);
-                      try {
-                        if (lastUrl) {
-                          // fall back to rerun from URL
-                          await handleGenerate(lastUrl);
-                        }
-                      } finally {
-                        // lastAIConfig updates upon success in processContent
-                      }
-                    }}
-                    className="px-3 py-1.5 bg-gradient-to-r from-ctp-lavender to-ctp-mauve hover:opacity-90 rounded-md text-sm text-ctp-base font-medium"
-                  >
-                    Regenerate the theme
-                  </button>
-                </div>
-              )}
             </div>
 
             <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
@@ -400,12 +424,13 @@ function App() {
 
             <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
               <h2 className="text-2xl font-bold mb-6 text-ctp-accent">Generate Theme</h2>
-              
+
               <InputSelector
                 onURLSubmit={handleGenerate}
                 onFileSelect={handleFileUpload}
                 onDirectorySelect={handleDirectoryUpload}
                 disabled={isProcessing}
+                canRegenerate={canRegenerate}
               />
             </div>
           </div>
@@ -415,20 +440,6 @@ function App() {
             {/* Thinking Process Display */}
             {(isProcessing || thinkingSteps.length > 0) && (
               <ThinkingProcess steps={thinkingSteps} />
-            )}
-
-            
-
-            {error && (
-              <div className="bg-ctp-red/20 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-red/50">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-6 w-6 text-ctp-red flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="text-lg font-semibold text-ctp-red mb-2">Error</h3>
-                    <p className="text-ctp-subtext0">{error}</p>
-                  </div>
-                </div>
-              </div>
             )}
 
             {!isProcessing && <ThemePreview themePackage={themePackage} />}

@@ -4,9 +4,10 @@ import { Upload, File, X } from 'lucide-react';
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
   disabled?: boolean;
+  canRegenerate?: boolean;
 }
 
-export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
+export function FileUpload({ onFileSelect, disabled, canRegenerate }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
@@ -167,12 +168,20 @@ export function FileUpload({ onFileSelect, disabled }: FileUploadProps) {
         )}
       </div>
 
+      {canRegenerate && (
+        <div className="bg-ctp-yellow/20 border border-ctp-yellow/30 rounded-lg p-3">
+          <p className="text-sm text-ctp-subtext0">
+            ⚡ AI config changed - click below to regenerate with new settings
+          </p>
+        </div>
+      )}
+
       <button
         type="submit"
         disabled={disabled || !selectedFile}
         className="w-full bg-gradient-to-r from-ctp-accent to-ctp-bi-accent hover:opacity-90 text-ctp-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
       >
-        {disabled ? 'Processing...' : 'Generate Theme from MHTML'}
+        {disabled ? 'Processing...' : canRegenerate ? 'Regenerate Theme from MHTML' : 'Generate Theme from MHTML'}
       </button>
     </form>
   );

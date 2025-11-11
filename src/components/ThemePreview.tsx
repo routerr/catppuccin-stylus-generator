@@ -94,9 +94,9 @@ export function ThemePreview({ themePackage }: ThemePreviewProps) {
         {/* Code Preview */}
         <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-xl p-6 border border-ctp-surface2">
           <h3 className="text-lg font-bold text-ctp-text mb-4">UserStyle Code Preview</h3>
-          <div className="bg-ctp-base rounded-lg p-4 overflow-x-auto max-h-96 overflow-y-auto">
-            <pre className="text-xs text-ctp-subtext1 font-mono">
-              <code>{themePackage.userStyle}</code>
+          <div className="overflow-x-auto max-h-96 overflow-y-auto bg-ctp-mantle/50 rounded-lg p-4 border border-ctp-surface1">
+            <pre className="text-sm leading-6 text-ctp-text font-mono m-0 bg-transparent whitespace-pre">
+              <code className="text-ctp-text">{themePackage.userStyle}</code>
             </pre>
           </div>
         </div>

@@ -4,11 +4,13 @@ import { FolderOpen, CheckCircle2 } from 'lucide-react';
 interface DirectoryUploadProps {
   onDirectorySelect: (files: FileList) => void;
   disabled?: boolean;
+  canRegenerate?: boolean;
 }
 
-export function DirectoryUpload({ onDirectorySelect, disabled }: DirectoryUploadProps) {
+export function DirectoryUpload({ onDirectorySelect, disabled, canRegenerate }: DirectoryUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedPath, setSelectedPath] = useState<string>('');
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -16,57 +18,70 @@ export function DirectoryUpload({ onDirectorySelect, disabled }: DirectoryUpload
       // Get the directory path from the first file
       const path = files[0].webkitRelativePath.split('/')[0];
       setSelectedPath(path);
-      onDirectorySelect(files);
+      setSelectedFiles(files);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedFiles) {
+      onDirectorySelect(selectedFiles);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div
-        onClick={() => !disabled && inputRef.current?.click()}
-        className={`
-          border-2 border-dashed border-ctp-surface2 rounded-xl p-8
-          flex flex-col items-center justify-center gap-3
-          transition-all duration-200
-          ${disabled
-            ? 'opacity-50 cursor-not-allowed'
-            : 'cursor-pointer hover:border-ctp-accent hover:bg-ctp-surface1/30'
-          }
-          ${selectedPath ? 'border-ctp-green bg-ctp-green/10' : ''}
-        `}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          // @ts-ignore - webkitdirectory is not in the TypeScript types
-          webkitdirectory=""
-          directory=""
-          multiple
-          onChange={handleChange}
-          disabled={disabled}
-          className="hidden"
-        />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-ctp-subtext1 mb-2">
+          Webpage Directory
+        </label>
 
-        {selectedPath ? (
-          <>
-            <CheckCircle2 className="h-12 w-12 text-ctp-green" />
-            <p className="text-ctp-green font-medium">Directory selected!</p>
-            <p className="text-sm text-ctp-subtext0">{selectedPath}</p>
-            <p className="text-xs text-ctp-overlay0 mt-2">
-              Click again to select a different directory
-            </p>
-          </>
-        ) : (
-          <>
-            <FolderOpen className="h-12 w-12 text-ctp-overlay1" />
-            <p className="text-ctp-subtext1 font-medium">Select webpage directory</p>
-            <p className="text-sm text-ctp-subtext0 text-center max-w-md">
-              Choose a directory containing HTML file and assets folder
-              <br />
-              (Saved using "Webpage, Complete" in browser)
-            </p>
-          </>
-        )}
+        <div
+          onClick={() => !disabled && inputRef.current?.click()}
+          className={`
+            border-2 border-dashed border-ctp-surface2 rounded-xl p-8
+            flex flex-col items-center justify-center gap-3
+            transition-all duration-200
+            ${disabled
+              ? 'opacity-50 cursor-not-allowed'
+              : 'cursor-pointer hover:border-ctp-accent hover:bg-ctp-surface1/30'
+            }
+            ${selectedPath ? 'border-ctp-green bg-ctp-green/10' : ''}
+          `}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            // @ts-ignore - webkitdirectory is not in the TypeScript types
+            webkitdirectory=""
+            directory=""
+            multiple
+            onChange={handleChange}
+            disabled={disabled}
+            className="hidden"
+          />
+
+          {selectedPath ? (
+            <>
+              <CheckCircle2 className="h-12 w-12 text-ctp-green" />
+              <p className="text-ctp-green font-medium">Directory selected!</p>
+              <p className="text-sm text-ctp-subtext0">{selectedPath}</p>
+              <p className="text-xs text-ctp-overlay0 mt-2">
+                Click again to select a different directory
+              </p>
+            </>
+          ) : (
+            <>
+              <FolderOpen className="h-12 w-12 text-ctp-overlay1" />
+              <p className="text-ctp-subtext1 font-medium">Select webpage directory</p>
+              <p className="text-sm text-ctp-subtext0 text-center max-w-md">
+                Choose a directory containing HTML file and assets folder
+                <br />
+                (Saved using "Webpage, Complete" in browser)
+              </p>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="bg-ctp-blue/20 border border-ctp-blue/30 rounded-lg p-4">
@@ -89,6 +104,22 @@ export function DirectoryUpload({ onDirectorySelect, disabled }: DirectoryUpload
           <li>Creates more precise and targeted theme rules</li>
         </ul>
       </div>
-    </div>
+
+      {canRegenerate && (
+        <div className="bg-ctp-yellow/20 border border-ctp-yellow/30 rounded-lg p-3">
+          <p className="text-sm text-ctp-subtext0">
+            ⚡ AI config changed - click below to regenerate with new settings
+          </p>
+        </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={disabled || !selectedFiles}
+        className="w-full bg-gradient-to-r from-ctp-accent to-ctp-bi-accent hover:opacity-90 text-ctp-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+      >
+        {disabled ? 'Processing...' : canRegenerate ? 'Regenerate Theme from Directory' : 'Generate Theme from Directory'}
+      </button>
+    </form>
   );
 }

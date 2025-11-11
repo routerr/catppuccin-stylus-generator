@@ -4,9 +4,10 @@ import { Globe } from 'lucide-react';
 interface URLInputProps {
   onSubmit: (url: string) => void;
   disabled?: boolean;
+  canRegenerate?: boolean;
 }
 
-export function URLInput({ onSubmit, disabled }: URLInputProps) {
+export function URLInput({ onSubmit, disabled, canRegenerate }: URLInputProps) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
 
@@ -60,12 +61,21 @@ export function URLInput({ onSubmit, disabled }: URLInputProps) {
           <p className="mt-2 text-sm text-ctp-red">{error}</p>
         )}
       </div>
+
+      {canRegenerate && (
+        <div className="bg-ctp-yellow/20 border border-ctp-yellow/30 rounded-lg p-3">
+          <p className="text-sm text-ctp-subtext0">
+            ⚡ AI config changed - click below to regenerate with new settings
+          </p>
+        </div>
+      )}
+
       <button
         type="submit"
         disabled={disabled}
         className="w-full bg-gradient-to-r from-ctp-accent to-ctp-bi-accent hover:opacity-90 text-ctp-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
       >
-        {disabled ? 'Processing...' : 'Generate Theme'}
+        {disabled ? 'Processing...' : canRegenerate ? 'Regenerate Theme' : 'Generate Theme'}
       </button>
     </form>
   );

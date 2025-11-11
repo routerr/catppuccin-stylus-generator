@@ -436,7 +436,7 @@ function createColorAnalysisPrompt(crawlerResult: CrawlerResult & { cssAnalysis?
     const grouped = crawlerResult.cssAnalysis.grouped;
     cssClassInfo = `\n\nCSS CLASS ANALYSIS (use this for precise class-specific mappings):
 Button classes (${grouped.buttons.length}): ${grouped.buttons.slice(0, 10).map((c: any) => c.className).join(', ')}
-Link classes (${grouped.links.length}): ${grouped.links.slice(0, 0).map((c: any) => c.className).join(', ')}
+Link classes (${grouped.links.length}): ${grouped.links.slice(0, 10).map((c: any) => c.className).join(', ')}
 Background classes (${grouped.backgrounds.length}): ${grouped.backgrounds.slice(0, 10).map((c: any) => c.className).join(', ')}
 Text classes (${grouped.text.length}): ${grouped.text.slice(0, 10).map((c: any) => c.className).join(', ')}
 Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((c: any) => c.className).join(', ')}
@@ -569,11 +569,11 @@ BACKGROUNDS & BORDERS (Default State):
 HOVER STATE STYLING RULES:
 Apply Catppuccin gradient effects on hover:
 
-TEXT GRADIENTS (for links, text buttons, borderless elements):
-- Apply gradient to TEXT using background-clip: text
+TEXT GRADIENTS (progressive enhancement on WebKit only):
+- Apply gradient to TEXT only when both -webkit-background-clip: text and -webkit-text-fill-color: transparent are supported
 - Gradient angles: 45deg, 225deg, or 315deg
 - Use main-color + bi-accent gradient
-- Example: a:hover { background: linear-gradient(45deg, blue, sapphire); -webkit-background-clip: text; color: transparent; }
+- Example: a:hover { background: linear-gradient(45deg, blue, sapphire); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
 BACKGROUND GRADIENTS (for solid buttons, cards, panels):
 - Apply gradient to BACKGROUND

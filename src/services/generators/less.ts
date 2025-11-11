@@ -54,7 +54,8 @@ export function generateLessTheme(
   colorMappings: Map<string, CatppuccinColor> | MappingOutput,
   url: string,
   mappingsWithReasons?: ColorMapping[],
-  defaultAccent: AccentColor = 'mauve'
+  defaultAccent: AccentColor = 'mauve',
+  cssAnalysis?: any
 ): string {
   const palette = CATPPUCCIN_PALETTINOTE(flaworCheck(flavor)) || CATPPUCCIN_PALETTES[flavor];
   const pre = computeAccentSetFor(palette, defaultAccent);
@@ -176,7 +177,7 @@ export function generateLessTheme(
  */
 a, .link {
   /* Default state: Apply Catppuccin text color */
-  color: @ALT_MAIN;
+  color: @ALT_MAIN !important;
   position: relative;
 
   &:hover,
@@ -187,22 +188,12 @@ a, .link {
     
     // Check if contrast is below WCAG AA (4.5:1) for normal text
     & when (contrast(@accentHex, @bgHex) < 4.5) {
-      // Prefer readable solid text
-      color: @text;
+      color: @text !important;
     }
     & when not (contrast(@accentHex, @bgHex) < 4.5) {
-      // Keep the accent color if contrast is sufficient
-      color: @accent;
+      color: @accent !important;
     }
-    
-    /* Modern browsers: Gradient text effect with proper support detection */
-    @supports (background-clip: text) or (-webkit-background-clip: text) {
-      background-image: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      color: transparent;
-    }
+    /* Gradient text is opt-in via .cp-gradient-text */
   }
 
   &:active,
@@ -233,13 +224,11 @@ a, .link {
       color: @accent;
     }
     
-    /* Modern browsers: Gradient text effect with proper support detection */
-    @supports (background-clip: text) or (-webkit-background-clip: text) {
+    /* Gradient text only on WebKit with full support; otherwise keep solid */
+    @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
       background-image: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);
       -webkit-background-clip: text;
-      background-clip: text;
       -webkit-text-fill-color: transparent;
-      color: transparent;
     }
   }
 
@@ -369,14 +358,11 @@ input[type="password"],
 input[type="url"],
 input[type="tel"],
 input[type="number"] {
-  background-color: fade(@surface0, 12%) !important;
-  color: @text;
+  background-color: transparent !important;
+  color: @text !important;
   caret-color: @alt1-main;
 
-  &:hover {
-    /* Neutralize hover: keep default border/background */
-    background-color: fade(@surface0, 12%) !important;
-  }
+  &:hover { background-color: transparent !important; }
 
   &::placeholder { color: @subtext0; opacity: .75; }
   &::-webkit-input-placeholder { color: @subtext0; opacity: .75; }
@@ -391,6 +377,30 @@ input[type="number"] {
     ) !important;
     caret-color: @bi-accent1;
   }
+}
+
+.ql-editor,
+.textarea.new-input-ui,
+.new-input-ui,
+.textarea,
+.new-input-ui .ql-editor {
+  background-color: transparent !important;
+  border: none !important;
+  color: @text !important;
+  box-shadow: none !important;
+}
+
+.copy-code,
+.code-toolbar,
+.copy-button,
+button[class*="copy"],
+textarea.copyable,
+.clipboard,
+.copy-to-clipboard,
+.copy-snippet {
+  background-color: transparent !important;
+  border: none !important;
+  color: @text !important;
 }
 
 // Text selection
@@ -508,6 +518,67 @@ tbody tr:hover {
     }
 
     less += '\n// Example Usage\n/*\nbody {\n  background-color: @base;\n  color: @text;\n}\n*/\n';
+  }
+
+  // Class-specific styling (from CSS analysis)
+  if (cssAnalysis && cssAnalysis.grouped) {
+    less += `\n// Class-specific styling (AI CSS analysis)\n`;
+    // Buttons
+    if (cssAnalysis.grouped.buttons?.length) {
+      const classes = cssAnalysis.grouped.buttons.slice(0, 100).map((b: any) => b.className).filter(Boolean);
+      classes.forEach((cls: string) => {
+        less += `.${cls} {\n`;
+        less += `  color: @ALT_MAIN;\n`;
+        less += `  &:hover {\n`;
+        less += `    background: @surface0;\n`;
+        less += `    background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%);\n`;
+        less += `    & when (contrast(@ALT_MAIN, @surface0) < 4.5) { color: @text; }\n`;
+        less += `    & when not (contrast(@ALT_MAIN, @surface0) < 4.5) { color: @ALT_MAIN; }\n`;
+        less += `  }\n`;
+        less += `}\n`;
+      });
+    }
+    // Links
+    if (cssAnalysis.grouped.links?.length) {
+      const classes = cssAnalysis.grouped.links.slice(0, 100).map((l: any) => l.className).filter(Boolean);
+      classes.forEach((cls: string) => {
+        less += `a.${cls}, .${cls} a {\n`;
+        less += `  color: @accent;\n`;
+        less += `}\n`;
+        less += `a.${cls}:hover, .${cls} a:hover {\n`;
+        less += `  & when (@link-contrast < 4.5) { color: @text; }\n`;
+        less += `  & when not (@link-contrast < 4.5) { color: @accent; }\n`;
+        less += `  /* Gradient text with strict support detection */\n`;
+        less += `  @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {\n`;
+        less += `    background-image: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);\n`;
+        less += `    -webkit-background-clip: text;\n`;
+        less += `    -webkit-text-fill-color: transparent;\n`;
+        less += `  }\n`;
+        less += `}\n`;
+      });
+    }
+    // Backgrounds
+    if (cssAnalysis.grouped.backgrounds?.length) {
+      const classes = cssAnalysis.grouped.backgrounds.slice(0, 100).map((b: any) => b.className).filter(Boolean);
+      classes.forEach((cls: string) => {
+        less += `.${cls} { background: @surface0 !important; }\n`;
+      });
+    }
+    // Text
+    if (cssAnalysis.grouped.text?.length) {
+      const classes = cssAnalysis.grouped.text.slice(0, 100).map((t: any) => t.className).filter(Boolean);
+      classes.forEach((cls: string) => {
+        less += `.${cls} { color: @text !important; }\n`;
+      });
+    }
+    // Borders (color-only)
+    if (cssAnalysis.grouped.borders?.length) {
+      const classes = cssAnalysis.grouped.borders.slice(0, 100).map((b: any) => b.className).filter(Boolean);
+      classes.forEach((cls: string) => {
+        less += `.${cls} { border-color: @overlay1 !important; }\n`;
+        less += `.${cls}:hover { border-color: @alt1-main !important; }\n`;
+      });
+    }
   }
 
   return less;
