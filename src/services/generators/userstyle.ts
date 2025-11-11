@@ -178,33 +178,35 @@ export function generateUserStyle(
 ${cssVarMappings}
 
     /* ═══════════════════════════════════════════════════════════
-       CATPPUCCIN ADVANCED ACCENT SYSTEM
+       CATPPUCCIN ACCENT SYSTEM (Analogous Harmony)
        ═══════════════════════════════════════════════════════════
 
-       This theme uses a sophisticated color harmony system:
+       This theme uses an analogous color harmony system:
 
        @accent (main-accent):
          - The primary accent color selected by the user
          - Used for primary interactive elements (buttons, links)
 
        @bi-accent1, @bi-accent2 (±72° hue, analogous harmony):
-         - ALWAYS used WITH their main-accent for gradients
+         - Two colors that work as BOTH:
+           1. Main-colors for different elements (alongside @accent)
+           2. Gradient companions for any main-color
          - Create harmonious color transitions
          - Example: linear-gradient(@accent, @bi-accent1)
-         - NEVER appear alone without their main-accent
 
-       @co-accent1, @co-accent2 (±144° hue, triadic harmony):
-         - NEVER appear with their originating main-accent
-         - Used as INDEPENDENT main-accents on DIFFERENT elements
-         - Create visual separation and color diversity
+       MAIN-COLORS FOR ELEMENTS:
+         The three analogous colors used as primary colors for elements:
+         - @accent: Primary elements (main CTAs, primary buttons)
+         - @bi-accent1: Secondary elements (secondary buttons, badges)
+         - @bi-accent2: Tertiary elements (tags, chips, highlights)
 
        CASCADING SYSTEM:
-         When a co-accent becomes a main-accent (alt1/alt2),
-         it gets its own bi-accents for gradients:
+         When bi-accents are used as main-colors (alt1/alt2),
+         they get their OWN bi-accents for gradients:
 
          Primary: @accent → gradients with @bi-accent1/@bi-accent2
-         Secondary: @alt1-main (co-accent1) → gradients with @alt1-bi1/@alt1-bi2
-         Tertiary: @alt2-main (co-accent2) → gradients with @alt2-bi1/@alt2-bi2
+         Secondary: @alt1-main (bi-accent1) → gradients with @alt1-bi1/@alt1-bi2
+         Tertiary: @alt2-main (bi-accent2) → gradients with @alt2-bi1/@alt2-bi2
 
        ═══════════════════════════════════════════════════════════ */
 
@@ -229,37 +231,34 @@ ${cssVarMappings}
 
        When user changes @accentColor in UserStyle UI, this mixin
        automatically updates ALL derived accents including the
-       full cascading hierarchy (bi-accents and co-accents).
+       full cascading hierarchy (bi-accents for each main-color).
 
        ═══════════════════════════════════════════════════════════ */
 ${(() => {
       let out = '';
       ACCENT_NAMES.forEach((name) => {
         const mainSet = PRECOMPUTED_ACCENTS[flavor][name];
-        const co1Set = PRECOMPUTED_ACCENTS[flavor][mainSet.coAccent1];
-        const co2Set = PRECOMPUTED_ACCENTS[flavor][mainSet.coAccent2];
+        const bi1Set = PRECOMPUTED_ACCENTS[flavor][mainSet.biAccent1];
+        const bi2Set = PRECOMPUTED_ACCENTS[flavor][mainSet.biAccent2];
 
         out += `    #derive-accents() when (@accentColor = ${name}) {\n`;
         out += `      @accent: @${name};\n`;
-        out += `      /* Bi-accents for main accent */\n`;
+        out += `      /* Bi-accents for main accent (analogous harmony at ±72°) */\n`;
         out += `      @bi-accent1: @${mainSet.biAccent1};\n`;
         out += `      @bi-accent2: @${mainSet.biAccent2};\n`;
         out += `      @bi-accent: @${mainSet.biAccent1};\n`;
-        out += `      /* Co-accents (become main-accents on other elements) */\n`;
-        out += `      @co-accent1: @${mainSet.coAccent1};\n`;
-        out += `      @co-accent2: @${mainSet.coAccent2};\n`;
-        out += `      /* Cascading: alt1 (co-accent1 as main with its bi-accents) */\n`;
-        out += `      @alt1-main: @${mainSet.coAccent1};\n`;
-        out += `      @alt1-bi1: @${co1Set.biAccent1};\n`;
-        out += `      @alt1-bi2: @${co1Set.biAccent2};\n`;
-        out += `      /* Cascading: alt2 (co-accent2 as main with its bi-accents) */\n`;
-        out += `      @alt2-main: @${mainSet.coAccent2};\n`;
-        out += `      @alt2-bi1: @${co2Set.biAccent1};\n`;
-        out += `      @alt2-bi2: @${co2Set.biAccent2};\n`;
-        out += `      /* Button accent (uses one of the co-accent sets) */\n`;
+        out += `      /* Cascading: alt1 (bi-accent1 as main with its bi-accents) */\n`;
+        out += `      @alt1-main: @${mainSet.biAccent1};\n`;
+        out += `      @alt1-bi1: @${bi1Set.biAccent1};\n`;
+        out += `      @alt1-bi2: @${bi1Set.biAccent2};\n`;
+        out += `      /* Cascading: alt2 (bi-accent2 as main with its bi-accents) */\n`;
+        out += `      @alt2-main: @${mainSet.biAccent2};\n`;
+        out += `      @alt2-bi1: @${bi2Set.biAccent1};\n`;
+        out += `      @alt2-bi2: @${bi2Set.biAccent2};\n`;
+        out += `      /* Button accent (uses one of the bi-accent sets) */\n`;
         out += `      @ALT_MAIN: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-main;\n`;
         out += `      @ALT_BI: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-${useAltBi};\n`;
-        
+
         const accentHex = CATPPUCCIN_PALETTES[flavor][name].hex;
         const biAccent1Hex = CATPPUCCIN_PALETTES[flavor][mainSet.biAccent1].hex;
         const newLinkContrast = contrastRatio(accentHex, biAccent1Hex);
@@ -324,7 +323,7 @@ ${(() => {
       &:active,
       &.active,
       &[aria-current="page"] {
-        color: @co-accent1;
+        color: @alt1-main;
         filter: brightness(1.05);
       }
 
@@ -905,7 +904,7 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
       lines.push('      }');
       lines.push('    }');
       lines.push('    a.' + cls + ':active, .' + cls + ' a:active, a.' + cls + '.active, .' + cls + ' a.active {');
-      lines.push('      color: @co-accent1;');
+      lines.push('      color: @alt1-main;');
       lines.push('    }');
     });
   }

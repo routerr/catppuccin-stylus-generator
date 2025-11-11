@@ -46,46 +46,51 @@ Rosewater, Flamingo, Pink, Mauve, Red, Maroon, Peach, Yellow, Green, Teal, Sky, 
 
 User can select which accent(s) to emphasize in theme generation.
 
-### 5. Advanced Accent System
+### 5. Accent System (Analogous Harmony)
 
 **Main Accent**: The primary accent color selected by the user from the Catppuccin palette.
 
-**Bi-accents (Gradient Companions)**:
+**Bi-accents (±72° Analogous Harmony)**:
 - **Calculation**: Two colors at ±72° on the hue wheel from the main-accent
 - **Matching**: The nearest Catppuccin palette colors to these raw ±72° hue positions
-- **Usage**: Always appear as the secondary color in gradients WITH their main-accent
+- **Dual Usage**:
+  1. As **main-colors** for different elements (alongside main-accent)
+  2. As **gradient companions** for any main-color they're paired with
 - **Example**: If Blue is the main-accent, its bi-accents might be Sapphire and Lavender
-- **Application**: `background: linear-gradient(main-accent, bi-accent-1 8%)`
+- **Application**: `background: linear-gradient(blue, sapphire 8%)`
 
-**Co-accents (Independent Companions)**:
-- **Calculation**: Two colors at ±144° on the hue wheel from the main-accent (triadic harmony)
-- **Matching**: The nearest Catppuccin palette colors to these raw ±144° hue positions
-- **Usage**: NEVER appear with their originating main-accent; used as independent main-accents on different elements
-- **Cascading**: When a co-accent is used as a main-accent, it gets its own bi-accents
-- **Example**: If Blue is the main-accent, its co-accents might be Peach and Pink, which then become main-accents for other UI elements
+**Main-Colors for Elements**:
+- The three analogous colors used as primary colors for different UI elements
+- Consists of: **main-accent + bi-accent1 + bi-accent2**
+- Example: If main-accent is Blue → main-colors are [Blue, Sapphire, Lavender]
+- Each main-color can be used independently on different elements:
+  - Blue → Primary buttons, main CTAs
+  - Sapphire → Secondary buttons, badges
+  - Lavender → Tertiary elements, tags, chips
 
-**Accent Hierarchy & Cascading**:
+**Cascading Bi-Accent System**:
 ```
-Primary Element:
-  main-accent: Blue
-  └─ bi-accents: Sapphire, Lavender (used in gradient)
-  └─ co-accents: Peach, Pink (used elsewhere)
+Element with Blue:
+  main-color: Blue
+  └─ gradient-bi1: Sapphire (±72° from Blue)
+  └─ gradient-bi2: Lavender (±72° from Blue)
 
-Secondary Element:
-  main-accent: Peach (from Blue's co-accent)
-  └─ bi-accents: Yellow, Maroon (used in gradient)
-  └─ co-accents: Sky, Mauve (used elsewhere)
+Element with Sapphire (Blue's bi-accent1):
+  main-color: Sapphire
+  └─ gradient-bi1: Sky (±72° from Sapphire)
+  └─ gradient-bi2: Blue (±72° from Sapphire)
 
-Tertiary Element:
-  main-accent: Sky (from Peach's co-accent)
-  └─ bi-accents: Sapphire, Teal (used in gradient)
+Element with Lavender (Blue's bi-accent2):
+  main-color: Lavender
+  └─ gradient-bi1: Mauve (±72° from Lavender)
+  └─ gradient-bi2: Pink (±72° from Lavender)
 ```
 
 **Color Harmony Rules**:
-1. Main-accent + bi-accent pairs create harmonious gradients (analogous harmony at ±72°)
-2. Co-accents never appear in the same element as their originating main-accent (triadic separation at ±144°)
-3. When user changes the main-accent, all derived bi-accents and co-accents update automatically
-4. Co-accents cascade: a co-accent becomes a main-accent with its own bi-accents on other elements
+1. Main-colors distributed across elements create visual hierarchy (primary, secondary, tertiary)
+2. Each main-color gets its own bi-accents for gradients (analogous harmony at ±72°)
+3. When user changes the main-accent, all derived bi-accents update automatically
+4. Bi-accents cascade: when used as main-colors, they get their own bi-accents
 
 ### 6. Theme Generation
 **AI Task**: Analyze website colors and map them to Catppuccin palette
@@ -93,11 +98,11 @@ Tertiary Element:
 **Layout Preservation**: The AI is instructed to ONLY change colors - no layout, sizing, spacing, borders, or positioning changes. The theme should look identical to the original except for the color palette.
 
 **Accent Application Strategy**:
-1. Identify primary interactive elements (buttons, links, tabs) → assign main-accent
-2. Create gradients using main-accent + bi-accents (8-12% opacity on bi-accent)
-3. Identify secondary/supporting elements → assign co-accents as their main-accent
-4. Apply cascading: co-accents get their own bi-accents for their gradients
-5. Ensure co-accents never appear alongside their originating main-accent
+1. Identify primary interactive elements → assign main-accent (e.g., Blue)
+2. Identify secondary elements → assign bi-accent1 (e.g., Sapphire)
+3. Identify tertiary elements → assign bi-accent2 (e.g., Lavender)
+4. Create gradients: each main-color uses its own bi-accents (8-12% opacity)
+5. Apply cascading: bi-accents get their own bi-accents when used as main-colors
 
 **Output format**:
 - **UserStyle (.user.less)** - Single comprehensive theme file supporting all 4 Catppuccin flavors with automatic light/dark mode detection and customizable accent colors

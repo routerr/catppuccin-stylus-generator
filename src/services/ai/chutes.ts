@@ -488,30 +488,37 @@ IMPORTANT: For BUTTON BORDERS, DO NOT add accent color borders if the original s
 ${accentGuide}
 
 ACCENT COLOR MAPPING STRATEGY:
-Map different original colors to different Catppuccin accents based on their semantic meaning:
+Map different original colors to different Catppuccin accents based on their semantic meaning.
 
-Primary/Brand Colors → blue or sapphire (main CTAs, primary buttons)
-  - Use their bi-accents for gradients
-  - Use their co-accents for OTHER elements (badges, secondary items)
+MAIN-COLORS (The three analogous colors):
+For any chosen main-accent, the system provides THREE main-colors to distribute across elements:
+  - main-accent: Primary color (e.g., blue)
+  - bi-accent1: Secondary color (e.g., sapphire, ±72° from blue)
+  - bi-accent2: Tertiary color (e.g., lavender, ±72° from blue)
 
-Secondary Actions → mauve or lavender (secondary buttons, less important actions)
-  - Use their bi-accents for gradients
+ELEMENT ASSIGNMENT EXAMPLES:
+If main-accent is Blue → main-colors are [blue, sapphire, lavender]:
+  - Primary buttons/CTAs → blue (gradients with sapphire/lavender)
+  - Secondary buttons/badges → sapphire (gradients with sky/blue)
+  - Tertiary elements/tags → lavender (gradients with mauve/pink)
 
-Links & Navigation → sapphire or sky (clickable text, navigation items)
-  - Use their bi-accents for hover gradients
-  - Their co-accents can be used for active/visited states on OTHER elements
+If main-accent is Green → main-colors are [green, teal, yellow]:
+  - Success states → green (gradients with teal/yellow)
+  - Info badges → teal (gradients with sky/sapphire)
+  - Highlights → yellow (gradients with peach/maroon)
 
-Success States → green or teal
-Warning States → yellow or peach
-Error States → red or maroon
-Info States → blue or sky
+SEMANTIC STATES:
+Success States → green (with teal, yellow as related elements)
+Warning States → yellow (with peach, maroon as related elements)
+Error States → red (with maroon, pink as related elements)
+Info States → blue (with sapphire, lavender as related elements)
 
-VARIETY IS KEY: If the website has multiple shades of blue, map them to DIFFERENT Catppuccin colors:
-- Bright blue button → blue (gradients with sapphire/lavender)
-- Darker blue link → sapphire (gradients with blue/sky)
-- Light blue banner → sky (gradients with sapphire/teal)
-- Blue's co-accents (peach/pink) → use for badges or other distinct elements
-This prevents everything from looking the same color!
+VARIETY IS KEY: Distribute the three main-colors across different UI elements:
+- Primary action → blue (gradients with sapphire/lavender)
+- Navigation/links → sapphire (blue's bi-accent1, gradients with sky/blue)
+- Headings/emphasis → lavender (blue's bi-accent2, gradients with mauve/pink)
+- Badges/tags → Can use any of the bi-accents as their main-color
+This creates visual hierarchy while maintaining color harmony!
 
 TEXT CLARITY RULES:
 CRITICAL: Text must always be fully opaque.

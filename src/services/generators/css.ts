@@ -65,11 +65,8 @@ export function generateCssTheme(
     css += `  --ctp-${colorName}-rgb: ${colorValue.rgb.r}, ${colorValue.rgb.g}, ${colorValue.rgb.b};\n`;
   }
 
-  css += `\n  /* Accent Color Scheme Variables */\n`;
-  css += `  /* Main accents (used for static colors) */\n`;
-  css += `  --ctp-co-accent1: var(--ctp-${pre.coAccent1});\n`;
-  css += `  --ctp-co-accent2: var(--ctp-${pre.coAccent2});\n`;
-  css += `  /* Bi-accents (two nearest to ${defaultAccent}, used for smooth gradients) */\n`;
+  css += `\n  /* Accent Color Scheme Variables (Analogous Harmony) */\n`;
+  css += `  /* Main-colors: three analogous colors at ±72° for visual hierarchy */\n`;
   css += `  --ctp-accent: var(--ctp-${defaultAccent});\n`;
   css += `  --ctp-bi-accent1: var(--ctp-${pre.biAccent1});\n`;
   css += `  --ctp-bi-accent2: var(--ctp-${pre.biAccent2});\n`;

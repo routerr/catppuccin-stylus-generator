@@ -288,10 +288,10 @@ function createColorAnalysisPrompt(crawler: CrawlerResult & { detectedMode?: 'da
   TASK: Analyze the website's color usage and map to Catppuccin colors.
 
   KEY RULES:
-  1. Map PRIMARY buttons/CTAs to main-accents (e.g., blue, sapphire)
-  2. Use bi-accents for gradients WITH their main-accent
-  3. Use co-accents as main-accents on DIFFERENT elements (never with their originating main-accent)
-  4. Create diverse mappings - don't use same accent for everything
+  1. Main-colors = main-accent + bi-accent1 + bi-accent2 (three analogous colors)
+  2. Distribute main-colors across elements: primary buttons (main-accent), secondary buttons (bi-accent1), tertiary elements (bi-accent2)
+  3. Each main-color uses its OWN bi-accents for gradients
+  4. Create diverse mappings - distribute the three main-colors across UI
   5. Preserve semantic meaning (green=success, red=error, etc.)
 
   HOVER STATE RULES FOR TEXT & LINKS (DIFFERENT FROM BUTTONS):
@@ -319,8 +319,8 @@ function createColorAnalysisPrompt(crawler: CrawlerResult & { detectedMode?: 'da
     },
     "mappings": [
       {"originalColor": "#HEX1", "catppuccinColor": "blue", "reason": "Primary CTA buttons"},
-      {"originalColor": "#HEX2", "catppuccinColor": "peach", "reason": "Secondary badges (co-accent from blue)"},
-      {"originalColor": "#HEX3", "catppuccinColor": "sapphire", "reason": "Links (bi-accent gradient with blue)"}
+      {"originalColor": "#HEX2", "catppuccinColor": "sapphire", "reason": "Secondary buttons (blue's bi-accent1)"},
+      {"originalColor": "#HEX3", "catppuccinColor": "lavender", "reason": "Badges and tags (blue's bi-accent2)"}
     ]
   }
 

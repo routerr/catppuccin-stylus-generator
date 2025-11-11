@@ -6,8 +6,6 @@ type RGB = { r: number; g: number; b: number };
 export interface AccentSet {
   biAccent1: AccentColor;
   biAccent2: AccentColor;
-  coAccent1: AccentColor;
-  coAccent2: AccentColor;
 }
 
 export type PrecomputedAccents = Record<CatppuccinFlavor, Record<AccentColor, AccentSet>>;
@@ -86,23 +84,17 @@ export function nearestAccentByRGB(target: RGB, palette: Record<CatppuccinColor,
 export function computeAccentSetFor(palette: Record<CatppuccinColor, { hex: string }>, main: AccentColor): AccentSet {
   const mainHex = palette[main]?.hex;
   const { h, s, l } = hexToHsl(mainHex);
-  // Pentagonal scheme offsets (nearest: ±72°, farther: ±144°)
+  // Analogous scheme offsets (±72° for harmonious bi-accents)
   const nearA = h + 72;
   const nearB = h - 72;
-  const farA = h + 144;
-  const farB = h - 144;
 
   const nearARGB = hslToRgb(nearA, s, l);
   const nearBRGB = hslToRgb(nearB, s, l);
-  const farARGB = hslToRgb(farA, s, l);
-  const farBRGB = hslToRgb(farB, s, l);
 
   const bi1 = nearestAccentByRGB(nearARGB, palette, [main]);
   const bi2 = nearestAccentByRGB(nearBRGB, palette, [main, bi1]);
-  const co1 = nearestAccentByRGB(farARGB, palette, [main, bi1, bi2]);
-  const co2 = nearestAccentByRGB(farBRGB, palette, [main, bi1, bi2, co1]);
 
-  return { biAccent1: bi1, biAccent2: bi2, coAccent1: co1, coAccent2: co2 };
+  return { biAccent1: bi1, biAccent2: bi2 };
 }
 
 export const PRECOMPUTED_ACCENTS: PrecomputedAccents = (() => {
@@ -119,7 +111,7 @@ export const PRECOMPUTED_ACCENTS: PrecomputedAccents = (() => {
 
 /**
  * Generates a comprehensive guide for AI systems explaining the Catppuccin accent system
- * including main-accents, bi-accents, and co-accents with their usage rules.
+ * including main-accents and bi-accents with their usage rules.
  */
 export function generateAccentSystemGuide(flavor: CatppuccinFlavor = 'mocha'): string {
   const palette = CATPPUCCIN_PALETTES[flavor];
@@ -130,58 +122,58 @@ export function generateAccentSystemGuide(flavor: CatppuccinFlavor = 'mocha'): s
     { main: 'green', desc: 'Success states and confirmations' },
   ];
 
-  let guide = `CATPPUCCIN ADVANCED ACCENT SYSTEM - Color Harmony Guide:
+  let guide = `CATPPUCCIN ACCENT SYSTEM - Analogous Color Harmony Guide:
 
 ═══════════════════════════════════════════════════════════
 
-MAIN-ACCENT: The primary accent color selected for an element.
+MAIN-ACCENT: The primary accent color selected by the user.
 
-BI-ACCENTS (Gradient Companions at ±72° hue):
+BI-ACCENTS (±72° hue, Analogous Harmony):
 - Two harmonious colors that create ANALOGOUS color harmony
-- ALWAYS used as gradient partners WITH their main-accent
-- Create subtle, pleasing gradients (e.g., linear-gradient(main-accent, bi-accent))
-- NEVER appear alone; always paired with their main-accent
+- Calculated at ±72° on the hue wheel from the main-accent
+- Used in two ways:
+  1. As MAIN-COLORS for different elements (alongside main-accent)
+  2. As GRADIENT companions for any main-color they're paired with
 
-CO-ACCENTS (Independent Companions at ±144° hue):
-- Two TRIADIC harmony colors (complementary color theory)
-- NEVER appear in the same element as their originating main-accent
-- Used as INDEPENDENT main-accents on DIFFERENT elements
-- Create visual separation and color diversity across the UI
+MAIN-COLORS FOR ELEMENTS:
+- The three colors used as primary colors for different UI elements
+- Consists of: main-accent + bi-accent1 + bi-accent2
+- Example: If main-accent is Blue → main-colors are [Blue, Sapphire, Lavender]
+- Each main-color can be used independently on different elements
 
 ═══════════════════════════════════════════════════════════
 
-CASCADING ACCENT HIERARCHY:
+CASCADING BI-ACCENT SYSTEM:
 
-When a co-accent becomes a main-accent on a different element,
-it gets its own bi-accents for gradients:
+When bi-accents are used as main-colors on elements,
+they get their OWN bi-accents for gradients:
 
-Primary Element:
-  main-accent: Blue
-  ├─ bi-accent1: Sapphire (gradient with Blue)
-  ├─ bi-accent2: Lavender (gradient with Blue)
-  └─ co-accents: Peach, Pink (used elsewhere, NOT with Blue)
+Element with Blue:
+  main-color: Blue
+  ├─ gradient-bi1: Sapphire (±72° from Blue)
+  ├─ gradient-bi2: Lavender (±72° from Blue)
 
-Secondary Element (uses Blue's co-accent):
-  main-accent: Peach (from Blue's co-accent)
-  ├─ bi-accent1: Yellow (gradient with Peach)
-  ├─ bi-accent2: Maroon (gradient with Peach)
-  └─ co-accents: Sky, Mauve (used elsewhere, NOT with Peach)
+Element with Sapphire (Blue's bi-accent1):
+  main-color: Sapphire
+  ├─ gradient-bi1: Sky (±72° from Sapphire)
+  ├─ gradient-bi2: Blue (±72° from Sapphire)
 
-Tertiary Element (uses Peach's co-accent):
-  main-accent: Sky (from Peach's co-accent)
-  ├─ bi-accent1: Sapphire (gradient with Sky)
-  ├─ bi-accent2: Teal (gradient with Sky)
+Element with Lavender (Blue's bi-accent2):
+  main-color: Lavender
+  ├─ gradient-bi1: Mauve (±72° from Lavender)
+  ├─ gradient-bi2: Pink (±72° from Lavender)
 
 ═══════════════════════════════════════════════════════════
 
 ACCENT SCHEME REFERENCE TABLE (${flavor} flavor):
 
+Main-Accent   → Bi-Accents (±72°)
 `;
 
   // Generate table for all accents
   for (const mainAccent of ACCENT_NAMES) {
     const set = computeAccentSetFor(palette, mainAccent);
-    guide += `${mainAccent.padEnd(12)} → bi: [${set.biAccent1}, ${set.biAccent2}] | co: [${set.coAccent1}, ${set.coAccent2}]\n`;
+    guide += `${mainAccent.padEnd(12)} → [${set.biAccent1}, ${set.biAccent2}]\n`;
   }
 
   guide += `
@@ -189,31 +181,30 @@ ACCENT SCHEME REFERENCE TABLE (${flavor} flavor):
 
 USAGE RULES:
 
-1. GRADIENT CREATION:
-   - Use main-accent + bi-accent (e.g., linear-gradient(blue, sapphire))
-   - Bi-accents at 8-12% opacity for subtle effect
-   - Common angles: 45deg, 135deg, 225deg
+1. MAIN-COLORS ASSIGNMENT:
+   - Assign main-accent to primary UI elements (e.g., primary buttons, main CTAs)
+   - Assign bi-accent1 to secondary UI elements (e.g., secondary buttons, badges)
+   - Assign bi-accent2 to tertiary UI elements (e.g., tags, chips, highlights)
 
-2. CO-ACCENT SEPARATION:
-   - Co-accents MUST NOT appear with their originating main-accent
-   - Co-accents become main-accents on OTHER elements
-   - Example: If blue is used for buttons, peach/pink (blue's co-accents)
-     should be used for DIFFERENT elements like badges or secondary CTAs
+2. GRADIENT CREATION:
+   - Each main-color uses its OWN bi-accents for gradients
+   - Format: linear-gradient(main-color, gradient-bi-accent)
+   - Bi-accents at 8-12% opacity for subtle effect
+   - Common angles: 45deg (text/links), 135deg (buttons), 225deg (panels)
 
 3. VISUAL HARMONY EXAMPLES:
 
-   Primary Button:
+   Primary Button (Blue main-color):
      background: linear-gradient(135deg, blue, sapphire 10%)
-     ❌ WRONG: color: peach (peach is blue's co-accent!)
-     ✅ RIGHT: color: text
+     color: text
 
-   Secondary Badge (uses blue's co-accent):
-     background: linear-gradient(45deg, peach, yellow 10%)
-     ❌ WRONG: color: blue (blue is peach's originator!)
-     ✅ RIGHT: color: text
+   Secondary Badge (Sapphire main-color, from Blue's bi-accent1):
+     background: linear-gradient(45deg, sapphire, sky 10%)
+     color: text
 
-   Focus Ring (uses co-accent from current element):
-     outline: 2px solid peach (if main element uses blue)
+   Tertiary Tag (Lavender main-color, from Blue's bi-accent2):
+     background: linear-gradient(45deg, lavender, mauve 10%)
+     color: text
 
 ═══════════════════════════════════════════════════════════
 
@@ -222,13 +213,12 @@ PRACTICAL MAPPING STRATEGY:
 ${examples.map((ex, i) => {
   const set = computeAccentSetFor(palette, ex.main as AccentColor);
   return `${i + 1}. ${ex.desc}
-   → main: ${ex.main}
+   → main-color: ${ex.main}
    → gradients: ${ex.main} + ${set.biAccent1} OR ${set.biAccent2}
-   → other elements can use: ${set.coAccent1}, ${set.coAccent2}`;
+   → related elements can use: ${set.biAccent1}, ${set.biAccent2} as their main-colors`;
 }).join('\n\n')}
 
 ═══════════════════════════════════════════════════════════`;
 
   return guide;
 }
-

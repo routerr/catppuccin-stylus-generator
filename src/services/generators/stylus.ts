@@ -54,9 +54,9 @@ export function generateStylusTheme(
 ): string {
   const palette = CATPPUCCIN_PALETTES[flavor];
   const pre = computeAccentSetFor(palette, defaultAccent);
-  const co1Set = computeAccentSetFor(palette, pre.coAccent1);
-  const co2Set = computeAccentSetFor(palette, pre.coAccent2);
-  const useAltForSecondary = Math.random() < 0.5 ? 'co1' : 'co2';
+  const bi1Set = computeAccentSetFor(palette, pre.biAccent1);
+  const bi2Set = computeAccentSetFor(palette, pre.biAccent2);
+  const useAltForSecondary = Math.random() < 0.5 ? 'bi1' : 'bi2';
   const date = new Date().toISOString().split('T')[0];
   // Flavor-based intensity tuning (decimals for Stylus fade())
   const intensity = (() => {
@@ -110,16 +110,14 @@ export function generateStylusTheme(
   });
 
   // Add accent color scheme variables
-  stylus += `\n// Accent Color Scheme Variables\n`;
-  stylus += `// Main accents (used for static colors before interactions)\n`;
-  stylus += `$co-accent1 = ${pre.coAccent1}\n`;
-  stylus += `$co-accent2 = ${pre.coAccent2}\n`;
+  stylus += `\n// Accent Color Scheme Variables (Analogous Harmony)\n`;
+  stylus += `// Main-colors: three analogous colors at ±72° for visual hierarchy\n`;
   stylus += `// Intensity tuning (decimals)\n`;
   stylus += `$tint_weak = ${intensity.weak}\n`;
   stylus += `$tint_mid = ${intensity.mid}\n`;
   stylus += `$tint_strong = ${intensity.strong}\n`;
   stylus += `$tint_input_hover = ${intensity.inputHover}\n`;
-  stylus += `// Bi-accents (two nearest to ${defaultAccent}, used for smooth gradients)\n`;
+  stylus += `// Bi-accents (analogous colors at ±72° from ${defaultAccent})\n`;
   stylus += `$bi-accent1 = ${pre.biAccent1}\n`;
   stylus += `$bi-accent2 = ${pre.biAccent2}\n`;
   stylus += `$bi-accent = $bi-accent1\n`;
@@ -218,8 +216,8 @@ export function generateStylusTheme(
       -webkit-text-fill-color transparent
       color transparent
   &:active, &.active
-    color $co-accent1
-    text-decoration-color $co-accent2
+    color $bi-accent1
+    text-decoration-color $bi-accent2
 
 `;
 
@@ -249,32 +247,32 @@ export function generateStylusTheme(
     border-color ${defaultAccent}
   &:focus-visible
     // Co-accent focus ring for harmonious accessibility
-    outline 2px solid $co-accent1
+    outline 2px solid $bi-accent1
     outline-offset 2px
-    box-shadow 0 0 0 4px fade($co-accent2, 0.25)
+    box-shadow 0 0 0 4px fade($bi-accent2, 0.25)
 
 `;
 
     // Calculate contrast for secondary button hover state
-    const secondaryBtnTextHex = useAltForSecondary === 'co1' ? 
-      palette[pre.coAccent1].hex : palette[pre.coAccent2].hex;
+    const secondaryBtnTextHex = useAltForSecondary === 'bi1' ?
+      palette[pre.biAccent1].hex : palette[pre.biAccent2].hex;
     const secondaryBtnBgHex = palette.surface0.hex;
     const secondaryBtnContrast = contrastRatio(secondaryBtnTextHex, secondaryBtnBgHex);
     
     stylus += `.btn-secondary
   background $surface_0
-  color ${useAltForSecondary === 'co1' ? `${pre.coAccent1}` : `${pre.coAccent2}`}
-  border-color fade(${useAltForSecondary === 'co1' ? `${pre.coAccent1}` : `${pre.coAccent2}`}, 0.25)
+  color ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`}
+  border-color fade(${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`}, 0.25)
   &:hover
     // Apply contrast-aware text color
     if (${secondaryBtnContrast} < 4.5)
       color $base  // White for better contrast
     else
-      color ${useAltForSecondary === 'co1' ? `${pre.coAccent1}` : `${pre.coAccent2}`}
+      color ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`}
       
     background $surface_0
-    background-image linear-gradient(135deg, ${useAltForSecondary === 'co1' ? `${pre.coAccent1}` : `${pre.coAccent2}`} 0%, ${useAltForSecondary === 'co1' ? `${pre.coAccent1}` : `${pre.coAccent2}`} ${hoverMain}%, ${useAltForSecondary === 'co1' ? `${co1Set.biAccent1}` : `${co2Set.biAccent1}`} ${hoverMain}%, ${useAltForSecondary === 'co1' ? `${co1Set.biAccent1}` : `${co2Set.biAccent1}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'co1' ? `${co1Set.biAccent2}` : `${co2Set.biAccent2}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'co1' ? `${co1Set.biAccent2}` : `${co2Set.biAccent2}`} 100%)
-    border-color ${useAltForSecondary === 'co1' ? `${co1Set.biAccent1}` : `${co2Set.biAccent1}`}
+    background-image linear-gradient(135deg, ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`} 0%, ${useAltForSecondary === 'bi1' ? `${pre.biAccent1}` : `${pre.biAccent2}`} ${hoverMain}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`} ${hoverMain}%, ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'bi1' ? `${co1Set.biAccent2}` : `${co2Set.biAccent2}`} ${hoverMain + hoverB1}%, ${useAltForSecondary === 'bi1' ? `${co1Set.biAccent2}` : `${co2Set.biAccent2}`} 100%)
+    border-color ${useAltForSecondary === 'bi1' ? `${bi1Set.biAccent1}` : `${bi2Set.biAccent1}`}
 
 `;
 

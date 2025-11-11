@@ -86,26 +86,23 @@ export function generateLessTheme(
   }
 
   // Add accent color scheme variables
-  less += `\n// Accent Color Scheme Variables\n`;
-  less += `// Main accents (used for static colors before interactions)\n`;
-  less += `@co-accent1: @${pre.coAccent1};\n`;
-  less += `@co-accent2: @${pre.coAccent2};\n`;
-  less += `// Bi-accent (most similar to ${defaultAccent}, used for smooth gradients)\n`;
+  less += `\n// Accent Color Scheme Variables (Analogous Harmony)\n`;
+  less += `// Main-colors: three analogous colors at ±72° for visual hierarchy\n`;
   // Accent family variables
   less += `@accent: @${defaultAccent};\n`;
   less += `@bi-accent1: @${pre.biAccent1};\n`;
   less += `@bi-accent2: @${pre.biAccent2};\n`;
   less += `@bi-accent: @bi-accent1;\n`;
-  // Alt accent sets (from co-accents, with their own bi-accents)
-  const co1Set = computeAccentSetFor(palette, pre.coAccent1);
-  const co2Set = computeAccentSetFor(palette, pre.coAccent2);
+  // Alt accent sets (bi-accents as main-colors with their own bi-accents)
+  const bi1Set = computeAccentSetFor(palette, pre.biAccent1);
+  const bi2Set = computeAccentSetFor(palette, pre.biAccent2);
   const useAltForSecondary = Math.random() < 0.5 ? 'alt1' : 'alt2';
-  less += `@alt1-main: @${pre.coAccent1};\n`;
-  less += `@alt1-bi1: @${co1Set.biAccent1};\n`;
-  less += `@alt1-bi2: @${co1Set.biAccent2};\n`;
-  less += `@alt2-main: @${pre.coAccent2};\n`;
-  less += `@alt2-bi1: @${co2Set.biAccent1};\n`;
-  less += `@alt2-bi2: @${co2Set.biAccent2};\n`;
+  less += `@alt1-main: @${pre.biAccent1};\n`;
+  less += `@alt1-bi1: @${bi1Set.biAccent1};\n`;
+  less += `@alt1-bi2: @${bi1Set.biAccent2};\n`;
+  less += `@alt2-main: @${pre.biAccent2};\n`;
+  less += `@alt2-bi1: @${bi2Set.biAccent1};\n`;
+  less += `@alt2-bi2: @${bi2Set.biAccent2};\n`;
   // Link hover gradient parameters (build-time random)
   less += `@hover-angle: ${hoverAngle}deg;\n`;
   less += `@hover-bi: @${Math.random() < 0.5 ? pre.biAccent1 : pre.biAccent2};\n`;
@@ -218,7 +215,7 @@ a, .link {
 
   &:active,
   &.active {
-    color: @co-accent1;
+    color: @alt1-main;
   }
 }
 
@@ -263,7 +260,7 @@ a, .link {
 
   &:active,
   &.active {
-    color: @co-accent1;
+    color: @alt1-main;
   }
 }
 
@@ -394,7 +391,7 @@ input[type="tel"],
 input[type="number"] {
   background-color: fade(@surface0, 12%) !important;
   color: @text;
-  caret-color: @co-accent1;
+  caret-color: @alt1-main;
 
   &:hover {
     /* Neutralize hover: keep default border/background */
