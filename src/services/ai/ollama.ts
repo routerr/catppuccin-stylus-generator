@@ -339,6 +339,27 @@ Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((
   - Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); }
   - Different angles: 135deg or 225deg
 
+  HOVER GRADIENT DETECTION RULES (NEW):
+  CRITICAL: Analyze each interactive element to determine hover gradient behavior:
+
+  1. VISIBLE BACKGROUND ELEMENTS (gradient to background on hover):
+     - Elements with visible background colors different from their parent
+     - Elements with visible borders (border-width > 0 and not transparent)
+     - Set: hasVisibleBackground: true OR hasBorder: true
+     - Hover effect: Apply linear-gradient to background with random angle (0-360°)
+
+  2. INVISIBLE BACKGROUND ELEMENTS (gradient to text on hover):
+     - Text-only elements with transparent/invisible backgrounds (same as parent)
+     - No visible borders
+     - Set: isTextOnly: true, hasVisibleBackground: false, hasBorder: false
+     - Hover effect: Apply linear-gradient to text using background-clip technique
+
+  3. FOR EACH MAPPING, DETECT AND SET:
+     - hasVisibleBackground: true if element has visible background different from parent
+     - hasBorder: true if element has borders (border-width > 0 and not transparent)
+     - isTextOnly: true if element is text-only with invisible background
+     - hoverGradientAngle: random integer between 0-360 degrees
+
   OUTPUT FORMAT (JSON only, no markdown):
   {
     "analysis": {
@@ -348,9 +369,9 @@ Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((
       "textColor": "#HEX6"
     },
     "mappings": [
-      {"originalColor": "#HEX1", "catppuccinColor": "blue", "reason": "Primary CTA buttons"},
-      {"originalColor": "#HEX2", "catppuccinColor": "sapphire", "reason": "Secondary buttons (blue's bi-accent1)"},
-      {"originalColor": "#HEX3", "catppuccinColor": "lavender", "reason": "Badges and tags (blue's bi-accent2)"}
+      {"originalColor": "#HEX1", "catppuccinColor": "blue", "reason": "Primary CTA buttons", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 135},
+      {"originalColor": "#HEX2", "catppuccinColor": "sapphire", "reason": "Secondary buttons (blue's bi-accent1)", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 225},
+      {"originalColor": "#HEX3", "catppuccinColor": "lavender", "reason": "Badges and tags (blue's bi-accent2)", "hasVisibleBackground": false, "hasBorder": false, "isTextOnly": true, "hoverGradientAngle": 315}
     ]
   }
 

@@ -84,6 +84,11 @@ export interface ColorMapping {
   originalColor: string;
   catppuccinColor: CatppuccinColor;
   reason: string;
+  // Hover gradient properties
+  hasVisibleBackground?: boolean; // Element has visible background different from parent
+  hasBorder?: boolean; // Element has visible borders
+  isTextOnly?: boolean; // Element is text-only with invisible background
+  hoverGradientAngle?: number; // Random angle (0-360°) for hover gradient
 }
 
 // CSS class mapping result
@@ -97,6 +102,11 @@ export interface CSSClassMapping {
     catppuccinColor?: CatppuccinColor;
   }>;
   purpose: string; // e.g., "button", "link", "background", "text"
+  // Hover gradient properties
+  hasVisibleBackground?: boolean; // Element has visible background different from parent
+  hasBorder?: boolean; // Element has visible borders
+  isTextOnly?: boolean; // Element is text-only with invisible background
+  hoverGradientAngle?: number; // Random angle (0-360°) for hover gradient
 }
 
 // Enhanced website analysis with CSS classes

@@ -100,8 +100,24 @@ export function generateUserStyle(
   const palette = CATPPUCCIN_PALETTES[flavor];
   const useAltForButtons = Math.random() < 0.5 ? 'alt1' : 'alt2';
   const useAltBi = 'bi1'; // deterministic: pair main-accent with bi-accent1
-  const hoverAngle = Math.floor(Math.random() * 180); // subtle randomness retained
   const hoverBiPick = 'bi-accent1'; // deterministic: gradient pairs with bi-accent1
+
+  // Extract hover angles from AI mappings (more flexible and dynamic)
+  const colorMappings = Array.isArray(mappings) ? mappings : [];
+  const hoverAngles = {
+    links: colorMappings.find(m => m.reason?.toLowerCase().includes('link') && m.hoverGradientAngle)?.hoverGradientAngle || Math.floor(Math.random() * 360),
+    buttons: colorMappings.find(m => m.reason?.toLowerCase().includes('button') && m.hoverGradientAngle)?.hoverGradientAngle || Math.floor(Math.random() * 360),
+    cards: colorMappings.find(m => (m.reason?.toLowerCase().includes('card') || m.reason?.toLowerCase().includes('panel')) && m.hoverGradientAngle)?.hoverGradientAngle || Math.floor(Math.random() * 360),
+    badges: colorMappings.find(m => (m.reason?.toLowerCase().includes('badge') || m.reason?.toLowerCase().includes('tag')) && m.hoverGradientAngle)?.hoverGradientAngle || Math.floor(Math.random() * 360),
+    general: Math.floor(Math.random() * 360), // Fallback for unclassified elements
+  };
+
+  // Determine if elements should use text gradients vs background gradients
+  const textOnlyElements = {
+    links: colorMappings.some(m => m.reason?.toLowerCase().includes('link') && m.isTextOnly) || true, // Links are text-only by default
+    buttons: colorMappings.some(m => m.reason?.toLowerCase().includes('button') && m.isTextOnly) || false,
+    headings: true, // Headings are always text-only
+  };
 
   // Flavor-based intensity tuning for subtle gradients and tints
   const intensity = (() => {
@@ -210,8 +226,12 @@ ${cssVarMappings}
 
        ═══════════════════════════════════════════════════════════ */
 
-    /* Link hover gradient parameters (build-time random) */
-    @hover-angle: ${hoverAngle}deg;
+    /* Hover gradient parameters (AI-generated or dynamic) */
+    @hover-angle-links: ${hoverAngles.links}deg;
+    @hover-angle-buttons: ${hoverAngles.buttons}deg;
+    @hover-angle-cards: ${hoverAngles.cards}deg;
+    @hover-angle-badges: ${hoverAngles.badges}deg;
+    @hover-angle-general: ${hoverAngles.general}deg;
     @hover-bi: @${hoverBiPick};
 
     /* Intensity tuning (flavor-aware) */
@@ -309,9 +329,21 @@ ${(() => {
       color: @text !important;
     }
 
-    /* Links - prefer solid text; enable gradient text only when supported */
+    /* SVG elements - preserve transparency and original styling */
+    svg,
+    svg *,
+    [class*="icon"],
+    [class*="Icon"] {
+      background: none !important;
+      background-color: transparent !important;
+      background-image: none !important;
+    }
+
+    /* Links - apply gradient to text (invisible background) */
     a,
-    a.link {
+    a.link,
+    a[class],
+    a[class][href] {
       /* Default state: Apply Catppuccin text color */
       color: @accent !important;
 
@@ -321,15 +353,25 @@ ${(() => {
       &:focus-visible {
         /* Remove underline on hover for clean look */
         text-decoration: none;
-        /* Contrast-aware text color adjustment */
-        & when (@link-contrast < 4.5) {
-          color: @link-fallback !important;
-        }
-        & when not (@link-contrast < 4.5) {
-          color: @accent !important;
+
+        /* Apply gradient to text using background-clip (text-only elements) */
+        @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
+          background: linear-gradient(@hover-angle-links, @accent 0%, @hover-bi 100%) !important;
+          -webkit-background-clip: text !important;
+          background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
         }
 
-        /* Gradient text moved to opt-in block (.cp-gradient-text). Keep solid colors here. */
+        /* Fallback for non-supporting browsers */
+        @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
+          /* Contrast-aware text color adjustment */
+          & when (@link-contrast < 4.5) {
+            color: @link-fallback !important;
+          }
+          & when not (@link-contrast < 4.5) {
+            color: @accent !important;
+          }
+        }
       }
 
       &:active,
@@ -345,19 +387,7 @@ ${(() => {
       }
     }
 
-    /* Opt-in gradient text (WebKit only): add .cp-gradient-text to html/body */
-    .cp-gradient-text {
-      a:hover,
-      a:focus-visible {
-        @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
-          background: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-      }
-    }
-
-    /* Buttons - gradients on backgrounds; solid readable text */
+    /* Buttons - apply gradients based on background visibility */
     button,
     input[type="button"],
     input[type="submit"] {
@@ -365,8 +395,8 @@ ${(() => {
       color: @ALT_MAIN !important;
 
       &:hover {
-        /* Apply gradient background on hover ONLY */
-        background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%) !important;
+        /* Apply gradient to background (visible background elements) */
+        background-image: linear-gradient(@hover-angle-buttons, @ALT_MAIN 0%, @ALT_BI 100%) !important;
         /* Prefer ALT_MAIN; fallback to @text if contrast fails */
         & when (@button-contrast < 4.5) { color: @text !important; }
         & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }
@@ -374,9 +404,34 @@ ${(() => {
 
       &:active {
         /* Apply reversed gradient on active state */
-        background-image: linear-gradient(135deg, @ALT_BI 0%, @ALT_MAIN 100%) !important;
+        background-image: linear-gradient(@hover-angle-buttons, @ALT_BI 0%, @ALT_MAIN 100%) !important;
         & when (@button-contrast < 4.5) { color: @text !important; }
         & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }
+      }
+    }
+
+    /* Buttons with invisible backgrounds (text-only) - apply gradient to text */
+    button.text-button,
+    button[class*="text"],
+    button[class*="link"],
+    .text-button,
+    .link-button {
+      background: transparent !important;
+      color: @accent !important;
+
+      &:hover {
+        /* Apply gradient to text using background-clip */
+        @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
+          background: linear-gradient(@hover-angle-buttons, @accent 0%, @hover-bi 100%) !important;
+          -webkit-background-clip: text !important;
+          background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+
+        /* Fallback for non-supporting browsers */
+        @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
+          color: @hover-bi !important;
+        }
       }
     }
 
@@ -386,7 +441,7 @@ ${(() => {
 
     /* Class-specific styling (from CSS analysis) */
     /* These rules will be added if directory analysis is used */
-${generateClassSpecificRules(cssAnalysis)}
+${generateClassSpecificRules(cssAnalysis, mappings)}
 
     /* Inputs – transparent background, blend with page */
     input,
@@ -798,9 +853,9 @@ ${generateClassSpecificRules(cssAnalysis)}
       background: fade(@surface0, 60%);
     }
     tbody tr:hover {
-      /* Solid background with gradient text */
+      /* Subtle gradient background for interactive feel */
       background: fade(@surface0, 80%);
-      
+      background-image: linear-gradient(@hover-angle-general, fade(@surface0, 75%), fade(@surface1, 85%));
     }
 
     /* Dense tables variant removed to avoid spacing changes */
@@ -871,6 +926,48 @@ ${generateClassSpecificRules(cssAnalysis)}
     .chip {
       background: fade(@accent, 20%);
       color: @accent;
+
+      &:hover {
+        /* Apply gradient background with variety */
+        background-image: linear-gradient(@hover-angle-badges, fade(@accent, 25%), fade(@bi-accent1, 25%));
+        color: @text;
+      }
+    }
+
+    /* Cards - add subtle hover gradients */
+    .card,
+    .panel,
+    [class*="card"] {
+      &:hover {
+        /* Subtle gradient background for elevated feel */
+        background-image: linear-gradient(@hover-angle-cards, fade(@surface0, 70%), fade(@surface1, 70%));
+      }
+    }
+
+    /* Interactive badges/tags with clickable actions */
+    .badge-interactive,
+    .tag-clickable,
+    .chip-button,
+    button.badge,
+    button.tag,
+    button.chip,
+    a.badge,
+    a.tag,
+    a.chip {
+      cursor: pointer;
+
+      &:hover {
+        /* Gradient to text for clickable badges */
+        @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
+          background: linear-gradient(@hover-angle-badges, @accent, @bi-accent1) !important;
+          -webkit-background-clip: text !important;
+          background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+        @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
+          color: @bi-accent1;
+        }
+      }
     }
   }
 }
@@ -1045,7 +1142,7 @@ function roleToCssVar(role: string): string {
 /**
  * Generate class-specific CSS rules from CSS analysis data
  */
-function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
+function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: ColorMapping[] | MappingOutput): string {
   if (!cssAnalysis || !cssAnalysis.grouped) {
     return '    /* No class-specific analysis available */';
   }
@@ -1053,30 +1150,85 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
   const lines: string[] = [];
   const grouped = cssAnalysis.grouped;
 
+  // Helper to check if a mapping indicates text-only/invisible background
+  const isTextOnlyMapping = (className: string): boolean => {
+    if (!mappings || !Array.isArray(mappings)) return false;
+    // Check if any mapping mentions this class and has isTextOnly=true
+    return mappings.some((m: ColorMapping) =>
+      m.reason?.toLowerCase().includes(className.toLowerCase()) && m.isTextOnly
+    );
+  };
+
+  // Helper to get appropriate angle variable for a class
+  const getHoverAngleVar = (className: string, elementType: 'button' | 'link' | 'card' | 'badge'): string => {
+    // Return the appropriate LESS variable based on element type
+    switch (elementType) {
+      case 'button':
+        return '@hover-angle-buttons';
+      case 'link':
+        return '@hover-angle-links';
+      case 'card':
+        return '@hover-angle-cards';
+      case 'badge':
+        return '@hover-angle-badges';
+      default:
+        return '@hover-angle-general';
+    }
+  };
+
   // Button classes
   if (grouped.buttons && grouped.buttons.length > 0) {
     lines.push('');
     lines.push('    /* Button classes with bi-accent gradients and readable text */');
     grouped.buttons.slice(0, 100).forEach(btn => {
+      const isTextOnly = isTextOnlyMapping(btn.className);
+      const angleVar = getHoverAngleVar(btn.className, 'button');
+
       lines.push('    .' + btn.className + ' {');
       lines.push('      /* Default state: emphasize ALT main on text */');
       lines.push('      color: @ALT_MAIN;');
+
+      if (isTextOnly) {
+        lines.push('      background: transparent !important;');
+      }
+
       lines.push('');
       lines.push('      &:hover {');
-      lines.push('        /* Solid background with gradient background */');
-      lines.push('        background: @surface0 !important;');
-      lines.push('        background-image: linear-gradient(135deg, @ALT_MAIN 0%, @ALT_BI 100%) !important;');
-      lines.push('        /* Prefer ALT_MAIN; fallback to @text if contrast fails */');
-      lines.push('        & when (@button-contrast < 4.5) { color: @text !important; }');
-      lines.push('        & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }');
+
+      if (isTextOnly) {
+        // Text-only button: apply gradient to text
+        lines.push('        /* Apply gradient to text (invisible background element) */');
+        lines.push('        @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
+        lines.push(`          background: linear-gradient(${angleVar}, @accent 0%, @hover-bi 100%) !important;`);
+        lines.push('          -webkit-background-clip: text !important;');
+        lines.push('          background-clip: text !important;');
+        lines.push('          -webkit-text-fill-color: transparent !important;');
+        lines.push('        }');
+        lines.push('        @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
+        lines.push('          color: @hover-bi !important;');
+        lines.push('        }');
+      } else {
+        // Visible background button: apply gradient to background
+        lines.push('        /* Apply gradient to background (visible background element) */');
+        lines.push(`        background-image: linear-gradient(${angleVar}, @ALT_MAIN 0%, @ALT_BI 100%) !important;`);
+        lines.push('        /* Prefer ALT_MAIN; fallback to @text if contrast fails */');
+        lines.push('        & when (@button-contrast < 4.5) { color: @text !important; }');
+        lines.push('        & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }');
+      }
+
       lines.push('      }');
       lines.push('');
       lines.push('      &:active {');
-      lines.push('        /* Solid background with reversed gradient */');
-      lines.push('        background: @surface0 !important;');
-      lines.push('        background-image: linear-gradient(135deg, @ALT_BI 0%, @ALT_MAIN 100%) !important;');
-      lines.push('        & when (@button-contrast < 4.5) { color: @text !important; }');
-      lines.push('        & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }');
+
+      if (!isTextOnly) {
+        lines.push('        /* Reversed gradient for active state */');
+        lines.push(`        background-image: linear-gradient(${angleVar}, @ALT_BI 0%, @ALT_MAIN 100%) !important;`);
+        lines.push('        & when (@button-contrast < 4.5) { color: @text !important; }');
+        lines.push('        & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }');
+      } else {
+        lines.push('        color: @alt1-main !important;');
+      }
+
       lines.push('      }');
       lines.push('    }');
     });
@@ -1085,34 +1237,33 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData): string {
   // Link classes (anchor-scoped – apply broadly to improve coverage)
   if (grouped.links && grouped.links.length > 0) {
     lines.push('');
-    lines.push('    /* Link classes – solid text by default; gradient text only when supported */');
+    lines.push('    /* Link classes – gradient text on hover (invisible background elements) */');
     grouped.links.slice(0, 100).forEach((link) => {
       const cls = link.className.trim();
       if (!cls) return;
+      const angleVar = getHoverAngleVar(cls, 'link');
+
       // anchor with class, and anchor inside element with class
       lines.push('    a.' + cls + ', .' + cls + ' a {');
       lines.push('      /* Default state: Catppuccin accent color */');
       lines.push('      color: @accent !important;');
       lines.push('    }');
       lines.push('    a.' + cls + ':hover, .' + cls + ' a:hover {');
-      lines.push('      /* Contrast-aware text color adjustment */');
-      lines.push('      & when (@link-contrast < 4.5) {');
-      lines.push('        color: @link-fallback !important;');
-      lines.push('      }');
-      lines.push('      & when not (@link-contrast < 4.5) {');
-      lines.push('        color: @accent !important;');
-      lines.push('      }');
-      lines.push('      /* Gradient text moved to opt-in block (.cp-gradient-text). Keep solid here. */');
-      lines.push('      ');
-      lines.push('    }');
-      lines.push('    .cp-gradient-text a.' + cls + ':hover, .cp-gradient-text .' + cls + ' a:hover {');
+      lines.push('      /* Apply gradient to text (text-only elements) */');
       lines.push('      @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
-      lines.push('        background: linear-gradient(@hover-angle, @accent 0%, @hover-bi 100%);');
-      lines.push('        -webkit-background-clip: text;');
-      lines.push('        -webkit-text-fill-color: transparent;');
+      lines.push(`        background: linear-gradient(${angleVar}, @accent 0%, @hover-bi 100%) !important;`);
+      lines.push('        -webkit-background-clip: text !important;');
+      lines.push('        background-clip: text !important;');
+      lines.push('        -webkit-text-fill-color: transparent !important;');
       lines.push('      }');
+      lines.push('      /* Fallback for non-supporting browsers */');
       lines.push('      @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
-      lines.push('        -webkit-text-fill-color: initial !important;');
+      lines.push('        & when (@link-contrast < 4.5) {');
+      lines.push('          color: @link-fallback !important;');
+      lines.push('        }');
+      lines.push('        & when not (@link-contrast < 4.5) {');
+      lines.push('          color: @accent !important;');
+      lines.push('        }');
       lines.push('      }');
       lines.push('    }');
       lines.push('    a.' + cls + ':active, .' + cls + ' a:active, a.' + cls + '.active, .' + cls + ' a.active {');

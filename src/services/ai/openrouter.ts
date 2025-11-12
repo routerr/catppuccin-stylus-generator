@@ -588,6 +588,34 @@ READABILITY RULES:
 - Test contrast: light gradient → use @text or @crust, dark gradient → use @base or @text
 - Text must ALWAYS be fully opaque (no transparency on text colors)
 
+HOVER GRADIENT DETECTION RULES (NEW):
+CRITICAL: Analyze each interactive element (buttons, links, cards, etc.) to determine hover gradient behavior:
+
+1. VISIBLE BACKGROUND ELEMENTS (apply gradient to background on hover):
+   - Elements with visible background colors different from their parent
+   - Elements with visible borders (border-width > 0 and not transparent)
+   - Set: hasVisibleBackground: true OR hasBorder: true
+   - Hover effect: Apply linear-gradient to background with random angle
+   - Generate random angle (0-360°) for each element's hover gradient
+
+2. INVISIBLE BACKGROUND ELEMENTS (apply gradient to text on hover):
+   - Text-only elements with transparent/invisible backgrounds (same as parent)
+   - No visible borders
+   - Set: isTextOnly: true, hasVisibleBackground: false, hasBorder: false
+   - Hover effect: Apply linear-gradient to text using background-clip technique
+   - Generate random angle (0-360°) for each element's hover gradient
+
+3. FOR EACH MAPPING, DETECT AND SET:
+   - hasVisibleBackground: true if element has visible background different from parent
+   - hasBorder: true if element has borders (border-width > 0 and not transparent)
+   - isTextOnly: true if element is text-only with invisible background
+   - hoverGradientAngle: random integer between 0-360 degrees
+
+EXAMPLES:
+- Button with solid background: {hasVisibleBackground: true, hasBorder: false, isTextOnly: false, hoverGradientAngle: 135}
+- Link with no background: {hasVisibleBackground: false, hasBorder: false, isTextOnly: true, hoverGradientAngle: 225}
+- Button with border only: {hasVisibleBackground: false, hasBorder: true, isTextOnly: false, hoverGradientAngle: 45}
+
 REQUIRED JSON OUTPUT (no thinking tags, no markdown, just this structure):
 {
   "analysis": {
@@ -598,21 +626,21 @@ REQUIRED JSON OUTPUT (no thinking tags, no markdown, just this structure):
     "accentColors": ["#HEX8", "#HEX9", "#HEX10", "#HEX11"]
   },
   "mappings": [
-    {"originalColor": "#HEX1", "catppuccinColor": "blue", "reason": "Primary CTA buttons (e.g., 'Sign Up', 'Buy Now')"},
-    {"originalColor": "#HEX2", "catppuccinColor": "sapphire", "reason": "Navigation links and secondary clickable items"},
-    {"originalColor": "#HEX3", "catppuccinColor": "mauve", "reason": "Secondary buttons (e.g., 'Learn More', 'Cancel')"},
-    {"originalColor": "#HEX4", "catppuccinColor": "lavender", "reason": "Page headings and section titles"},
-    {"originalColor": "#HEX5", "catppuccinColor": "pink", "reason": "Accent badges and tags"},
-    {"originalColor": "#HEX6", "catppuccinColor": "base", "reason": "Main page background"},
-    {"originalColor": "#HEX7", "catppuccinColor": "text", "reason": "Primary body text"},
-    {"originalColor": "#HEX8", "catppuccinColor": "green", "reason": "Success indicators and confirm buttons"},
-    {"originalColor": "#HEX9", "catppuccinColor": "red", "reason": "Error messages and delete buttons"},
-    {"originalColor": "#HEX10", "catppuccinColor": "surface0", "reason": "Card backgrounds"},
-    {"originalColor": "#HEX11", "catppuccinColor": "overlay0", "reason": "Subtle borders and dividers"},
-    {"originalColor": "#HEX12", "catppuccinColor": "sky", "reason": "Link hover states and info messages"},
-    {"originalColor": "#HEX13", "catppuccinColor": "yellow", "reason": "Warning banners and caution indicators"},
-    {"originalColor": "#HEX14", "catppuccinColor": "teal", "reason": "Active/selected state backgrounds"},
-    {"originalColor": "#HEX15", "catppuccinColor": "peach", "reason": "Notification badges and highlights"}
+    {"originalColor": "#HEX1", "catppuccinColor": "blue", "reason": "Primary CTA buttons (e.g., 'Sign Up', 'Buy Now')", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 135},
+    {"originalColor": "#HEX2", "catppuccinColor": "sapphire", "reason": "Navigation links and secondary clickable items", "hasVisibleBackground": false, "hasBorder": false, "isTextOnly": true, "hoverGradientAngle": 225},
+    {"originalColor": "#HEX3", "catppuccinColor": "mauve", "reason": "Secondary buttons (e.g., 'Learn More', 'Cancel')", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 315},
+    {"originalColor": "#HEX4", "catppuccinColor": "lavender", "reason": "Page headings and section titles", "hasVisibleBackground": false, "hasBorder": false, "isTextOnly": true, "hoverGradientAngle": 45},
+    {"originalColor": "#HEX5", "catppuccinColor": "pink", "reason": "Accent badges and tags", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 180},
+    {"originalColor": "#HEX6", "catppuccinColor": "base", "reason": "Main page background", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 0},
+    {"originalColor": "#HEX7", "catppuccinColor": "text", "reason": "Primary body text", "hasVisibleBackground": false, "hasBorder": false, "isTextOnly": true, "hoverGradientAngle": 90},
+    {"originalColor": "#HEX8", "catppuccinColor": "green", "reason": "Success indicators and confirm buttons", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 270},
+    {"originalColor": "#HEX9", "catppuccinColor": "red", "reason": "Error messages and delete buttons", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 160},
+    {"originalColor": "#HEX10", "catppuccinColor": "surface0", "reason": "Card backgrounds", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 120},
+    {"originalColor": "#HEX11", "catppuccinColor": "overlay0", "reason": "Subtle borders and dividers", "hasVisibleBackground": false, "hasBorder": true, "isTextOnly": false, "hoverGradientAngle": 200},
+    {"originalColor": "#HEX12", "catppuccinColor": "sky", "reason": "Link hover states and info messages", "hasVisibleBackground": false, "hasBorder": false, "isTextOnly": true, "hoverGradientAngle": 330},
+    {"originalColor": "#HEX13", "catppuccinColor": "yellow", "reason": "Warning banners and caution indicators", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 75},
+    {"originalColor": "#HEX14", "catppuccinColor": "teal", "reason": "Active/selected state backgrounds", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 240},
+    {"originalColor": "#HEX15", "catppuccinColor": "peach", "reason": "Notification badges and highlights", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 300}
   ]
 }
 

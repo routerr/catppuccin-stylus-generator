@@ -19,6 +19,8 @@ export function DirectoryUpload({ onDirectorySelect, disabled, canRegenerate }: 
       const path = files[0].webkitRelativePath.split('/')[0];
       setSelectedPath(path);
       setSelectedFiles(files);
+      // Auto-start generation when directory is selected
+      onDirectorySelect(files);
     }
   };
 
@@ -105,6 +107,22 @@ export function DirectoryUpload({ onDirectorySelect, disabled, canRegenerate }: 
         </ul>
       </div>
 
+      {selectedFiles && !disabled && !canRegenerate && (
+        <div className="bg-ctp-green/20 border border-ctp-green/30 rounded-lg p-3">
+          <p className="text-sm text-ctp-subtext0">
+            ✓ Directory uploaded - generation started automatically
+          </p>
+        </div>
+      )}
+
+      {disabled && (
+        <div className="bg-ctp-blue/20 border border-ctp-blue/30 rounded-lg p-3">
+          <p className="text-sm text-ctp-subtext0">
+            ⏳ Processing theme with advanced CSS analysis... This may take a moment
+          </p>
+        </div>
+      )}
+
       {canRegenerate && (
         <div className="bg-ctp-yellow/20 border border-ctp-yellow/30 rounded-lg p-3">
           <p className="text-sm text-ctp-subtext0">
@@ -113,13 +131,15 @@ export function DirectoryUpload({ onDirectorySelect, disabled, canRegenerate }: 
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={disabled || !selectedFiles}
-        className="w-full bg-gradient-to-r from-ctp-accent to-ctp-bi-accent hover:opacity-90 text-ctp-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
-      >
-        {disabled ? 'Processing...' : canRegenerate ? 'Regenerate Theme from Directory' : 'Generate Theme from Directory'}
-      </button>
+      {canRegenerate && (
+        <button
+          type="submit"
+          disabled={disabled || !selectedFiles}
+          className="w-full bg-gradient-to-r from-ctp-accent to-ctp-bi-accent hover:opacity-90 text-ctp-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+        >
+          {disabled ? 'Processing...' : 'Regenerate Theme from Directory'}
+        </button>
+      )}
     </form>
   );
 }

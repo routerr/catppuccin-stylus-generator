@@ -39,13 +39,15 @@ export function FileUpload({ onFileSelect, disabled, canRegenerate }: FileUpload
     setError('');
     if (validateFile(file)) {
       setSelectedFile(file);
+      // Auto-start generation when file is selected
+      onFileSelect(file);
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
 
@@ -58,6 +60,8 @@ export function FileUpload({ onFileSelect, disabled, canRegenerate }: FileUpload
         dataTransfer.items.add(file);
         fileInputRef.current.files = dataTransfer.files;
       }
+      // Auto-start generation when file is dropped
+      onFileSelect(file);
     }
   };
 
@@ -168,6 +172,22 @@ export function FileUpload({ onFileSelect, disabled, canRegenerate }: FileUpload
         )}
       </div>
 
+      {selectedFile && !disabled && !canRegenerate && (
+        <div className="bg-ctp-green/20 border border-ctp-green/30 rounded-lg p-3">
+          <p className="text-sm text-ctp-subtext0">
+            ✓ File uploaded - generation started automatically
+          </p>
+        </div>
+      )}
+
+      {disabled && (
+        <div className="bg-ctp-blue/20 border border-ctp-blue/30 rounded-lg p-3">
+          <p className="text-sm text-ctp-subtext0">
+            ⏳ Processing theme... This may take a moment
+          </p>
+        </div>
+      )}
+
       {canRegenerate && (
         <div className="bg-ctp-yellow/20 border border-ctp-yellow/30 rounded-lg p-3">
           <p className="text-sm text-ctp-subtext0">
@@ -176,13 +196,15 @@ export function FileUpload({ onFileSelect, disabled, canRegenerate }: FileUpload
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={disabled || !selectedFile}
-        className="w-full bg-gradient-to-r from-ctp-accent to-ctp-bi-accent hover:opacity-90 text-ctp-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
-      >
-        {disabled ? 'Processing...' : canRegenerate ? 'Regenerate Theme from MHTML' : 'Generate Theme from MHTML'}
-      </button>
+      {canRegenerate && (
+        <button
+          type="submit"
+          disabled={disabled || !selectedFile}
+          className="w-full bg-gradient-to-r from-ctp-accent to-ctp-bi-accent hover:opacity-90 text-ctp-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+        >
+          {disabled ? 'Processing...' : 'Regenerate Theme from MHTML'}
+        </button>
+      )}
     </form>
   );
 }

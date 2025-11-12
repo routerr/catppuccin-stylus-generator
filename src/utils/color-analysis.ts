@@ -811,11 +811,172 @@ export function classifyAll(
   flavor: CatppuccinFlavor
 ): Map<string, ClassificationResult> {
   const results = new Map<string, ClassificationResult>();
-  
+
   for (const [hex, usage] of sourceColors.entries()) {
     const classification = classifyColorRole(hex, usage, flavor);
     results.set(hex, classification);
   }
-  
+
   return results;
+}
+
+// ============================================================================
+// BACKGROUND VISIBILITY DETECTION HELPERS
+// ============================================================================
+
+/**
+ * Parse CSS color value to normalized hex or detect transparency.
+ * Handles hex, rgb, rgba, transparent, and named colors.
+ *
+ * @param colorValue - CSS color value (e.g., "#fff", "rgba(0,0,0,0.5)", "transparent")
+ * @returns Object with hex value and opacity (0-1), or null if transparent
+ */
+export function parseCSSColor(colorValue: string): { hex: string; opacity: number } | null {
+  if (!colorValue) return null;
+
+  const normalized = colorValue.trim().toLowerCase();
+
+  // Handle transparent
+  if (normalized === 'transparent' || normalized === 'none') {
+    return null;
+  }
+
+  // Handle rgba with 0 alpha
+  const rgbaMatch = normalized.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/);
+  if (rgbaMatch) {
+    const r = parseInt(rgbaMatch[1]);
+    const g = parseInt(rgbaMatch[2]);
+    const b = parseInt(rgbaMatch[3]);
+    const a = rgbaMatch[4] ? parseFloat(rgbaMatch[4]) : 1;
+
+    if (a === 0) return null;
+
+    return {
+      hex: rgbToHex(r, g, b),
+      opacity: a
+    };
+  }
+
+  // Handle hex colors
+  const hexMatch = normalized.match(/^#?([a-f\d]{3}|[a-f\d]{6})$/i);
+  if (hexMatch) {
+    let hex = hexMatch[1];
+    // Expand shorthand hex
+    if (hex.length === 3) {
+      hex = hex.split('').map(c => c + c).join('');
+    }
+    return {
+      hex: '#' + hex,
+      opacity: 1
+    };
+  }
+
+  // Common named colors
+  const namedColors: Record<string, string> = {
+    'white': '#ffffff',
+    'black': '#000000',
+    'red': '#ff0000',
+    'green': '#008000',
+    'blue': '#0000ff',
+    'yellow': '#ffff00',
+    'cyan': '#00ffff',
+    'magenta': '#ff00ff',
+    'gray': '#808080',
+    'grey': '#808080'
+  };
+
+  if (namedColors[normalized]) {
+    return {
+      hex: namedColors[normalized],
+      opacity: 1
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Check if a color is considered transparent or invisible.
+ *
+ * @param colorValue - CSS color value
+ * @returns true if transparent/invisible
+ */
+export function isColorTransparent(colorValue: string): boolean {
+  const parsed = parseCSSColor(colorValue);
+  return parsed === null || parsed.opacity < 0.1;
+}
+
+/**
+ * Check if two colors are perceptually different.
+ * Uses Delta E threshold to determine if colors are visually distinct.
+ *
+ * @param color1 - First color (hex)
+ * @param color2 - Second color (hex)
+ * @param threshold - Delta E threshold (default: 10, lower = more similar)
+ * @returns true if colors are different enough to be visible
+ */
+export function areColorsDifferent(color1: string, color2: string, threshold: number = 10): boolean {
+  const parsed1 = parseCSSColor(color1);
+  const parsed2 = parseCSSColor(color2);
+
+  if (!parsed1 || !parsed2) {
+    // If either is transparent, they're different if the other isn't
+    return parsed1 !== parsed2;
+  }
+
+  const deltaE = calculateDeltaE(parsed1.hex, parsed2.hex);
+  return deltaE > threshold;
+}
+
+/**
+ * Detect if an element has a visible background.
+ * Compares element's background to parent's background.
+ *
+ * @param elementBg - Element's background-color CSS value
+ * @param parentBg - Parent's background-color CSS value
+ * @returns true if element has a visible background different from parent
+ */
+export function hasVisibleBackground(elementBg: string, parentBg: string): boolean {
+  // If element has no background, it's not visible
+  if (isColorTransparent(elementBg)) {
+    return false;
+  }
+
+  // If parent is transparent, element's background is visible
+  if (isColorTransparent(parentBg)) {
+    return true;
+  }
+
+  // Check if colors are perceptually different
+  return areColorsDifferent(elementBg, parentBg);
+}
+
+/**
+ * Detect if an element has visible borders.
+ * Checks border-width and border-color.
+ *
+ * @param borderWidth - CSS border-width value
+ * @param borderColor - CSS border-color value
+ * @returns true if element has visible borders
+ */
+export function hasVisibleBorder(borderWidth: string, borderColor: string): boolean {
+  // Check if border width is non-zero
+  const widthMatch = borderWidth.match(/(\d+(\.\d+)?)/);
+  if (!widthMatch) return false;
+
+  const width = parseFloat(widthMatch[1]);
+  if (width <= 0) return false;
+
+  // Check if border color is not transparent
+  return !isColorTransparent(borderColor);
+}
+
+/**
+ * Generate a random hover gradient angle.
+ * Returns an angle between 0 and 360 degrees.
+ *
+ * @returns Random angle in degrees
+ */
+export function generateRandomGradientAngle(): number {
+  return Math.floor(Math.random() * 361);
 }
