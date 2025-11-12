@@ -331,9 +331,7 @@ ${(() => {
 
     /* SVG elements - preserve transparency and original styling */
     svg,
-    svg *,
-    [class*="icon"],
-    [class*="Icon"] {
+    svg * {
       background: none !important;
       background-color: transparent !important;
       background-image: none !important;
@@ -360,6 +358,20 @@ ${(() => {
           -webkit-background-clip: text !important;
           background-clip: text !important;
           -webkit-text-fill-color: transparent !important;
+
+          /* Ensure nested text elements inherit gradient properly */
+          & *:not(svg):not(svg *) {
+            background: inherit !important;
+            -webkit-background-clip: inherit !important;
+            background-clip: inherit !important;
+            -webkit-text-fill-color: inherit !important;
+          }
+
+          /* Keep SVG icons visible by using color instead of text-fill-color */
+          & svg {
+            color: @accent !important;
+            -webkit-text-fill-color: currentColor !important;
+          }
         }
 
         /* Fallback for non-supporting browsers */
@@ -426,6 +438,20 @@ ${(() => {
           -webkit-background-clip: text !important;
           background-clip: text !important;
           -webkit-text-fill-color: transparent !important;
+
+          /* Ensure nested text elements inherit gradient properly */
+          & *:not(svg):not(svg *) {
+            background: inherit !important;
+            -webkit-background-clip: inherit !important;
+            background-clip: inherit !important;
+            -webkit-text-fill-color: inherit !important;
+          }
+
+          /* Keep SVG icons visible */
+          & svg {
+            color: @accent !important;
+            -webkit-text-fill-color: currentColor !important;
+          }
         }
 
         /* Fallback for non-supporting browsers */
@@ -963,6 +989,20 @@ ${generateClassSpecificRules(cssAnalysis, mappings)}
           -webkit-background-clip: text !important;
           background-clip: text !important;
           -webkit-text-fill-color: transparent !important;
+
+          /* Ensure nested text elements inherit gradient properly */
+          & *:not(svg):not(svg *) {
+            background: inherit !important;
+            -webkit-background-clip: inherit !important;
+            background-clip: inherit !important;
+            -webkit-text-fill-color: inherit !important;
+          }
+
+          /* Keep SVG icons visible */
+          & svg {
+            color: @accent !important;
+            -webkit-text-fill-color: currentColor !important;
+          }
         }
         @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
           color: @bi-accent1;
@@ -1203,6 +1243,18 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
         lines.push('          -webkit-background-clip: text !important;');
         lines.push('          background-clip: text !important;');
         lines.push('          -webkit-text-fill-color: transparent !important;');
+        lines.push('          /* Ensure nested text elements inherit gradient properly */');
+        lines.push('          & *:not(svg):not(svg *) {');
+        lines.push('            background: inherit !important;');
+        lines.push('            -webkit-background-clip: inherit !important;');
+        lines.push('            background-clip: inherit !important;');
+        lines.push('            -webkit-text-fill-color: inherit !important;');
+        lines.push('          }');
+        lines.push('          /* Keep SVG icons visible */');
+        lines.push('          & svg {');
+        lines.push('            color: @accent !important;');
+        lines.push('            -webkit-text-fill-color: currentColor !important;');
+        lines.push('          }');
         lines.push('        }');
         lines.push('        @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
         lines.push('          color: @hover-bi !important;');
@@ -1255,6 +1307,18 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
       lines.push('        -webkit-background-clip: text !important;');
       lines.push('        background-clip: text !important;');
       lines.push('        -webkit-text-fill-color: transparent !important;');
+      lines.push('        /* Ensure nested text elements inherit gradient properly */');
+      lines.push('        & *:not(svg):not(svg *) {');
+      lines.push('          background: inherit !important;');
+      lines.push('          -webkit-background-clip: inherit !important;');
+      lines.push('          background-clip: inherit !important;');
+      lines.push('          -webkit-text-fill-color: inherit !important;');
+      lines.push('        }');
+      lines.push('        /* Keep SVG icons visible */');
+      lines.push('        & svg {');
+      lines.push('          color: @accent !important;');
+      lines.push('          -webkit-text-fill-color: currentColor !important;');
+      lines.push('        }');
       lines.push('      }');
       lines.push('      /* Fallback for non-supporting browsers */');
       lines.push('      @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
