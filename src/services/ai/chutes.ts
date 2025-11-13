@@ -83,9 +83,56 @@ export const CHUTES_MODELS: AIModel[] = [
 
 export async function analyzeColorsWithChutes(
   crawlerResult: CrawlerResult,
+  mainAccent: string,
   apiKey: string,
-  model: string
-): Promise<{ analysis: WebsiteColorAnalysis; mappings: ColorMapping[]; mode: 'dark' | 'light' }> {
+  model: string,
+  customPrompt?: string
+): Promise<string | { analysis: WebsiteColorAnalysis; mappings: ColorMapping[]; mode: 'dark' | 'light' }> {
+  // If custom prompt is provided, use it directly (for deep analysis)
+  if (customPrompt) {
+    console.log('Using custom deep analysis prompt');
+    const response = await fetch('https://llm.chutes.ai/v1/chat/completions', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a color mapping expert. Return only valid JSON.',
+          },
+          {
+            role: 'user',
+            content: customPrompt,
+          },
+        ],
+        stream: false,
+        temperature: 0.3,
+        max_tokens: 3000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Chutes API error: ${response.statusText} - ${JSON.stringify(errorData)}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No response from Chutes');
+    }
+
+    // Return raw response for custom prompts
+    return content;
+  }
+
+  // Original generic flow below
   // Step 1: Detect dark/light mode using AI
   const modePrompt = `You are a web design expert. Analyze the following website content and CSS and answer with ONLY "dark" or "light" (no explanation, no markdown, just the word). Is this site primarily dark mode or light mode?
 
@@ -481,6 +528,7 @@ CRITICAL LAYOUT PRESERVATION RULES - READ THIS CAREFULLY
 ═════════════════════════════════════════════════════════════════════
 
 YOU MUST ONLY CHANGE COLORS. DO NOT CHANGE ANYTHING ELSE.
+THE GENERATED CSS MUST NOT INCLUDE ANY LAYOUT OR POSITIONING PROPERTIES.
 
 NEVER MODIFY THESE PROPERTIES (this breaks layouts):
 ❌ width, height, min-width, min-height, max-width, max-height
@@ -488,10 +536,15 @@ NEVER MODIFY THESE PROPERTIES (this breaks layouts):
 ❌ margin-top, margin-bottom, margin-left, margin-right
 ❌ border-width, border-radius, border-style
 ❌ font-size, font-weight, font-family, line-height
-❌ display, position, top, left, right, bottom
-❌ flex, grid, flex-direction, justify-content, align-items
-❌ transform, translate, scale, rotate
-❌ z-index, overflow, opacity (except for fade() function in colors)
+❌ display, position, top, left, right, bottom, float, clear
+❌ flex, grid, flex-direction, flex-wrap, justify-content, align-items, align-content
+❌ gap, row-gap, column-gap, grid-template-columns, grid-template-rows
+❌ transform, translate, scale, rotate, skew
+❌ z-index, overflow, overflow-x, overflow-y, clip, clip-path
+❌ visibility (except when used with opacity for transitions)
+❌ opacity (except for fade() function in colors)
+❌ white-space, word-wrap, word-break, text-overflow
+❌ vertical-align, text-align
 
 ONLY MODIFY COLOR PROPERTIES:
 ✓ color (text color)

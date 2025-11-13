@@ -304,6 +304,7 @@ Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((
   ═════════════════════════════════════════════════════════════════════
 
   YOU MUST ONLY CHANGE COLORS. DO NOT CHANGE ANYTHING ELSE.
+  THE GENERATED CSS MUST NOT INCLUDE ANY LAYOUT OR POSITIONING PROPERTIES.
 
   NEVER MODIFY THESE PROPERTIES (this breaks layouts):
   ❌ width, height, min-width, min-height, max-width, max-height
@@ -311,10 +312,15 @@ Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((
   ❌ margin-top, margin-bottom, margin-left, margin-right
   ❌ border-width, border-radius, border-style
   ❌ font-size, font-weight, font-family, line-height
-  ❌ display, position, top, left, right, bottom
-  ❌ flex, grid, flex-direction, justify-content, align-items
-  ❌ transform, translate, scale, rotate
-  ❌ z-index, overflow, opacity (except for fade() function in colors)
+  ❌ display, position, top, left, right, bottom, float, clear
+  ❌ flex, grid, flex-direction, flex-wrap, justify-content, align-items, align-content
+  ❌ gap, row-gap, column-gap, grid-template-columns, grid-template-rows
+  ❌ transform, translate, scale, rotate, skew
+  ❌ z-index, overflow, overflow-x, overflow-y, clip, clip-path
+  ❌ visibility (except when used with opacity for transitions)
+  ❌ opacity (except for fade() function in colors)
+  ❌ white-space, word-wrap, word-break, text-overflow
+  ❌ vertical-align, text-align
 
   ONLY MODIFY COLOR PROPERTIES:
   ✓ color (text color)
