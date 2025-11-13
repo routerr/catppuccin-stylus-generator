@@ -487,14 +487,66 @@ TEXT (maintain readability):
 - Secondary/muted text: subtext0, subtext1
 - Disabled text: overlay2
 
-CRITICAL LAYOUT PRESERVATION RULES:
-1. DO NOT change any layout, positioning, sizing, or spacing from the original website
-2. DO NOT add new borders if the original site doesn't have them
-3. DO NOT modify border-radius, padding, margin, or dimensions
-4. ONLY change COLORS - preserve ALL other CSS properties from the original
-5. The theme should look identical to the original except for the color palette
+═════════════════════════════════════════════════════════════════════
+CRITICAL LAYOUT PRESERVATION RULES - READ THIS CAREFULLY
+═════════════════════════════════════════════════════════════════════
 
-IMPORTANT: For BUTTON BORDERS, DO NOT add accent color borders if the original site does not use accent borders. Only modify button borders if the original site uses accent colors for borders. Otherwise, preserve the original border style from the website.
+YOU MUST ONLY CHANGE COLORS. DO NOT CHANGE ANYTHING ELSE.
+
+NEVER MODIFY THESE PROPERTIES (this breaks layouts):
+❌ width, height, min-width, min-height, max-width, max-height
+❌ padding, margin, padding-top, padding-bottom, padding-left, padding-right
+❌ margin-top, margin-bottom, margin-left, margin-right
+❌ border-width, border-radius, border-style
+❌ font-size, font-weight, font-family, line-height
+❌ display, position, top, left, right, bottom
+❌ flex, grid, flex-direction, justify-content, align-items
+❌ transform, translate, scale, rotate
+❌ z-index, overflow, opacity (except for fade() function in colors)
+
+ONLY MODIFY COLOR PROPERTIES:
+✓ color (text color)
+✓ background-color, background (gradient colors only)
+✓ border-color (not border-width!)
+✓ box-shadow (color values only, preserve blur/spread)
+✓ outline-color (not outline-width!)
+✓ fill, stroke (for SVGs, color only)
+
+BORDER RULES:
+- If original has NO border → DO NOT add borders
+- If original has border → ONLY change border-color, NEVER border-width or border-style
+- DO NOT add accent borders to buttons unless original uses colored borders
+
+BACKGROUND RULES:
+- Preserve transparent backgrounds if original is transparent
+- DO NOT add backgrounds where none exist
+- Match parent background when appropriate
+
+GRADIENT TEXT RULES (CRITICAL - HIGHEST PRIORITY):
+════════════════════════════════════════════════════════════════════
+⚠️  EXTREMELY IMPORTANT: PRESERVE ORIGINAL GRADIENT COLORS  ⚠️
+════════════════════════════════════════════════════════════════════
+
+Elements with gradient text (Tailwind/modern CSS) MUST keep their ORIGINAL colors:
+- class="bg-clip-text text-transparent" → SKIP entirely, do NOT map
+- class="bg-gradient-to-*" → SKIP entirely, do NOT map
+- class="from-* via-* to-*" → SKIP entirely, do NOT map
+- Gradient colors (green/moss, rose/pink, indigo/purple, etc.) → DO NOT map to Catppuccin
+
+WHY: These gradients are intentional branding/visual elements. Changing them to
+Catppuccin colors destroys the visual impact and breaks the site's identity.
+
+ACTION: Completely ignore gradient text when analyzing. Do NOT include any gradient
+colors in your color mappings. These elements will keep 100% of their original colors.
+
+EXAMPLES to COMPLETELY SKIP:
+❌ <span class="from-moss bg-gradient-to-br via-rose-300 via-60% to-indigo-500 bg-clip-text text-transparent">Breakthrough</span>
+❌ Any element with bg-clip-text, text-transparent, bg-gradient-*, from-*, via-*, to-*
+❌ Colors only used in gradients: moss, rose, indigo shades in gradient context
+
+The theme must look IDENTICAL to the original except for colors.
+
+═════════════════════════════════════════════════════════════════════
 
 ${accentGuide}
 

@@ -323,25 +323,87 @@ ${(() => {
     /* Custom styling rules */
     /* Add website-specific color overrides here */
 
-    /* Background colors */
-    body {
-      background: @base !important;
-      color: @text !important;
+    /* ═══════════════════════════════════════════════════════════════════
+       CRITICAL: PRESERVE ORIGINAL GRADIENT TEXT - DO NOT MODIFY
+       ═══════════════════════════════════════════════════════════════════
+       Elements with gradient text (like Tailwind gradient text) must keep
+       their original colors for visual impact and branding.
+
+       This section MUST come early to establish highest priority.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* Explicitly preserve gradient text - HIGHEST PRIORITY */
+    /* Force original colors by preventing any theme color application */
+    [class*="bg-clip-text"],
+    [class*="text-transparent"],
+    [class*="bg-gradient"],
+    [class*="from-"],
+    [class*="via-"],
+    [class*="to-"],
+    .bg-clip-text,
+    .text-transparent,
+    .text-clip {
+      /* Prevent theme colors from being applied */
+      color: revert !important;
+      background: revert !important;
+      background-color: revert !important;
+      background-image: revert !important;
+      -webkit-background-clip: revert !important;
+      background-clip: revert !important;
+      -webkit-text-fill-color: revert !important;
+      text-fill-color: revert !important;
     }
 
-    /* SVG elements - preserve transparency and original styling */
-    svg,
-    svg * {
-      background: none !important;
-      background-color: transparent !important;
-      background-image: none !important;
+    /* Protect ALL elements with gradient classes - extra safety layer */
+    *[class*="bg-clip-text"],
+    *[class*="text-transparent"],
+    *[class*="bg-gradient"],
+    *[class*="from-"],
+    *[class*="via-"],
+    *[class*="to-"],
+    span[class*="bg-clip-text"],
+    span[class*="text-transparent"],
+    span[class*="bg-gradient"],
+    div[class*="bg-clip-text"],
+    div[class*="text-transparent"],
+    div[class*="bg-gradient"],
+    h1 [class*="bg-clip-text"],
+    h2 [class*="bg-clip-text"],
+    h3 [class*="bg-clip-text"],
+    h4 [class*="bg-clip-text"],
+    h5 [class*="bg-clip-text"],
+    h6 [class*="bg-clip-text"] {
+      /* Force preservation of ALL gradient properties */
+      color: revert !important;
+      background: revert !important;
+      background-color: revert !important;
+      background-image: revert !important;
+      -webkit-background-clip: revert !important;
+      background-clip: revert !important;
+      -webkit-text-fill-color: revert !important;
+      text-fill-color: revert !important;
+    }
+
+    /* Background colors - use theme base colors */
+    body:not([class*="bg-clip-text"]):not([class*="bg-gradient"]) {
+      background-color: @base;
+      color: @text;
+    }
+
+    /* SVG elements - preserve transparency and use currentColor for fills */
+    /* SVGs should inherit color from parent text, not have forced backgrounds */
+    svg {
+      /* SVGs typically don't have backgrounds, preserve this */
+      background: none;
+      background-color: transparent;
     }
 
     /* Links - apply gradient to text (invisible background) */
-    a,
-    a.link,
-    a[class],
-    a[class][href] {
+    /* Exclude gradient text elements */
+    a:not([class*="bg-clip-text"]):not([class*="text-transparent"]):not([class*="bg-gradient"]),
+    a.link:not([class*="bg-clip-text"]):not([class*="text-transparent"]),
+    a[class]:not([class*="bg-clip-text"]):not([class*="text-transparent"]),
+    a[class][href]:not([class*="bg-clip-text"]):not([class*="text-transparent"]) {
       /* Default state: Apply Catppuccin text color */
       color: @accent !important;
 
@@ -353,8 +415,9 @@ ${(() => {
         text-decoration: none;
 
         /* Apply gradient to text using background-clip (text-only elements) */
+        /* Gradient: main-accent with bi-accent1 companion (analogous harmony) */
         @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
-          background: linear-gradient(@hover-angle-links, @accent 0%, @hover-bi 100%) !important;
+          background: linear-gradient(@hover-angle-links, @accent 0%, @bi-accent1 12%, @accent 100%) !important;
           -webkit-background-clip: text !important;
           background-clip: text !important;
           -webkit-text-fill-color: transparent !important;
@@ -400,25 +463,52 @@ ${(() => {
     }
 
     /* Buttons - apply gradients based on background visibility */
+    /* CRITICAL: 70-80% use main-accent, 20-30% use bi-accents for variety */
     button,
     input[type="button"],
     input[type="submit"] {
-      /* Default state: Use ALT main color for emphasis */
-      color: @ALT_MAIN !important;
+      /* Default state: Use main-accent (70-80% rule) */
+      color: @accent;
 
       &:hover {
-        /* Apply gradient to background (visible background elements) */
-        background-image: linear-gradient(@hover-angle-buttons, @ALT_MAIN 0%, @ALT_BI 100%) !important;
-        /* Prefer ALT_MAIN; fallback to @text if contrast fails */
-        & when (@button-contrast < 4.5) { color: @text !important; }
-        & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }
+        /* Apply gradient to background: main-accent with its bi-accent companion */
+        background-image: linear-gradient(@hover-angle-buttons, @accent 0%, @bi-accent1 8%, @accent 100%);
+        /* Text remains accent for readability */
+        color: @accent;
       }
 
       &:active {
-        /* Apply reversed gradient on active state */
-        background-image: linear-gradient(@hover-angle-buttons, @ALT_BI 0%, @ALT_MAIN 100%) !important;
-        & when (@button-contrast < 4.5) { color: @text !important; }
-        & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }
+        /* Apply stronger gradient on active state */
+        background-image: linear-gradient(@hover-angle-buttons, @bi-accent1 0%, @accent 50%, @bi-accent1 100%);
+        color: @accent;
+      }
+    }
+
+    /* Secondary buttons - use bi-accent1 for variety (20-30% rule) */
+    button.secondary,
+    button[class*="secondary"],
+    button[class*="outline"],
+    .btn-secondary,
+    .button-secondary {
+      color: @bi-accent1;
+
+      &:hover {
+        background-image: linear-gradient(@hover-angle-buttons, @bi-accent1 0%, @alt1-bi1 8%, @bi-accent1 100%);
+        color: @bi-accent1;
+      }
+    }
+
+    /* Tertiary buttons - use bi-accent2 for variety (20-30% rule) */
+    button.tertiary,
+    button[class*="tertiary"],
+    button[class*="ghost"],
+    .btn-tertiary,
+    .button-tertiary {
+      color: @bi-accent2;
+
+      &:hover {
+        background-image: linear-gradient(@hover-angle-buttons, @bi-accent2 0%, @alt2-bi1 8%, @bi-accent2 100%);
+        color: @bi-accent2;
       }
     }
 
@@ -428,8 +518,8 @@ ${(() => {
     button[class*="link"],
     .text-button,
     .link-button {
-      background: transparent !important;
-      color: @accent !important;
+      /* Only change color, preserve original background */
+      color: @accent;
 
       &:hover {
         /* Apply gradient to text using background-clip */
@@ -461,15 +551,49 @@ ${(() => {
       }
     }
 
-    /* Headings and emphasis - ensure readable text */
-    h1, h2, h3, h4, h5, h6 { color: @text !important; }
-    strong, b { color: @text !important; }
+    /* Headings and emphasis - use theme text colors */
+    /* CRITICAL: Do NOT apply color to headings with gradient children */
+    h1:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h2:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h3:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h4:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h5:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h6:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])) {
+      color: @text;
+    }
+
+    /* Ensure gradient text spans/children are never styled */
+    h1 > [class*="bg-clip-text"],
+    h1 > [class*="text-transparent"],
+    h1 > [class*="bg-gradient"],
+    h2 > [class*="bg-clip-text"],
+    h2 > [class*="text-transparent"],
+    h2 > [class*="bg-gradient"],
+    h3 > [class*="bg-clip-text"],
+    h3 > [class*="text-transparent"],
+    h3 > [class*="bg-gradient"],
+    h4 > [class*="bg-clip-text"],
+    h4 > [class*="text-transparent"],
+    h4 > [class*="bg-gradient"],
+    h5 > [class*="bg-clip-text"],
+    h5 > [class*="text-transparent"],
+    h5 > [class*="bg-gradient"],
+    h6 > [class*="bg-clip-text"],
+    h6 > [class*="text-transparent"],
+    h6 > [class*="bg-gradient"] {
+      /* Never apply any theme colors to these */
+    }
+
+    strong:not([class*="bg-clip-text"]):not([class*="text-transparent"]),
+    b:not([class*="bg-clip-text"]):not([class*="text-transparent"]) {
+      color: @text;
+    }
 
     /* Class-specific styling (from CSS analysis) */
     /* These rules will be added if directory analysis is used */
 ${generateClassSpecificRules(cssAnalysis, mappings)}
 
-    /* Inputs – transparent background, blend with page */
+    /* Inputs – only change colors, preserve original styling */
     input,
     textarea,
     select,
@@ -480,9 +604,8 @@ ${generateClassSpecificRules(cssAnalysis, mappings)}
     input[type="url"],
     input[type="tel"],
     input[type="number"] {
-      background-color: transparent !important;
-      color: @text !important;
-      border-color: transparent !important;
+      /* Only modify colors, preserve original background/border styles */
+      color: @text;
       caret-color: @accent;
 
       &::placeholder { color: @subtext0; opacity: .75; }
@@ -490,35 +613,20 @@ ${generateClassSpecificRules(cssAnalysis, mappings)}
       &::-moz-placeholder { color: @subtext0; opacity: .75; }
       &:-ms-input-placeholder { color: @subtext0; opacity: .75; }
 
-      /* Remove any backgrounds from pseudo-elements inside inputs */
-      &::before, &::after {
-        background: none !important;
-        background-color: transparent !important;
-      }
-
       &:hover {
-        background-color: fade(@surface0, 30%) !important;
-        border-color: fade(@surface2, 40%) !important;
+        /* Subtle border color change on hover (only if border exists) */
+        border-color: @overlay1;
       }
 
       &:focus {
-        background-color: fade(@surface0, 50%) !important;
-        border-color: @accent !important;
-        box-shadow: 0 0 0 1px fade(@accent, 20%) !important;
+        /* Accent border on focus (only if border exists) */
+        border-color: @accent;
+        outline-color: @accent;
         caret-color: @accent;
       }
     }
 
-    /* Ensure any child elements inside inputs also have transparent backgrounds */
-    input *,
-    textarea *,
-    select * {
-      background: transparent !important;
-      background-color: transparent !important;
-      color: inherit !important;
-    }
-
-    /* Autofill – prevent browser default yellow/blue backgrounds */
+    /* Autofill – override browser default yellow/blue backgrounds with theme colors */
     input:-webkit-autofill,
     input:-webkit-autofill:hover,
     input:-webkit-autofill:focus,
@@ -529,181 +637,49 @@ ${generateClassSpecificRules(cssAnalysis, mappings)}
     select:-webkit-autofill,
     select:-webkit-autofill:hover,
     select:-webkit-autofill:focus {
-      -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+      /* Use subtle surface color instead of browser's yellow */
+      -webkit-box-shadow: 0 0 0 1000px @surface0 inset !important;
       -webkit-text-fill-color: @text !important;
       transition: background-color 5000s ease-in-out 0s;
       caret-color: @accent;
     }
 
-    /* Material Design / Angular components - ripples, overlays, internal spans */
-    .mat-ripple,
-    .mat-mdc-button-ripple,
-    .mdc-button__ripple,
-    .mat-mdc-button-persistent-ripple,
-    .mat-mdc-button-touch-target,
-    .mdc-icon-button__ripple,
-    .mat-focus-indicator,
-    .mat-mdc-focus-indicator,
-    [class*="ripple"],
-    [class*="overlay"] {
-      background: transparent !important;
-      background-color: transparent !important;
-    }
-
-    /* Material Design form fields and input internals */
+    /* Material Design / Angular components - only change colors */
+    /* Form fields and inputs - preserve original styling */
     .mat-form-field,
     .mat-mdc-form-field,
     .mat-input-element,
     .mat-mdc-input-element,
     .mdc-text-field,
     .mdc-text-field__input,
-    .mat-form-field-wrapper,
-    .mat-mdc-text-field-wrapper,
-    .mat-mdc-form-field-infix,
-    .mdc-text-field__affix,
-    .mat-mdc-form-field-text-prefix,
-    .mat-mdc-form-field-text-suffix,
-    .mdc-floating-label,
-    .mat-mdc-floating-label {
-      background: transparent !important;
-      background-color: transparent !important;
-    }
-
-    /* Other popular UI frameworks - form components */
     .ant-input,
-    .ant-input-affix-wrapper,
-    .ant-input-prefix,
-    .ant-input-suffix,
-    .form-control,
-    .input-group,
-    .input-group-text,
-    [class*="input-wrapper"],
-    [class*="form-field"],
-    [class*="text-field"] {
-      background: transparent !important;
-      background-color: transparent !important;
+    .form-control {
+      color: @text;
     }
 
-    /* Span/label elements inside input containers that might have backgrounds */
-    input span,
-    textarea span,
-    select span,
-    label span,
-    .input-group span,
-    .form-field span,
-    [class*="input"] span,
-    [class*="text-field"] span,
-    [class*="form-control"] span {
-      background: transparent !important;
-      background-color: transparent !important;
-    }
-
-    /* Div wrappers inside inputs (some frameworks use these) */
-    input div,
-    textarea div,
-    select div {
-      background: transparent !important;
-      background-color: transparent !important;
+    /* Focus indicators and outlines */
+    .mat-focus-indicator,
+    .mat-mdc-focus-indicator {
+      &:focus {
+        outline-color: @accent;
+      }
     }
 
     /* Contenteditable elements (modern chat/input interfaces) */
+    /* Only change colors, preserve original layout and styling */
     [contenteditable],
     [contenteditable="true"],
     [role="textbox"],
     .contenteditable {
-      background-color: transparent !important;
-      color: @text !important;
-      border-color: transparent !important;
-
-      &:hover {
-        background-color: fade(@surface0, 30%) !important;
-      }
+      color: @text;
 
       &:focus {
-        background-color: fade(@surface0, 50%) !important;
-        border-color: @accent !important;
+        border-color: @accent;
+        outline-color: @accent;
       }
     }
 
-    /* All child elements inside contenteditable must be transparent */
-    [contenteditable] *,
-    [contenteditable="true"] *,
-    [role="textbox"] *,
-    .contenteditable * {
-      background: transparent !important;
-      background-color: transparent !important;
-    }
-
-    /* Specific text container elements that might have backgrounds */
-    [contenteditable] p,
-    [contenteditable] div,
-    [contenteditable] span,
-    [contenteditable] br,
-    [role="textbox"] p,
-    [role="textbox"] div,
-    [role="textbox"] span {
-      background: transparent !important;
-      background-color: transparent !important;
-      color: inherit !important;
-    }
-
-    /* Rich editor inputs (Quill/new input UI) should stay transparent */
-    .ql-editor,
-    .textarea.new-input-ui,
-    .new-input-ui,
-    .textarea,
-    .new-input-ui .ql-editor {
-      background-color: transparent !important;
-      border: none !important;
-      color: @text !important;
-      box-shadow: none !important;
-    }
-
-    /* All children in rich editors */
-    .ql-editor *,
-    .new-input-ui * {
-      background: transparent !important;
-      background-color: transparent !important;
-    }
-
-    /* Google-specific input/contenteditable classes */
-    .goog-textarea,
-    .goog-input,
-    [class*="goog-"] input,
-    [class*="goog-"] textarea,
-    [class*="input-area"],
-    [class*="text-input"],
-    [class*="message-input"],
-    [class*="chat-input"],
-    [class*="prompt-input"] {
-      background: transparent !important;
-      background-color: transparent !important;
-
-      * {
-        background: transparent !important;
-        background-color: transparent !important;
-      }
-    }
-
-    /* Override any inline background styles on text elements */
-    p[style*="background"],
-    div[style*="background"],
-    span[style*="background"] {
-      background: transparent !important;
-      background-color: transparent !important;
-    }
-
-    /* Nuclear option: Force transparency on ALL possible text container patterns */
-    input *, input *::before, input *::after,
-    textarea *, textarea *::before, textarea *::after,
-    [contenteditable] *, [contenteditable] *::before, [contenteditable] *::after,
-    [role="textbox"] *, [role="textbox"] *::before, [role="textbox"] *::after {
-      background: transparent !important;
-      background-color: transparent !important;
-      background-image: none !important;
-    }
-
-    /* Copyable code/text areas should blend with their container before focus */
+    /* Copyable code/text areas - only change colors */
     .copy-code,
     .code-toolbar,
     .copy-button,
@@ -712,9 +688,7 @@ ${generateClassSpecificRules(cssAnalysis, mappings)}
     .clipboard,
     .copy-to-clipboard,
     .copy-snippet {
-      background-color: transparent !important;
-      border: none !important;
-      color: @text !important;
+      color: @text;
     }
 
     /* Code blocks */
@@ -813,36 +787,30 @@ ${generateClassSpecificRules(cssAnalysis, mappings)}
     }
 
     /* Generic toggle/switch UI helpers (class-based for common libs) */
+    /* IMPORTANT: Only change colors, preserve original sizing and layout */
     .switch,
     .toggle {
-      position: relative;
-      display: inline-block;
-      width: 42px;
-      height: 24px;
-      background: fade(@overlay2, 25%);
-      border-radius: 999px;
+      /* Only modify background color, preserve original size/position */
+      background-color: fade(@overlay2, 25%);
     }
     .switch::after,
     .toggle::after {
-      content: '';
-      position: absolute;
-      top: 3px; left: 3px;
-      width: 18px; height: 18px;
-      background: @surface2;
-      border-radius: 999px;
+      /* Only modify background color of toggle knob */
+      background-color: @surface2;
     }
     .switch[aria-checked="true"],
     .toggle.is-on,
     .toggle[aria-checked="true"],
     .toggle[aria-pressed="true"] {
-      background: fade(@accent, 65%);
+      /* Only change background when active */
+      background-color: fade(@accent, 65%);
     }
     .switch[aria-checked="true"]::after,
     .toggle.is-on::after,
     .toggle[aria-checked="true"]::after,
     .toggle[aria-pressed="true"]::after {
-      transform: translateX(18px);
-      background: @base;
+      /* Only change knob color when active, preserve transform from original */
+      background-color: @base;
     }
 
     input:disabled,
@@ -946,16 +914,51 @@ ${generateClassSpecificRules(cssAnalysis, mappings)}
       color: @text;
     }
 
-    /* Badges / chips */
+    /* Badges / chips - VARIETY (20-30% rule) */
+    /* Primary badges - main-accent (70%) */
     .badge,
     .tag,
-    .chip {
+    .chip,
+    .badge-primary,
+    .tag-primary {
       background: fade(@accent, 20%);
       color: @accent;
 
       &:hover {
-        /* Apply gradient background with variety */
+        /* Gradient: main-accent with bi-accent companion */
         background-image: linear-gradient(@hover-angle-badges, fade(@accent, 25%), fade(@bi-accent1, 25%));
+        color: @text;
+      }
+    }
+
+    /* Secondary badges - bi-accent1 (15%) */
+    .badge-secondary,
+    .tag-secondary,
+    .chip-secondary,
+    .badge:nth-child(3n+2),
+    .tag:nth-child(3n+2) {
+      background: fade(@bi-accent1, 20%);
+      color: @bi-accent1;
+
+      &:hover {
+        /* Gradient: bi-accent1 with its own bi-accent companion */
+        background-image: linear-gradient(@hover-angle-badges, fade(@bi-accent1, 25%), fade(@alt1-bi1, 25%));
+        color: @text;
+      }
+    }
+
+    /* Tertiary badges - bi-accent2 (15%) */
+    .badge-tertiary,
+    .tag-tertiary,
+    .chip-tertiary,
+    .badge:nth-child(3n+3),
+    .tag:nth-child(3n+3) {
+      background: fade(@bi-accent2, 20%);
+      color: @bi-accent2;
+
+      &:hover {
+        /* Gradient: bi-accent2 with its own bi-accent companion */
+        background-image: linear-gradient(@hover-angle-badges, fade(@bi-accent2, 25%), fade(@alt2-bi1, 25%));
         color: @text;
       }
     }
@@ -1219,14 +1222,18 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
   // Button classes
   if (grouped.buttons && grouped.buttons.length > 0) {
     lines.push('');
-    lines.push('    /* Button classes with bi-accent gradients and readable text */');
-    grouped.buttons.slice(0, 100).forEach(btn => {
+    lines.push('    /* Button classes with proper accent distribution (70-30 rule) */');
+    grouped.buttons.slice(0, 100).forEach((btn, index) => {
       const isTextOnly = isTextOnlyMapping(btn.className);
       const angleVar = getHoverAngleVar(btn.className, 'button');
 
+      // Distribute colors: 70% main-accent, 15% bi-accent1, 15% bi-accent2
+      const colorVar = index % 10 < 7 ? '@accent' : (index % 10 < 9 ? '@bi-accent1' : '@bi-accent2');
+      const gradientCompanion = index % 10 < 7 ? '@bi-accent1' : (index % 10 < 9 ? '@alt1-bi1' : '@alt2-bi1');
+
       lines.push('    .' + btn.className + ' {');
-      lines.push('      /* Default state: emphasize ALT main on text */');
-      lines.push('      color: @ALT_MAIN;');
+      lines.push('      /* Default state: ' + (index % 10 < 7 ? 'main-accent' : 'bi-accent for variety') + ' (70-30 rule) */');
+      lines.push('      color: ' + colorVar + ';');
 
       if (isTextOnly) {
         lines.push('      background: transparent !important;');
@@ -1237,9 +1244,9 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
 
       if (isTextOnly) {
         // Text-only button: apply gradient to text
-        lines.push('        /* Apply gradient to text (invisible background element) */');
+        lines.push('        /* Apply gradient to text with proper bi-accent companion */');
         lines.push('        @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
-        lines.push(`          background: linear-gradient(${angleVar}, @accent 0%, @hover-bi 100%) !important;`);
+        lines.push(`          background: linear-gradient(${angleVar}, ${colorVar} 0%, ${gradientCompanion} 12%, ${colorVar} 100%) !important;`);
         lines.push('          -webkit-background-clip: text !important;');
         lines.push('          background-clip: text !important;');
         lines.push('          -webkit-text-fill-color: transparent !important;');
@@ -1252,20 +1259,18 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
         lines.push('          }');
         lines.push('          /* Keep SVG icons visible */');
         lines.push('          & svg {');
-        lines.push('            color: @accent !important;');
+        lines.push('            color: ' + colorVar + ' !important;');
         lines.push('            -webkit-text-fill-color: currentColor !important;');
         lines.push('          }');
         lines.push('        }');
         lines.push('        @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
-        lines.push('          color: @hover-bi !important;');
+        lines.push('          color: ' + colorVar + ' !important;');
         lines.push('        }');
       } else {
         // Visible background button: apply gradient to background
-        lines.push('        /* Apply gradient to background (visible background element) */');
-        lines.push(`        background-image: linear-gradient(${angleVar}, @ALT_MAIN 0%, @ALT_BI 100%) !important;`);
-        lines.push('        /* Prefer ALT_MAIN; fallback to @text if contrast fails */');
-        lines.push('        & when (@button-contrast < 4.5) { color: @text !important; }');
-        lines.push('        & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }');
+        lines.push('        /* Apply gradient to background with proper bi-accent companion */');
+        lines.push(`        background-image: linear-gradient(${angleVar}, ${colorVar} 0%, ${gradientCompanion} 8%, ${colorVar} 100%) !important;`);
+        lines.push('        color: ' + colorVar + ' !important;');
       }
 
       lines.push('      }');
@@ -1273,12 +1278,11 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
       lines.push('      &:active {');
 
       if (!isTextOnly) {
-        lines.push('        /* Reversed gradient for active state */');
-        lines.push(`        background-image: linear-gradient(${angleVar}, @ALT_BI 0%, @ALT_MAIN 100%) !important;`);
-        lines.push('        & when (@button-contrast < 4.5) { color: @text !important; }');
-        lines.push('        & when not (@button-contrast < 4.5) { color: @ALT_MAIN !important; }');
+        lines.push('        /* Stronger gradient for active state with bi-accent companion */');
+        lines.push(`        background-image: linear-gradient(${angleVar}, ${gradientCompanion} 0%, ${colorVar} 50%, ${gradientCompanion} 100%) !important;`);
+        lines.push('        color: ' + colorVar + ' !important;');
       } else {
-        lines.push('        color: @alt1-main !important;');
+        lines.push('        color: ' + colorVar + ' !important;');
       }
 
       lines.push('      }');

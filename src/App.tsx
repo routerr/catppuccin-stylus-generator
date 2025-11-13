@@ -12,6 +12,7 @@ import { createUserStylePackage } from './services/generators';
 import { MHTMLParser } from './utils/mhtml-parser';
 import { parseWebpageDirectory, groupCSSClassesByPurpose } from './utils/directory-parser';
 import { useVersion } from './hooks/useVersion';
+import catppuccinLogo from '/catppuccin.png';
 
 function App() {
   const [aiProvider, setAIProvider] = useState<AIProvider>('openrouter');
@@ -358,7 +359,7 @@ function App() {
           {/* Catppuccin Icon */}
           <div className="flex justify-center mb-6">
             <img
-              src="/catppuccin.png"
+              src={catppuccinLogo}
               alt="Catppuccin"
               onError={(e) => {
                 console.error('Image failed to load:', e);
