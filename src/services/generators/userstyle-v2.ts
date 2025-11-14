@@ -108,6 +108,19 @@ function buildUserstyleDocument(
   }
 
   lines.push(`${INDENT}}`);
+  const modeSelectors = buildModeSelectors(mode);
+  if (modeSelectors.length > 0) {
+    lines.push('');
+    if (includeComments) {
+      lines.push(`${INDENT}/* Invoke Catppuccin mixin for detected mode */`);
+    }
+    modeSelectors.forEach((selector, index) => {
+      const suffix = index === modeSelectors.length - 1 ? ' {' : ',';
+      lines.push(`${INDENT}${selector}${suffix}`);
+    });
+    lines.push(`${INDENT}${INDENT}#catppuccin(@flavor);`);
+    lines.push(`${INDENT}}`);
+  }
   lines.push('}');
 
   return lines.join('\n');
@@ -119,15 +132,20 @@ function buildVariableSection(mappings: VariableMapping[], includeComments: bool
   }
 
   const lines: string[] = [];
+  const declarations: string[] = [];
+  mappings.forEach(mapping => {
+    const colorToken = toToken(mapping.catppuccin);
+    const comment = includeComments ? ` // ${mapping.reason}` : '';
+    declarations.push(`${INDENT}${mapping.original}: ${colorToken} !important;${comment}`);
+  });
+
   if (includeComments) {
     lines.push('/* Apply Catppuccin colors to existing CSS custom properties */');
   }
 
-  mappings.forEach(mapping => {
-    const colorToken = toToken(mapping.catppuccin);
-    const comment = includeComments ? ` // ${mapping.reason}` : '';
-    lines.push(`${mapping.original}: ${colorToken} !important;${comment}`);
-  });
+  lines.push(':root {');
+  lines.push(...declarations);
+  lines.push('}');
 
   return lines.join('\n');
 }
@@ -359,6 +377,23 @@ function safeHostname(url: string): string {
   } catch (error) {
     return url;
   }
+}
+
+function buildModeSelectors(mode: DeepAnalysisResult['mode']): string[] {
+  const selectors = [
+    `:root[data-mode="${mode}"]`,
+    `:root[data-theme="${mode}"]`,
+    `html[data-theme="${mode}"]`,
+    `body[data-theme="${mode}"]`,
+    `html[data-mode="${mode}"]`,
+    `body[data-mode="${mode}"]`,
+  ];
+
+  if (mode === 'light') {
+    selectors.push(':root');
+  }
+
+  return Array.from(new Set(selectors));
 }
 
 function indentBlock(block: string, depth: number): string {
