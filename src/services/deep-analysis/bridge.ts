@@ -89,7 +89,7 @@ export function hasDeepAnalysis(
 ): pkg is ThemePackage & {
   metadata: { deepAnalysis: NonNullable<ThemePackage['metadata']>['deepAnalysis'] };
 } {
-  return 'deepAnalysis' in pkg.metadata;
+  return pkg.metadata.deepAnalysis != null;
 }
 
 /**
@@ -113,7 +113,7 @@ export function extractDeepAnalysisSummary(pkg: ThemePackage): string {
     `  • CSS Variables: ${mappingStats.variablesMapped}/${mappingStats.variablesTotal}`,
     `  • SVG Icons: ${mappingStats.svgsMapped}/${mappingStats.svgsTotal}`,
     `  • Selectors: ${mappingStats.selectorsMapped}/${mappingStats.selectorsTotal}`,
-    `  • Total Coverage: ${coverage.total} elements`,
+    `  • Total Coverage: ${coverage.total.toFixed(1)}%`,
     ``,
     `🎨 Accent Distribution:`,
     `  • Main: ${deepAnalysis.accentDistribution.main}`,
