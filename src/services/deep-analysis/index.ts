@@ -1,4 +1,4 @@
-import type { CatppuccinAccent, CatppuccinFlavor } from '../../types/catppuccin';
+import type { AccentColor, CatppuccinFlavor } from '../../types/catppuccin';
 import type {
   DeepAnalysisResult,
   DeepAnalysisConfig,
@@ -39,7 +39,7 @@ export type UserstyleV2Overrides = Partial<
 export interface DeepAnalysisPipelineOptions {
   url: string;
   flavor: CatppuccinFlavor;
-  mainAccent: CatppuccinAccent;
+  mainAccent: AccentColor;
   fetchConfig?: Partial<DeepAnalysisConfig>;
   mapper: DeepAnalysisMapperOptions;
   userstyle?: UserstyleV2Overrides;

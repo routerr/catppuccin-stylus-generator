@@ -3,12 +3,16 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import { InputSelector } from './components/InputSelector';
 import { APIKeyConfig } from './components/APIKeyConfig';
 import { ServiceSelector } from './components/ServiceSelector';
+import { DeepAnalysisControls } from './components/DeepAnalysisControls';
 import { ThemePreview } from './components/ThemePreview';
 import { ThinkingProcess, type ThinkingStep } from './components/ThinkingProcess';
 import type { AIProvider, ThemePackage, CrawlerResult } from './types/theme';
+import type { CatppuccinFlavor, AccentColor } from './types/catppuccin';
 import { fetchWebsiteContent } from './services/fetcher';
 import { analyzeWebsiteColors } from './services/ai';
 import { createUserStylePackage } from './services/generators';
+import { runDeepAnalysisPipeline } from './services/deep-analysis';
+import { convertToThemePackage } from './services/deep-analysis/bridge';
 import { MHTMLParser } from './utils/mhtml-parser';
 import { parseWebpageDirectory, groupCSSClassesByPurpose } from './utils/directory-parser';
 import { useVersion } from './hooks/useVersion';
@@ -25,6 +29,11 @@ function App() {
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
   const [discoveredOllamaModels, setDiscoveredOllamaModels] = useState<string[]>([]);
   const version = useVersion();
+
+  // Deep Analysis state
+  const [enableDeepAnalysis, setEnableDeepAnalysis] = useState(false);
+  const [flavor, setFlavor] = useState<CatppuccinFlavor>('mocha');
+  const [accent, setAccent] = useState<AccentColor>('blue');
 
   // Regeneration support state
   const [lastCrawlerResult, setLastCrawlerResult] = useState<CrawlerResult | null>(null);
@@ -294,57 +303,134 @@ function App() {
 
   const processContent = async (crawlerResult: CrawlerResult, source: string) => {
     try {
-      // Step 2: Analyze colors with AI
-      updateStep('analyze', { status: 'in_progress' });
-      setProgress('Analyzing colors with AI...');
+      // Check if deep analysis is enabled
+      if (enableDeepAnalysis) {
+        // === DEEP ANALYSIS PIPELINE ===
 
-      const { analysis, mappings } = await analyzeWebsiteColors(crawlerResult, {
-        provider: aiProvider,
-        apiKey: aiKey,
-        model: aiModel,
-      });
+        // Step 2: Deep Analysis
+        updateStep('analyze', {
+          status: 'in_progress',
+          description: 'Deep website analysis with CSS variables, SVGs, and design system detection'
+        });
+        setProgress('Running deep analysis...');
 
-      updateStep('analyze', {
-        status: 'completed',
-        details: `Identified ${mappings.length} color mappings using ${aiProvider}/${aiModel}`
-      });
+        const result = await runDeepAnalysisPipeline({
+          url: crawlerResult.url,
+          flavor,
+          mainAccent: accent,
+          mapper: {
+            provider: aiProvider,
+            apiKey: aiProvider !== 'ollama' ? aiKey : undefined,
+            model: aiModel,
+            enableVariableMapping: true,
+            enableSVGMapping: true,
+            enableSelectorMapping: true,
+            useAIForVariables: true,
+            useAIForSVGs: true,
+            useAIForSelectors: true,
+          },
+        });
 
-      // Step 3: Map colors
-      updateStep('map', {
-        status: 'in_progress',
-        description: 'Creating semantic color mappings for UI elements'
-      });
+        updateStep('analyze', {
+          status: 'completed',
+          details: `Analyzed ${result.analysis.cssVariables.length} CSS variables, ${result.analysis.svgs.length} SVGs, and ${result.analysis.selectorGroups.length} selector groups`
+        });
 
-      // Small delay to show the step
-      await new Promise(resolve => setTimeout(resolve, 300));
+        // Step 3: AI Mapping
+        updateStep('map', {
+          status: 'in_progress',
+          description: 'AI-powered precision mapping to Catppuccin colors'
+        });
 
-      updateStep('map', {
-        status: 'completed',
-        details: `Mapped colors for buttons, text, backgrounds, and more`
-      });
+        // Small delay to show the step
+        await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Step 4: Generate UserStyle theme
-      updateStep('generate', { status: 'in_progress' });
-      setProgress('Generating UserStyle theme...');
+        updateStep('map', {
+          status: 'completed',
+          details: `Mapped ${result.mappings.stats.mappedVariables} variables, ${result.mappings.stats.processedSVGs} SVGs, ${result.mappings.stats.mappedSelectors} selectors`
+        });
 
-      const pkg = createUserStylePackage(
-        crawlerResult.url,
-        mappings,
-        analysis.accentColors,
-        source as any,
-        aiModel,
-        (crawlerResult as any).cssAnalysis
-      );
+        // Step 4: Generate theme
+        updateStep('generate', {
+          status: 'in_progress',
+          description: 'Generating priority-layered LESS theme'
+        });
+        setProgress('Generating masterpiece theme...');
 
-      updateStep('generate', {
-        status: 'completed',
-        details: 'Generated themes for Latte, Frappé, Macchiato, and Mocha'
-      });
+        // Convert to ThemePackage format
+        const pkg = convertToThemePackage(result, source as any, aiModel);
 
-      setThemePackage(pkg);
-      setLastAIConfig({ provider: aiProvider, model: aiModel, apiKey: aiKey });
-      setHasCompleted(true);
-      setProgress('');
+        // Calculate total coverage as average
+        const totalCoverage = Math.round(
+          (result.userstyle.coverage.variableCoverage +
+            result.userstyle.coverage.svgCoverage +
+            result.userstyle.coverage.selectorCoverage) / 3
+        );
+
+        updateStep('generate', {
+          status: 'completed',
+          details: `Generated ${flavor} theme with ${totalCoverage}% average coverage`
+        });
+
+        setThemePackage(pkg);
+        setLastAIConfig({ provider: aiProvider, model: aiModel, apiKey: aiKey });
+        setHasCompleted(true);
+        setProgress('');
+      } else {
+        // === GENERIC ANALYSIS (OLD SYSTEM) ===
+
+        // Step 2: Analyze colors with AI
+        updateStep('analyze', { status: 'in_progress' });
+        setProgress('Analyzing colors with AI...');
+
+        const { analysis, mappings } = await analyzeWebsiteColors(crawlerResult, {
+          provider: aiProvider,
+          apiKey: aiKey,
+          model: aiModel,
+        });
+
+        updateStep('analyze', {
+          status: 'completed',
+          details: `Identified ${mappings.length} color mappings using ${aiProvider}/${aiModel}`
+        });
+
+        // Step 3: Map colors
+        updateStep('map', {
+          status: 'in_progress',
+          description: 'Creating semantic color mappings for UI elements'
+        });
+
+        // Small delay to show the step
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        updateStep('map', {
+          status: 'completed',
+          details: `Mapped colors for buttons, text, backgrounds, and more`
+        });
+
+        // Step 4: Generate UserStyle theme
+        updateStep('generate', { status: 'in_progress' });
+        setProgress('Generating UserStyle theme...');
+
+        const pkg = createUserStylePackage(
+          crawlerResult.url,
+          mappings,
+          analysis.accentColors,
+          source as any,
+          aiModel,
+          (crawlerResult as any).cssAnalysis
+        );
+
+        updateStep('generate', {
+          status: 'completed',
+          details: 'Generated themes for Latte, Frappé, Macchiato, and Mocha'
+        });
+
+        setThemePackage(pkg);
+        setLastAIConfig({ provider: aiProvider, model: aiModel, apiKey: aiKey });
+        setHasCompleted(true);
+        setProgress('');
+      }
     } catch (err) {
       // Mark current step as error
       const currentStep = thinkingSteps.find(s => s.status === 'in_progress');
@@ -428,6 +514,19 @@ function App() {
                 onKeyChange={(key) => setAIKey(key)}
                 onPickModel={(m) => setAIModel(m)}
                 onModelsDiscovered={(models) => setDiscoveredOllamaModels(models)}
+              />
+            </div>
+
+            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
+              <h2 className="text-2xl font-bold mb-6 text-ctp-accent">Theme Options</h2>
+              <DeepAnalysisControls
+                enabled={enableDeepAnalysis}
+                flavor={flavor}
+                accent={accent}
+                onEnabledChange={setEnableDeepAnalysis}
+                onFlavorChange={setFlavor}
+                onAccentChange={setAccent}
+                disabled={isProcessing}
               />
             </div>
 
