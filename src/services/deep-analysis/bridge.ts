@@ -27,6 +27,12 @@ export function convertToThemePackage(
   // Use first 3 dominant colors or fallback to detected accent colors
   const accentColors = analysis.dominantColors.slice(0, 3);
 
+  // Calculate total coverage as average of the three coverage percentages
+  const totalCoverage =
+    (userstyle.coverage.variableCoverage +
+      userstyle.coverage.svgCoverage +
+      userstyle.coverage.selectorCoverage) / 3;
+
   return {
     url: analysis.url,
     timestamp: new Date().toISOString(),
@@ -51,21 +57,25 @@ export function convertToThemePackage(
           variables: userstyle.coverage.variableCoverage,
           svgs: userstyle.coverage.svgCoverage,
           selectors: userstyle.coverage.selectorCoverage,
-          total: userstyle.coverage.totalCoverage,
+          total: totalCoverage,
         },
 
         // Mapping statistics
         mappingStats: {
-          variablesMapped: mappings.stats.variables.mapped,
-          variablesTotal: mappings.stats.variables.total,
-          svgsMapped: mappings.stats.svgs.mapped,
-          svgsTotal: mappings.stats.svgs.total,
-          selectorsMapped: mappings.stats.selectors.mapped,
-          selectorsTotal: mappings.stats.selectors.total,
+          variablesMapped: mappings.stats.mappedVariables,
+          variablesTotal: mappings.stats.totalVariables,
+          svgsMapped: mappings.stats.processedSVGs,
+          svgsTotal: mappings.stats.totalSVGs,
+          selectorsMapped: mappings.stats.mappedSelectors,
+          selectorsTotal: mappings.stats.totalSelectors,
         },
 
         // Accent distribution
-        accentDistribution: mappings.stats.accentDistribution,
+        accentDistribution: {
+          main: mappings.stats.accentUsage.mainAccent,
+          biAccent1: mappings.stats.accentUsage.biAccent1,
+          biAccent2: mappings.stats.accentUsage.biAccent2,
+        },
       },
     },
   };

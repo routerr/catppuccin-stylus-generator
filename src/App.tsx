@@ -347,7 +347,7 @@ function App() {
 
         updateStep('map', {
           status: 'completed',
-          details: `Mapped ${result.mappings.stats.variables.mapped} variables, ${result.mappings.stats.svgs.mapped} SVGs, ${result.mappings.stats.selectors.mapped} selectors`
+          details: `Mapped ${result.mappings.stats.mappedVariables} variables, ${result.mappings.stats.processedSVGs} SVGs, ${result.mappings.stats.mappedSelectors} selectors`
         });
 
         // Step 4: Generate theme
@@ -360,9 +360,16 @@ function App() {
         // Convert to ThemePackage format
         const pkg = convertToThemePackage(result, source as any, aiModel);
 
+        // Calculate total coverage as average
+        const totalCoverage = Math.round(
+          (result.userstyle.coverage.variableCoverage +
+            result.userstyle.coverage.svgCoverage +
+            result.userstyle.coverage.selectorCoverage) / 3
+        );
+
         updateStep('generate', {
           status: 'completed',
-          details: `Generated ${flavor} theme with ${result.userstyle.coverage.totalCoverage} total elements covered`
+          details: `Generated ${flavor} theme with ${totalCoverage}% average coverage`
         });
 
         setThemePackage(pkg);

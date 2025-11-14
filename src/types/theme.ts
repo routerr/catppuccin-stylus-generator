@@ -51,6 +51,30 @@ export interface ThemePackage {
     accentColors: string[];
     crawlerUsed: FetcherService;
     aiModelUsed: string;
+    deepAnalysis?: {
+      designSystem: string;
+      designSystemConfidence: number;
+      detectedMode: 'dark' | 'light';
+      coverage: {
+        variables: number;
+        svgs: number;
+        selectors: number;
+        total: number;
+      };
+      mappingStats: {
+        variablesMapped: number;
+        variablesTotal: number;
+        svgsMapped: number;
+        svgsTotal: number;
+        selectorsMapped: number;
+        selectorsTotal: number;
+      };
+      accentDistribution: {
+        main: number;
+        biAccent1: number;
+        biAccent2: number;
+      };
+    };
   };
 }
 

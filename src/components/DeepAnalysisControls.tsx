@@ -48,17 +48,19 @@ export function DeepAnalysisControls({
     <div className="space-y-4">
       {/* Deep Analysis Toggle */}
       <div className="flex items-center gap-3 p-4 bg-ctp-surface1/50 rounded-xl border border-ctp-surface2 hover:border-ctp-accent/30 transition-colors">
-        <label className="flex items-center gap-3 flex-1 cursor-pointer">
+        <label htmlFor="deep-analysis-toggle" className="flex items-center gap-3 flex-1 cursor-pointer">
           <input
+            id="deep-analysis-toggle"
             type="checkbox"
             checked={enabled}
             onChange={(e) => onEnabledChange(e.target.checked)}
             disabled={disabled}
+            aria-label="Enable Deep Analysis Mode for precision theme generation"
             className="w-5 h-5 rounded border-2 border-ctp-surface2 bg-ctp-surface0 checked:bg-ctp-accent checked:border-ctp-accent focus:ring-2 focus:ring-ctp-accent/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-ctp-accent" />
+              <Sparkles className="w-5 h-5 text-ctp-accent" aria-hidden="true" />
               <span className="font-semibold text-ctp-text">Deep Analysis Mode</span>
             </div>
             <p className="text-sm text-ctp-subtext0 mt-1">
