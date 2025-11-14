@@ -293,7 +293,7 @@ async function fetchWithDeepAnalysis(url: string): Promise<EnhancedCrawlerResult
 - Extract all `<style>` blocks
 - Compute styles for major elements
 - Run all Layer 1 analyzers
-- Return comprehensive analysis
+- Return comprehensive analysis (raw HTML + sanitized text)
 
 ---
 
@@ -314,6 +314,7 @@ const result = await runDeepAnalysisPipeline({
 - Execute Layer 4 fetch (`fetchWithDeepAnalysis`) with optional feature flags
 - Merge mapper defaults with overrides and call `mapWithDeepAnalysis`
 - Feed analysis + mappings into `generateUserstyleV2`
+- Provide downstream AI callers with both sanitized text and raw HTML snapshots
 - Return `{ analysis, mappings, userstyle }` bundle for UI/download pipelines
 
 **Why it matters:**

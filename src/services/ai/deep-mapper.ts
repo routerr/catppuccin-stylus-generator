@@ -927,7 +927,7 @@ async function callAIProvider(
     url: analysis.url,
     title: analysis.title,
     content: analysis.content,
-    html: analysis.content,
+    html: analysis.html,
   };
 
   switch (provider) {
