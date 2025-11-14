@@ -12,6 +12,23 @@ import { fetchWithDeepAnalysis } from '../fetcher-v2';
 import { mapWithDeepAnalysis } from '../ai/deep-mapper';
 import { generateUserstyleV2 } from '../generators/userstyle-v2';
 
+const VALID_ACCENTS: CatppuccinAccent[] = [
+  'rosewater',
+  'flamingo',
+  'pink',
+  'mauve',
+  'red',
+  'maroon',
+  'peach',
+  'yellow',
+  'green',
+  'teal',
+  'sky',
+  'sapphire',
+  'blue',
+  'lavender',
+];
+
 export type DeepAnalysisFeatureToggle = Partial<
   Pick<
     DeepMapperConfig,
@@ -56,7 +73,21 @@ export async function runDeepAnalysisPipeline(
 ): Promise<DeepAnalysisPipelineResult> {
   const { url, flavor, mainAccent, fetchConfig, mapper, userstyle } = options;
 
-  const analysis = await fetchWithDeepAnalysis(url, fetchConfig);
+  if (!VALID_ACCENTS.includes(mainAccent)) {
+    throw new Error(`Invalid accent: ${mainAccent}. Must be one of: ${VALID_ACCENTS.join(', ')}`);
+  }
+
+  const formatError = (message: string, error: unknown) => {
+    const detail = error instanceof Error ? error.message : String(error);
+    return `${message}: ${detail}`;
+  };
+
+  let analysis: DeepAnalysisResult;
+  try {
+    analysis = await fetchWithDeepAnalysis(url, fetchConfig);
+  } catch (error) {
+    throw new Error(formatError('Deep analysis fetch failed', error));
+  }
 
   const { provider, apiKey, model, ...overrides } = mapper;
   const mapperConfig: DeepMapperConfig = {
@@ -74,7 +105,12 @@ export async function runDeepAnalysisPipeline(
     ...overrides,
   };
 
-  const mappings = await mapWithDeepAnalysis(analysis, mapperConfig);
+  let mappings: MappingResult;
+  try {
+    mappings = await mapWithDeepAnalysis(analysis, mapperConfig);
+  } catch (error) {
+    throw new Error(formatError('Deep analysis mapping failed', error));
+  }
 
   const userstyleConfig: UserstyleV2Config = {
     url,
@@ -84,7 +120,12 @@ export async function runDeepAnalysisPipeline(
     version: userstyle?.version,
   };
 
-  const generated = generateUserstyleV2(analysis, mappings, userstyleConfig);
+  let generated: GeneratedTheme;
+  try {
+    generated = generateUserstyleV2(analysis, mappings, userstyleConfig);
+  } catch (error) {
+    throw new Error(formatError('Userstyle generation failed', error));
+  }
 
   return {
     analysis,

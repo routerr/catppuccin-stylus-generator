@@ -95,57 +95,58 @@ export const OPENROUTER_MODELS: AIModel[] = [
   },
 ];
 
-export async function analyzeColorsWithOpenRouter(
+export async function submitOpenRouterCustomPrompt(
   crawlerResult: CrawlerResult,
-  mainAccent: string,
   apiKey: string,
   model: string,
-  customPrompt?: string
-): Promise<string | { analysis: WebsiteColorAnalysis; mappings: ColorMapping[]; mode: 'dark' | 'light' }> {
-  // If custom prompt is provided, use it directly (for deep analysis)
-  if (customPrompt) {
-    console.log('Using custom deep analysis prompt');
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'Catppuccin Theme Generator',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a color mapping expert. Return only valid JSON.',
-          },
-          {
-            role: 'user',
-            content: customPrompt,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 3000,
-      }),
-    });
+  customPrompt: string,
+): Promise<string> {
+  console.log(`Using custom deep analysis prompt for ${crawlerResult.url}`);
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': window.location.origin,
+      'X-Title': 'Catppuccin Theme Generator',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a color mapping expert. Return only valid JSON.',
+        },
+        {
+          role: 'user',
+          content: customPrompt,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 3000,
+    }),
+  });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`OpenRouter API error: ${response.statusText} - ${JSON.stringify(errorData)}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error('No response from OpenRouter');
-    }
-
-    // Return raw response for custom prompts
-    return content;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`OpenRouter API error: ${response.statusText} - ${JSON.stringify(errorData)}`);
   }
 
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error('No response from OpenRouter');
+  }
+
+  return content;
+}
+
+export async function analyzeColorsWithOpenRouter(
+  crawlerResult: CrawlerResult,
+  apiKey: string,
+  model: string,
+): Promise<{ analysis: WebsiteColorAnalysis; mappings: ColorMapping[]; mode: 'dark' | 'light' }> {
   // Original generic flow below
   // Step 1: Detect dark/light mode using AI
   const modePrompt = `You are a web design expert. Analyze the following website content and CSS and answer with ONLY "dark" or "light" (no explanation, no markdown, just the word). Is this site primarily dark mode or light mode?

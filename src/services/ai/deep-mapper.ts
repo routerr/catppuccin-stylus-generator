@@ -32,8 +32,8 @@ import {
 } from '../../utils/accent-schemes';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
 import { processSVGForLESS } from '../../utils/deep-analysis/svg-analyzer';
-import { analyzeColorsWithOpenRouter } from './openrouter';
-import { analyzeColorsWithChutes } from './chutes';
+import { submitOpenRouterCustomPrompt } from './openrouter';
+import { submitChutesCustomPrompt } from './chutes';
 
 const CATPPUCCIN_COLOR_TOKENS: CatppuccinColor[] = [
   'base',
@@ -258,7 +258,7 @@ async function mapSelectors(
 
   try {
     const response = await callAIProvider(prompt, config, analysis);
-    const parsed = parseSelectorMappings(response, entries, fallback, config);
+    const parsed = parseSelectorMappings(response, entries, fallback, config, analysis.mode);
     return parsed.length > 0 ? parsed : fallback;
   } catch (error) {
     console.warn('⚠️  Selector mapping failed, using fallback mappings.', error);
@@ -528,6 +528,7 @@ function parseSelectorMappings(
   entries: SelectorEntry[],
   fallback: SelectorMapping[],
   config: DeepMapperConfig,
+  mode: 'dark' | 'light',
 ): SelectorMapping[] {
   const fallbackBySelector = new Map(fallback.map(mapping => [mapping.selector, mapping]));
   const entryBySelector = new Map(entries.map(entry => [entry.info.selector, entry]));
@@ -546,7 +547,7 @@ function parseSelectorMappings(
 
       const base = fallbackBySelector.get(selector)
         ?? (entryBySelector.has(selector)
-          ? createFallbackSelectorMapping(entryBySelector.get(selector)!, config)
+          ? createFallbackSelectorMapping(entryBySelector.get(selector)!, config, mode)
           : undefined);
 
       if (!base) {
@@ -671,7 +672,7 @@ function createFallbackSelectorMappings(
 function createFallbackSelectorMapping(
   entry: SelectorEntry,
   config: DeepMapperConfig,
-  mode: 'dark' | 'light' = 'dark',
+  mode: 'dark' | 'light',
 ): SelectorMapping {
   const properties = inferDefaultPropertiesForSelector(entry, config, mode);
   return {
@@ -935,36 +936,19 @@ async function callAIProvider(
       if (!apiKey || !model) {
         throw new Error('OpenRouter requires apiKey and model for deep analysis prompts');
       }
-      const response = await analyzeColorsWithOpenRouter(
-        crawl,
-        config.mainAccent,
-        apiKey,
-        model,
-        prompt,
-      );
-      if (typeof response !== 'string') {
-        throw new Error('Unexpected OpenRouter response for custom prompt');
-      }
-      return response;
+      return submitOpenRouterCustomPrompt(crawl, apiKey, model, prompt);
     }
     case 'chutes': {
       if (!apiKey || !model) {
         throw new Error('Chutes requires apiKey and model for deep analysis prompts');
       }
-      const response = await analyzeColorsWithChutes(
-        crawl,
-        config.mainAccent,
-        apiKey,
-        model,
-        prompt,
-      );
-      if (typeof response !== 'string') {
-        throw new Error('Unexpected Chutes response for custom prompt');
-      }
-      return response;
+      return submitChutesCustomPrompt(crawl, apiKey, model, prompt);
     }
     case 'ollama':
-      throw new Error('Custom deep analysis prompts are not yet supported for Ollama');
+      console.warn(
+        `[DeepMapper] Ollama provider was selected for custom deep analysis prompt, but this operation is not supported. Falling back to default mappings. Prompt: "${prompt}"`,
+      );
+      throw new Error('Custom deep analysis prompts are not yet supported for Ollama. See warning log for details.');
     default:
       throw new Error(`Unsupported AI provider: ${provider}`);
   }

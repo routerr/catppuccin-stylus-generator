@@ -108,6 +108,14 @@ function buildUserstyleDocument(
   }
 
   lines.push(`${INDENT}}`);
+  lines.push('');
+
+  const invocationLines = buildMixinInvocationBlock(mode, includeComments);
+  if (invocationLines.length > 0) {
+    invocationLines.forEach(line => lines.push(line));
+    lines.push('');
+  }
+
   lines.push('}');
 
   return lines.join('\n');
@@ -118,18 +126,58 @@ function buildVariableSection(mappings: VariableMapping[], includeComments: bool
     return includeComments ? '/* No CSS variables detected for direct mapping */' : '';
   }
 
+  const variableLines: string[] = [];
+  mappings.forEach(mapping => {
+    const colorToken = toToken(mapping.catppuccin);
+    const comment = includeComments ? ` // ${mapping.reason}` : '';
+    variableLines.push(`${mapping.original}: ${colorToken} !important;${comment}`);
+  });
+
+  if (variableLines.length === 0) {
+    return '';
+  }
+
   const lines: string[] = [];
   if (includeComments) {
     lines.push('/* Apply Catppuccin colors to existing CSS custom properties */');
   }
 
-  mappings.forEach(mapping => {
-    const colorToken = toToken(mapping.catppuccin);
-    const comment = includeComments ? ` // ${mapping.reason}` : '';
-    lines.push(`${mapping.original}: ${colorToken} !important;${comment}`);
+  lines.push(':root {');
+  variableLines.forEach(declaration => {
+    lines.push(`${INDENT}${declaration}`);
   });
+  lines.push('}');
 
   return lines.join('\n');
+}
+
+function buildMixinInvocationBlock(
+  mode: DeepAnalysisResult['mode'],
+  includeComments: boolean,
+): string[] {
+  const selectors = [
+    ':root',
+    'html',
+    'body',
+    `:root[data-theme="${mode}"]`,
+    `:root[data-mode="${mode}"]`,
+    `html[data-theme="${mode}"]`,
+    `body[data-theme="${mode}"]`,
+  ];
+
+  const lines: string[] = [];
+  if (includeComments) {
+    lines.push(`${INDENT}/* Invoke Catppuccin mixin for detected ${mode} theme contexts */`);
+  }
+
+  selectors.forEach((selector, index) => {
+    const suffix = index === selectors.length - 1 ? ' {' : ',';
+    lines.push(`${INDENT}${selector}${suffix}`);
+  });
+  lines.push(`${INDENT}${INDENT}#catppuccin(@flavor);`);
+  lines.push(`${INDENT}}`);
+
+  return lines;
 }
 
 function buildSvgSection(
