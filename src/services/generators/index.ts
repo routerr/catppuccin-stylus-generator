@@ -161,3 +161,4 @@ export async function createUserStylePackageAsync(
 
 // Export generators for direct usage
 export { generateStylusTheme, generateLessTheme, generateCssTheme };
+export { generateUserstyleV2, type UserstyleV2Config } from './userstyle-v2';

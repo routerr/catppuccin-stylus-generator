@@ -10,12 +10,29 @@
 
 Successfully completed **Phase 1: Foundation** of the deep analysis system rebuild. All core analysis infrastructure is now in place and ready for integration with AI mapping and theme generation layers.
 
+## 🆕 Session Update – 2025-11-15
+
+**Focus:** Deliver a single-call deep analysis pipeline for the UI by wiring fetch → map → generate with shared configuration.
+
+- ✅ **Pipeline Orchestrator** – Added `runDeepAnalysisPipeline` in `src/services/deep-analysis/index.ts` to execute `fetchWithDeepAnalysis`, `mapWithDeepAnalysis`, and `generateUserstyleV2` in sequence.
+- ✅ **Mapper Defaults Harmonized** – Centralized feature toggles (variables/SVGs/selectors, AI vs deterministic) so experiments can flip flags per run without duplicating logic across the app.
+- ✅ **Documentation Refresh** – Architecture guide now documents Layer 5 (Pipeline Orchestration) and roadmap/progress report highlight the new milestone.
+
+## 🆕 Session Update – 2025-11-14
+
+**Focus:** Wiring deep-analysis outputs into generation-ready assets and enforcing gradient preservation guarantees.
+
+- ✅ **Deep Mapper Enhancements** – `src/services/ai/deep-mapper.ts` now converts AI/heuristic SVG color decisions into reusable `ProcessedSVG` assets, tracks accent distribution, and ships coverage stats alongside selector and variable mappings.
+- ✅ **UserStyle Generator v2** – `src/services/generators/userstyle-v2.ts` assembles layered LESS output (variables, SVG replacements, selectors, gradients, fallbacks) with optional commentary and hostname-aware metadata.
+- ✅ **Gradient Safety Net** – Updated fallback generation to apply `revert`-based guards for all gradient text selectors so Catppuccin colors never override branding gradients.
+
 ### What We Built Today
 
 1. **Architecture & Planning** (100% ✅)
 2. **Core Analysis Tools** (100% ✅)
 3. **Enhanced Fetcher** (100% ✅)
 4. **Documentation** (100% ✅)
+5. **Deep Analysis Pipeline** (100% ✅)
 
 ---
 
@@ -155,6 +172,25 @@ fetchWithDeepAnalysis(url, config) → DeepAnalysisResult {
 }
 ```
 
+### 8. Deep Analysis Pipeline
+**File:** `src/services/deep-analysis/index.ts`
+
+**Capabilities:**
+- ✅ Bundles fetcher, mapper, and generator into a single promise
+- ✅ Shares flavor + accent context across every layer to keep palettes consistent
+- ✅ Applies mapper feature toggles (variables/SVGs/selectors, AI vs deterministic) from one config object
+- ✅ Produces `{ analysis, mappings, userstyle }` for UI download + telemetry flows
+
+**Usage:**
+```typescript
+const { analysis, mappings, userstyle } = await runDeepAnalysisPipeline({
+  url,
+  flavor: 'mocha',
+  mainAccent: 'blue',
+  mapper: { provider: 'openrouter', apiKey, model },
+});
+```
+
 ---
 
 ## 📁 File Structure Created
@@ -174,7 +210,8 @@ catppuccin-stylus-generator/
 │   │       ├── design-system.ts      (NEW - 550 lines)
 │   │       └── selector-discovery.ts (NEW - 500 lines)
 │   └── services/
-│       └── fetcher-v2.ts             (NEW - 400 lines)
+│       ├── fetcher-v2.ts             (NEW - 400 lines)
+│       └── deep-analysis/index.ts    (NEW - pipeline orchestrator)
 ```
 
 **Total New Code:** ~3,450 lines of production-ready TypeScript
