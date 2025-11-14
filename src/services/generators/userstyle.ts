@@ -398,16 +398,18 @@ ${(() => {
       background-color: transparent;
     }
 
-    /* Links - apply gradient to text (invisible background) */
-    /* Exclude gradient text elements */
+    /* ═══════════════════════════════════════════════════════════════════
+       Links - ONLY COLOR CHANGES, NO LAYOUT MODIFICATIONS
+       ═══════════════════════════════════════════════════════════════════
+       CRITICAL: Do NOT add position, display, width, height, padding, margin
+       or any layout-related properties. These break flex/grid layouts!
+       ═══════════════════════════════════════════════════════════════════ */
     a:not([class*="bg-clip-text"]):not([class*="text-transparent"]):not([class*="bg-gradient"]),
     a.link:not([class*="bg-clip-text"]):not([class*="text-transparent"]),
     a[class]:not([class*="bg-clip-text"]):not([class*="text-transparent"]),
     a[class][href]:not([class*="bg-clip-text"]):not([class*="text-transparent"]) {
       /* Default state: Apply Catppuccin text color */
       color: @accent !important;
-
-      position: relative;
 
       &:hover,
       &:focus-visible {

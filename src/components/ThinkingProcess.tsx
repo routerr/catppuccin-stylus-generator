@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, Circle, Brain, Sparkles } from 'lucide-react';
+import { CheckCircle2, Loader2, Circle, Brain, Sparkles, XCircle, RefreshCw } from 'lucide-react';
 
 export interface ThinkingStep {
   id: string;
@@ -12,10 +12,13 @@ export interface ThinkingStep {
 interface ThinkingProcessProps {
   steps: ThinkingStep[];
   title?: string;
+  onReset?: () => void;
 }
 
-export function ThinkingProcess({ steps, title = "AI Processing Steps" }: ThinkingProcessProps) {
+export function ThinkingProcess({ steps, title = "AI Processing Steps", onReset }: ThinkingProcessProps) {
   if (steps.length === 0) return null;
+
+  const hasError = steps.some(s => s.status === 'error');
 
   return (
     <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
@@ -52,7 +55,7 @@ export function ThinkingProcess({ steps, title = "AI Processing Steps" }: Thinki
                   <Circle className="h-8 w-8 text-ctp-overlay0" />
                 )}
                 {step.status === 'error' && (
-                  <Circle className="h-8 w-8 text-ctp-red" />
+                  <XCircle className="h-8 w-8 text-ctp-red" />
                 )}
               </div>
 
@@ -87,6 +90,7 @@ export function ThinkingProcess({ steps, title = "AI Processing Steps" }: Thinki
                 {step.details && step.status !== 'pending' && (
                   <div className={`mt-3 p-3 rounded-lg text-sm font-mono overflow-x-auto ${
                     step.status === 'completed' ? 'bg-ctp-green/10 text-ctp-text border border-ctp-green/30' :
+                    step.status === 'error' ? 'bg-ctp-red/10 text-ctp-red border border-ctp-red/30' :
                     'bg-ctp-base/60 text-ctp-subtext1 border border-ctp-surface2'
                   }`}>
                     {step.details}
@@ -113,6 +117,27 @@ export function ThinkingProcess({ steps, title = "AI Processing Steps" }: Thinki
             <CheckCircle2 className="h-6 w-6 text-ctp-green" />
             All processing steps completed successfully!
           </p>
+        </div>
+      )}
+
+      {/* Error Summary with Reset Button */}
+      {hasError && onReset && (
+        <div className="mt-6 p-4 bg-ctp-red/20 border-2 border-ctp-red rounded-lg shadow-lg">
+          <div className="flex items-start gap-3">
+            <XCircle className="h-6 w-6 text-ctp-red flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-ctp-text text-base font-semibold mb-3">
+                Processing failed. Please check the error details above.
+              </p>
+              <button
+                onClick={onReset}
+                className="flex items-center gap-2 px-4 py-2 bg-ctp-red hover:bg-ctp-red/80 rounded-lg transition-colors text-ctp-base font-medium"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Reset and Try Again
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

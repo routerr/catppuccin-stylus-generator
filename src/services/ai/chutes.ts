@@ -90,9 +90,56 @@ export const CHUTES_MODELS: AIModel[] = [
  */
 export async function analyzeColorsWithChutes(
   crawlerResult: CrawlerResult,
+  mainAccent: string,
   apiKey: string,
-  model: string
-): Promise<ColorAnalysisResult> {
+  model: string,
+  customPrompt?: string
+): Promise<string | ColorAnalysisResult> {
+  // If custom prompt is provided, use it directly (for deep analysis)
+  if (customPrompt) {
+    console.log('Using custom deep analysis prompt');
+    const response = await fetch(CHUTES_API_ENDPOINT, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a color mapping expert. Return only valid JSON.',
+          },
+          {
+            role: 'user',
+            content: customPrompt,
+          },
+        ],
+        stream: false,
+        temperature: 0.3,
+        max_tokens: 3000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Chutes API error: ${response.statusText} - ${JSON.stringify(errorData)}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No response from Chutes');
+    }
+
+    // Return raw response for custom prompts
+    return content;
+  }
+
+  // Original generic flow below
   const extendedResult: ExtendedCrawlerResult = crawlerResult as ExtendedCrawlerResult;
 
   // Step 1: Detect dark/light mode using AI

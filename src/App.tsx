@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 import { InputSelector } from './components/InputSelector';
 import { APIKeyConfig } from './components/APIKeyConfig';
 import { ServiceSelector } from './components/ServiceSelector';
@@ -44,6 +44,14 @@ function App() {
     )
   );
   const canRegenerate = hasCompleted && aiChangedSinceLast;
+
+  const handleReset = () => {
+    setError('');
+    setProgress('');
+    setIsProcessing(false);
+    setThinkingSteps([]);
+    setThemePackage(null);
+  };
 
   const updateStep = (id: string, updates: Partial<ThinkingStep>) => {
     setThinkingSteps(prev => prev.map(step =>
@@ -438,12 +446,32 @@ function App() {
 
           {/* Right Column - Preview & Thinking Process */}
           <div className="space-y-6">
-            {/* Thinking Process Display */}
-            {(isProcessing || thinkingSteps.length > 0) && (
-              <ThinkingProcess steps={thinkingSteps} />
+            {/* Error Banner */}
+            {error && (
+              <div className="bg-ctp-red/20 border-2 border-ctp-red rounded-xl p-4 shadow-lg">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-6 w-6 text-ctp-red flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-ctp-red mb-1">Error</h3>
+                    <p className="text-ctp-text text-sm mb-3">{error}</p>
+                    <button
+                      onClick={handleReset}
+                      className="flex items-center gap-2 px-4 py-2 bg-ctp-red hover:bg-ctp-red/80 rounded-lg transition-colors text-ctp-base font-medium"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Reset and Try Again
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
 
-            {!isProcessing && <ThemePreview themePackage={themePackage} />}
+            {/* Thinking Process Display */}
+            {(isProcessing || thinkingSteps.length > 0) && (
+              <ThinkingProcess steps={thinkingSteps} onReset={handleReset} />
+            )}
+
+            {!isProcessing && !error && <ThemePreview themePackage={themePackage} />}
           </div>
         </div>
 
