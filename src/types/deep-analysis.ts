@@ -163,6 +163,7 @@ export interface DeepAnalysisResult {
   url: string;
   title: string;
   content: string;
+  html: string;
 
   // Deep analysis data
   cssVariables: CSSVariable[];

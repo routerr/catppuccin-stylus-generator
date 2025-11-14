@@ -193,7 +193,69 @@ async function mapSelectors(
     }
 
     // SECTION 5: GENERIC FALLBACKS (LOWEST PRIORITY)
-    // Catch-all rules for uncovered elements
+    // Catch-all rules for uncovered elements (with gradient preservation)
+    [class*="bg-clip-text"],
+    [class*="text-transparent"],
+    [class*="bg-gradient"],
+    [class*="from-"],
+    [class*="via-"],
+    [class*="to-"],
+    .bg-clip-text,
+    .text-transparent,
+    .text-clip {
+      color: revert !important;
+      background: revert !important;
+      background-color: revert !important;
+      background-image: revert !important;
+      -webkit-background-clip: revert !important;
+      background-clip: revert !important;
+      -webkit-text-fill-color: revert !important;
+      text-fill-color: revert !important;
+    }
+
+    *[class*="bg-clip-text"],
+    *[class*="text-transparent"],
+    *[class*="bg-gradient"],
+    *[class*="from-"],
+    *[class*="via-"],
+    *[class*="to-"],
+    h1 [class*="bg-clip-text"],
+    h1 [class*="text-transparent"],
+    h1 [class*="bg-gradient"],
+    h2 [class*="bg-clip-text"],
+    h2 [class*="text-transparent"],
+    h2 [class*="bg-gradient"],
+    h3 [class*="bg-clip-text"],
+    h3 [class*="text-transparent"],
+    h3 [class*="bg-gradient"],
+    h4 [class*="bg-clip-text"],
+    h4 [class*="text-transparent"],
+    h4 [class*="bg-gradient"],
+    h5 [class*="bg-clip-text"],
+    h5 [class*="text-transparent"],
+    h5 [class*="bg-gradient"],
+    h6 [class*="bg-clip-text"],
+    h6 [class*="text-transparent"],
+    h6 [class*="bg-gradient"] {
+      color: revert !important;
+      background: revert !important;
+      background-color: revert !important;
+      background-image: revert !important;
+      -webkit-background-clip: revert !important;
+      background-clip: revert !important;
+      -webkit-text-fill-color: revert !important;
+      text-fill-color: revert !important;
+    }
+
+    h1:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h2:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h3:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h4:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h5:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h6:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])) {
+      color: @text;
+    }
+
     a:not([class*="bg-clip-text"]) { color: @blue; }
     button:not(.custom-btn) { background: @surface0; }
   }
@@ -231,7 +293,34 @@ async function fetchWithDeepAnalysis(url: string): Promise<EnhancedCrawlerResult
 - Extract all `<style>` blocks
 - Compute styles for major elements
 - Run all Layer 1 analyzers
-- Return comprehensive analysis
+- Return comprehensive analysis (raw HTML + sanitized text)
+
+---
+
+### Layer 5: Pipeline Orchestration
+**Location:** `src/services/deep-analysis/index.ts`
+
+#### 5.1 Deep Analysis Pipeline (`runDeepAnalysisPipeline`)
+```typescript
+const result = await runDeepAnalysisPipeline({
+  url: 'https://duckduckgo.com',
+  flavor: 'mocha',
+  mainAccent: 'blue',
+  mapper: { provider: 'openrouter', apiKey, model: 'gpt-4.1-mini' },
+});
+```
+
+**Responsibilities:**
+- Execute Layer 4 fetch (`fetchWithDeepAnalysis`) with optional feature flags
+- Merge mapper defaults with overrides and call `mapWithDeepAnalysis`
+- Feed analysis + mappings into `generateUserstyleV2`
+- Provide downstream AI callers with both sanitized text and raw HTML snapshots
+- Return `{ analysis, mappings, userstyle }` bundle for UI/download pipelines
+
+**Why it matters:**
+- Provides single entrypoint for the rebuilt stack
+- Guarantees consistent Catppuccin flavor/accent usage across mapping + generation
+- Keeps AI feature toggles centralized for experimentation
 
 ---
 
@@ -255,7 +344,7 @@ async function fetchWithDeepAnalysis(url: string): Promise<EnhancedCrawlerResult
 ### Phase 4: Generation (Week 4)
 10. ✅ UserStyle Generator v2
 11. ✅ Priority layering system
-12. ✅ DuckDuckGo-style output
+12. ✅ Deep analysis pipeline orchestration (`runDeepAnalysisPipeline`)
 
 ### Phase 5: Testing & Polish (Week 5)
 13. ✅ Test on DuckDuckGo

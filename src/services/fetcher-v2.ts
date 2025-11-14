@@ -74,6 +74,7 @@ export async function fetchWithDeepAnalysis(
     url,
     title: basicContent.title,
     content: basicContent.content,
+    html: basicContent.html,
 
     cssVariables,
     svgs,
