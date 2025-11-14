@@ -54,12 +54,51 @@ const CATPPUCCIN_COLORS = new Set<string>([
   'lavender',
 ]);
 
+// CSS at-rules that should not be treated as color references
+const CSS_AT_RULES = new Set<string>([
+  'media',
+  'supports',
+  'keyframes',
+  'font-face',
+  'import',
+  'charset',
+  'namespace',
+  'page',
+  'counter-style',
+  'font-feature-values',
+  'property',
+  'layer',
+  'container',
+  'scope',
+  'starting-style',
+  // LESS/preprocessor specific
+  'moz-document',
+  'flavor',
+  'catppuccin',
+]);
+
+/**
+ * Strip comments from LESS code for more reliable parsing
+ */
+function stripComments(code: string): string {
+  // Remove multi-line comments (/* ... */)
+  let result = code.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  // Remove single-line comments (// ...)
+  result = result.replace(/\/\/.*$/gm, '');
+
+  return result;
+}
+
 /**
  * Validate generated LESS output
  */
 export function validateOutput(theme: GeneratedTheme): ValidationResult {
   const issues: ValidationIssue[] = [];
-  const lines = theme.less.split('\n');
+
+  // Strip comments before processing to avoid parsing issues
+  const cleanCode = stripComments(theme.less);
+  const lines = cleanCode.split('\n');
 
   // Stats tracking
   const stats = {
@@ -67,7 +106,7 @@ export function validateOutput(theme: GeneratedTheme): ValidationResult {
     duplicateSelectors: 0,
     colorReferences: 0,
     invalidColorReferences: 0,
-    lines: lines.length,
+    lines: theme.less.split('\n').length, // Count original lines including comments
   };
 
   // Track selectors for duplicate detection
@@ -78,14 +117,15 @@ export function validateOutput(theme: GeneratedTheme): ValidationResult {
     const lineNum = index + 1;
     const trimmed = line.trim();
 
-    // Skip comments and empty lines
-    if (trimmed.startsWith('/*') || trimmed.startsWith('*') || trimmed.startsWith('//') || trimmed === '') {
+    // Skip empty lines
+    if (trimmed === '') {
       return;
     }
 
-    // Check for selector definitions (ends with { or :)
-    if (trimmed.match(/^[^{}]+[{:]$/)) {
-      const selector = trimmed.replace(/[{:]$/, '').trim();
+    // Check for selector definitions (ends with {)
+    // Use consistent pattern: selectors end with {
+    if (trimmed.match(/^[^{}]+\{$/)) {
+      const selector = trimmed.replace(/\{$/, '').trim();
       if (selector && !selector.startsWith('@')) {
         stats.totalSelectors++;
         const existing = selectorMap.get(selector) || [];
@@ -94,12 +134,12 @@ export function validateOutput(theme: GeneratedTheme): ValidationResult {
     }
 
     // Check for color references @color
-    const colorRefs = trimmed.matchAll(/@([a-z0-9]+)/gi);
+    const colorRefs = trimmed.matchAll(/@([a-z0-9-]+)/gi);
     for (const match of colorRefs) {
       const colorName = match[1];
 
-      // Skip LESS variables and mixins
-      if (colorName === 'flavor' || colorName === 'catppuccin' || colorName === 'import') {
+      // Skip CSS at-rules and LESS constructs
+      if (CSS_AT_RULES.has(colorName)) {
         continue;
       }
 
@@ -117,15 +157,8 @@ export function validateOutput(theme: GeneratedTheme): ValidationResult {
       }
     }
 
-    // Check for unclosed braces
-    const openBraces = (trimmed.match(/{/g) || []).length;
-    const closeBraces = (trimmed.match(/}/g) || []).length;
-    if (openBraces !== closeBraces) {
-      // This is a multi-line construct, skip
-    }
-
     // Check for invalid CSS properties
-    if (trimmed.includes(':') && !trimmed.startsWith('@') && !trimmed.includes('//')) {
+    if (trimmed.includes(':') && !trimmed.startsWith('@')) {
       const propMatch = trimmed.match(/^([\w-]+):\s*(.+);?$/);
       if (propMatch) {
         const [, property, value] = propMatch;
@@ -192,7 +225,7 @@ export function validateOutput(theme: GeneratedTheme): ValidationResult {
 
   // Validate coverage
   if (theme.coverage) {
-    if (theme.coverage.variables === 0 && theme.coverage.svgs === 0 && theme.coverage.selectors === 0) {
+    if (theme.coverage.variableCoverage === 0 && theme.coverage.svgCoverage === 0 && theme.coverage.selectorCoverage === 0) {
       issues.push({
         severity: 'warning',
         message: 'Zero coverage: no variables, SVGs, or selectors mapped',
@@ -270,13 +303,16 @@ export function findDuplicateSelectors(lessCode: string): Map<string, number[]> 
   const duplicates = new Map<string, number[]>();
   const selectorMap = new Map<string, number[]>();
 
-  const lines = lessCode.split('\n');
+  // Strip comments for consistent parsing
+  const cleanCode = stripComments(lessCode);
+  const lines = cleanCode.split('\n');
+
   lines.forEach((line, index) => {
     const trimmed = line.trim();
 
-    // Match selector definitions
-    if (trimmed.match(/^[^{}]+\s*{$/)) {
-      const selector = trimmed.replace(/\s*{$/, '').trim();
+    // Match selector definitions (consistent pattern: ends with {)
+    if (trimmed.match(/^[^{}]+\{$/)) {
+      const selector = trimmed.replace(/\{$/, '').trim();
       if (selector && !selector.startsWith('@')) {
         const existing = selectorMap.get(selector) || [];
         selectorMap.set(selector, [...existing, index + 1]);
@@ -299,13 +335,13 @@ export function findDuplicateSelectors(lessCode: string): Map<string, number[]> 
  */
 export function validateColorReferences(lessCode: string): { valid: boolean; invalidRefs: string[] } {
   const invalidRefs: string[] = [];
-  const colorRefs = lessCode.matchAll(/@([a-z0-9]+)/gi);
+  const colorRefs = lessCode.matchAll(/@([a-z0-9-]+)/gi);
 
   for (const match of colorRefs) {
     const colorName = match[1];
 
-    // Skip LESS keywords
-    if (['flavor', 'catppuccin', 'import', 'moz-document'].includes(colorName)) {
+    // Skip CSS at-rules and LESS constructs
+    if (CSS_AT_RULES.has(colorName)) {
       continue;
     }
 
@@ -325,20 +361,22 @@ export function validateColorReferences(lessCode: string): { valid: boolean; inv
  * Compute coverage metrics
  */
 export function computeCoverageMetrics(theme: GeneratedTheme): {
-  variables: number;
-  svgs: number;
-  selectors: number;
-  total: number;
-  percentage: number;
+  variableCoverage: number;
+  svgCoverage: number;
+  selectorCoverage: number;
+  totalCoverage: number;
+  averageCoverage: number;
 } {
-  const coverage = theme.coverage || { variables: 0, svgs: 0, selectors: 0 };
-  const total = coverage.variables + coverage.svgs + coverage.selectors;
-  const percentage = total > 0 ? Math.round((total / (total + 1)) * 100) : 0;
+  const coverage = theme.coverage || { variableCoverage: 0, svgCoverage: 0, selectorCoverage: 0 };
+  const totalCoverage = coverage.variableCoverage + coverage.svgCoverage + coverage.selectorCoverage;
+  const averageCoverage = Math.round(totalCoverage / 3);
 
   return {
-    ...coverage,
-    total,
-    percentage,
+    variableCoverage: coverage.variableCoverage,
+    svgCoverage: coverage.svgCoverage,
+    selectorCoverage: coverage.selectorCoverage,
+    totalCoverage,
+    averageCoverage,
   };
 }
 
@@ -370,10 +408,10 @@ export function generateValidationReport(theme: GeneratedTheme): string {
 
   // Coverage
   lines.push('Coverage:');
-  lines.push(`  CSS Variables: ${coverage.variables}`);
-  lines.push(`  SVG Icons: ${coverage.svgs}`);
-  lines.push(`  Selectors: ${coverage.selectors}`);
-  lines.push(`  Total: ${coverage.total} (${coverage.percentage}%)`);
+  lines.push(`  CSS Variables: ${coverage.variableCoverage}%`);
+  lines.push(`  SVG Icons: ${coverage.svgCoverage}%`);
+  lines.push(`  Selectors: ${coverage.selectorCoverage}%`);
+  lines.push(`  Total: ${coverage.totalCoverage} (Average: ${coverage.averageCoverage}%)`);
   lines.push('');
 
   // Issues
