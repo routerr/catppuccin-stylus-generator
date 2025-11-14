@@ -7,7 +7,14 @@
     "prebuild": "node scripts/generate-version.cjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build && gh-pages -d dist",
+    "test": "echo 'Tests are located in __tests__/ directory. Run individual test files with: npx tsx __tests__/test-*.ts'",
+    "test:smoke": "npx tsx __tests__/test-smoke-generator.ts",
+    "test:role": "npx tsx __tests__/test-role-mapper.ts",
+    "test:color": "npx tsx __tests__/test-color-classification.ts",
+    "test:contrast": "npx tsx __tests__/test-contrast-validation.ts",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "lucide-react": "^0.263.1",

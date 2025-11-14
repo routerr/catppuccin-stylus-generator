@@ -270,7 +270,7 @@ npm run deploy
 - [ ] Advanced color mapping controls
 - [ ] Theme testing/validation tools
 
-See [CLAUDE.md](CLAUDE.md#future-enhancements) for complete enhancement plans.
+See [AGENTS.md](AGENTS.md) for implementation guide and enhancement details.
 
 ---
 

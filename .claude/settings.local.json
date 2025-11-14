@@ -7,7 +7,18 @@
       "Bash(npm run dev)",
       "Bash(git rev-list:*)",
       "Bash(grep:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(nul)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(del \"comprehensive-contrast-report-2025-11-09.md\" \"contrast-issues-and-improvements.md\" \"contrast-test-report.md\" 2)",
+      "Bash(git rm:*)",
+      "Bash(git mv:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(del \"\\?\\%CD%\\nul\")",
+      "Bash(cmd //c \"del nul\")",
+      "Bash(powershell -Command \"Remove-Item -LiteralPath ''./nul'' -Force\")",
+      "Bash(powershell -Command \"Remove-Item -LiteralPath ''\\?\\C:\\repo\\catppuccin-stylus-generator\\nul'' -Force\")"
     ],
     "deny": [],
     "ask": []

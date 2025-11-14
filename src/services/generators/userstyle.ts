@@ -1032,7 +1032,12 @@ function generateCSSVariableMappings(mappings: ColorMapping[]): string {
   const borderColors: string[] = [];
   const surfaceColors: string[] = [];
 
-  mappings.forEach(mapping => {
+  mappings.forEach((mapping) => {
+    // Defensive check for undefined/null reason
+    if (!mapping.reason) {
+      return;
+    }
+
     const reason = mapping.reason.toLowerCase();
     const catColor = mapping.catppuccinColor;
 

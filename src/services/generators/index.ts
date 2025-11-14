@@ -9,17 +9,6 @@ import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
  
 
 /**
- * Filter out button and clickable background color mappings
- * to prevent overriding the original theme's button styles
- */
-// Previously filtered out button/clickable background mappings.
-// To better reflect AI results, we now keep all mappings and let the generators
-// handle contrast/readability and hover specifics.
-function filterButtonAndClickableBackgrounds(mappings: ColorMapping[]): ColorMapping[] {
-  return mappings;
-}
-
-/**
  * generateTheme
  * Supports legacy callers that pass ColorMapping[] and the new MappingOutput.
  * If MappingOutput is provided, the generators receive it directly and will
@@ -52,18 +41,15 @@ export function generateTheme(
   // Legacy path (ColorMapping[])
   const legacyMappings = colorMappings as ColorMapping[];
 
-  // Keep all mappings; generators will ensure readability/contrast.
-  const filteredMappings = filterButtonAndClickableBackgrounds(legacyMappings);
-
   // Convert ColorMapping array to Map for generators
   const mappingMap = new Map(
-    filteredMappings.map(m => [m.originalColor, m.catppuccinColor])
+    legacyMappings.map(m => [m.originalColor, m.catppuccinColor])
   );
 
   const output: ThemeOutput = {
-    stylus: generateStylusTheme(flavor, mappingMap, url, filteredMappings, 'mauve', cssAnalysis),
-    less: generateLessTheme(flavor, mappingMap, url, filteredMappings, 'mauve', cssAnalysis),
-    css: generateCssTheme(flavor, mappingMap, url, filteredMappings),
+    stylus: generateStylusTheme(flavor, mappingMap, url, legacyMappings, 'mauve', cssAnalysis),
+    less: generateLessTheme(flavor, mappingMap, url, legacyMappings, 'mauve', cssAnalysis),
+    css: generateCssTheme(flavor, mappingMap, url, legacyMappings),
   };
 
   return {
@@ -122,8 +108,7 @@ export function createUserStylePackage(
     userStyle = generateUserStyle(colorMappings as MappingOutput, url, undefined, cssAnalysis, 'mocha', defaultAccent);
   } else {
     const legacy = colorMappings as ColorMapping[];
-    const filteredMappings = filterButtonAndClickableBackgrounds(legacy);
-    userStyle = generateUserStyle(filteredMappings, url, undefined, cssAnalysis, 'mocha', defaultAccent);
+    userStyle = generateUserStyle(legacy, url, undefined, cssAnalysis, 'mocha', defaultAccent);
   }
 
   return {

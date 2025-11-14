@@ -23,3 +23,15 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Test coverage
+coverage
+*.lcov
+
+# OS files
+Thumbs.db
