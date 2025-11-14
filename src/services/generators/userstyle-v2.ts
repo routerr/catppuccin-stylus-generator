@@ -108,6 +108,12 @@ function buildUserstyleDocument(
   }
 
   lines.push(`${INDENT}}`);
+  lines.push('');
+
+  const flavorSelectors = buildFlavorInvocationSelectors(mode);
+  lines.push(`${INDENT}${flavorSelectors.join(`,\n${INDENT}`)} {`);
+  lines.push(`${INDENT}${INDENT}#catppuccin(@flavor);`);
+  lines.push(`${INDENT}}`);
   lines.push('}');
 
   return lines.join('\n');
@@ -123,11 +129,18 @@ function buildVariableSection(mappings: VariableMapping[], includeComments: bool
     lines.push('/* Apply Catppuccin colors to existing CSS custom properties */');
   }
 
+  const variableLines: string[] = [];
   mappings.forEach(mapping => {
     const colorToken = toToken(mapping.catppuccin);
     const comment = includeComments ? ` // ${mapping.reason}` : '';
-    lines.push(`${mapping.original}: ${colorToken} !important;${comment}`);
+    variableLines.push(`${INDENT}${mapping.original}: ${colorToken} !important;${comment}`);
   });
+
+  if (variableLines.length > 0) {
+    lines.push(':root {');
+    lines.push(...variableLines);
+    lines.push('}');
+  }
 
   return lines.join('\n');
 }
@@ -351,6 +364,30 @@ function computeCoverage(stats: MappingResult['stats']) {
     svgCoverage,
     selectorCoverage,
   };
+}
+
+function buildFlavorInvocationSelectors(mode: DeepAnalysisResult['mode']): string[] {
+  const baseSelectors = [
+    ':root',
+    'html',
+    'body',
+  ];
+
+  const modeSelectors = mode === 'dark'
+    ? [
+        ':root[data-mode="dark"]',
+        ':root[data-theme="dark"]',
+        'html[data-theme="dark"]',
+        'body[data-theme="dark"]',
+      ]
+    : [
+        ':root[data-mode="light"]',
+        ':root[data-theme="light"]',
+        'html[data-theme="light"]',
+        'body[data-theme="light"]',
+      ];
+
+  return [...modeSelectors, ...baseSelectors];
 }
 
 function safeHostname(url: string): string {

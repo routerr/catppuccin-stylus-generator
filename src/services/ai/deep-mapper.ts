@@ -671,7 +671,7 @@ function createFallbackSelectorMappings(
 function createFallbackSelectorMapping(
   entry: SelectorEntry,
   config: DeepMapperConfig,
-  mode: 'dark' | 'light' = 'dark',
+  mode: 'dark' | 'light',
 ): SelectorMapping {
   const properties = inferDefaultPropertiesForSelector(entry, config, mode);
   return {
@@ -942,9 +942,6 @@ async function callAIProvider(
         model,
         prompt,
       );
-      if (typeof response !== 'string') {
-        throw new Error('Unexpected OpenRouter response for custom prompt');
-      }
       return response;
     }
     case 'chutes': {
@@ -958,13 +955,14 @@ async function callAIProvider(
         model,
         prompt,
       );
-      if (typeof response !== 'string') {
-        throw new Error('Unexpected Chutes response for custom prompt');
-      }
       return response;
     }
-    case 'ollama':
-      throw new Error('Custom deep analysis prompts are not yet supported for Ollama');
+    case 'ollama': {
+      console.warn(
+        `[DeepMapper] Ollama provider was selected for custom deep analysis prompt, but this operation is not supported. Falling back to default mappings. Prompt: "${prompt}"`,
+      );
+      throw new Error('Custom deep analysis prompts are not yet supported for Ollama. See warning log for details.');
+    }
     default:
       throw new Error(`Unsupported AI provider: ${provider}`);
   }

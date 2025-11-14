@@ -86,7 +86,21 @@ export async function analyzeColorsWithChutes(
   mainAccent: string,
   apiKey: string,
   model: string,
-  customPrompt?: string
+  customPrompt: string,
+): Promise<string>;
+export async function analyzeColorsWithChutes(
+  crawlerResult: CrawlerResult,
+  mainAccent: string,
+  apiKey: string,
+  model: string,
+  customPrompt?: undefined,
+): Promise<{ analysis: WebsiteColorAnalysis; mappings: ColorMapping[]; mode: 'dark' | 'light' }>;
+export async function analyzeColorsWithChutes(
+  crawlerResult: CrawlerResult,
+  mainAccent: string,
+  apiKey: string,
+  model: string,
+  customPrompt?: string,
 ): Promise<string | { analysis: WebsiteColorAnalysis; mappings: ColorMapping[]; mode: 'dark' | 'light' }> {
   // If custom prompt is provided, use it directly (for deep analysis)
   if (customPrompt) {

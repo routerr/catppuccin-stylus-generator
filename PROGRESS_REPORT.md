@@ -10,7 +10,7 @@
 
 Successfully completed **Phase 1: Foundation** of the deep analysis system rebuild. All core analysis infrastructure is now in place and ready for integration with AI mapping and theme generation layers.
 
-## 🆕 Session Update – 2025-11-15
+## 🆕 Session Update – 2025-01-15
 
 **Focus:** Deliver a single-call deep analysis pipeline for the UI by wiring fetch → map → generate with shared configuration.
 
@@ -18,7 +18,7 @@ Successfully completed **Phase 1: Foundation** of the deep analysis system rebui
 - ✅ **Mapper Defaults Harmonized** – Centralized feature toggles (variables/SVGs/selectors, AI vs deterministic) so experiments can flip flags per run without duplicating logic across the app.
 - ✅ **Documentation Refresh** – Architecture guide now documents Layer 5 (Pipeline Orchestration) and roadmap/progress report highlight the new milestone.
 
-## 🆕 Session Update – 2025-11-14
+## 🆕 Session Update – 2025-01-14
 
 **Focus:** Wiring deep-analysis outputs into generation-ready assets and enforcing gradient preservation guarantees.
 
