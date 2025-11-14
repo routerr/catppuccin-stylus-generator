@@ -304,7 +304,7 @@ function buildCSSVariablePrompt(
         prompt += `\n${index + 1}. ${variable.name} = ${value} (scope: ${variable.selector}, usage: ${variable.frequency})`;
       });
     if (groupVars.length > 10) {
-      prompt += `\n... ${groupVars.length - 10} more`; 
+      prompt += `\n... ${groupVars.length - 10} more`;
     }
   });
 
