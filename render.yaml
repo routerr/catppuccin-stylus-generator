@@ -5,7 +5,9 @@
     plan: free
     autoDeploy: true
     envVars:
-      - key: PORT
+      - key: CRAWLER_KEY
+        generateValue: true
+      - key: CRAWLER_PORT
         value: "8787"
 
 # 2. One-click deploy on Render

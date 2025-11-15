@@ -1,7 +1,7 @@
 import http from 'http';
 import { chromium } from 'playwright';
 
-const PORT = Number(process.env.CRAWLER_PORT || 8787);
+const PORT = Number(process.env.CRAWLER_PORT || process.env.PORT || 8787);
 const AUTH_KEY = process.env.CRAWLER_KEY;
 
 async function crawl(url) {
