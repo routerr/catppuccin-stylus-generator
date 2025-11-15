@@ -48,32 +48,21 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## Step 3: Choose Your Input Method
+## Step 3: Crawl a URL
 
-The app supports **3 ways** to provide website content:
-
-### Method 1: Direct URL (Easiest)
-- Enter any public website URL
-- Direct fetch - no external crawler needed!
-- Example: `https://github.com`
-
-### Method 2: MHTML Upload
-- Save webpage in Chrome: `File → Save As → Webpage, Complete (.mhtml)`
-- Upload the `.mhtml` file
-- Works offline, bypasses CORS issues
-
-### Method 3: Directory Upload
-- Upload complete website directory with HTML/CSS files
-- Best for local testing and detailed CSS analysis
-- Supports multiple HTML files and stylesheets
+- Paste any public URL into the Generate card.
+- For JS-heavy sites, run the bundled Playwright crawler:
+  ```bash
+  npm run crawler:serve
+  ```
+  Then paste `http://localhost:8787/crawl` (or your tunnel) + API key into **API Key Configuration → Playwright Crawler**.
 
 ---
 
 ## Step 4: Generate Your Theme
 
-1. **Select Input Method**
-   - Choose URL, MHTML, or Directory tab
-   - Provide your content
+1. **Provide the URL**
+   - Enter the site address and ensure the Playwright crawler is running if you need full rendering.
 
 2. **Configure AI Provider**
    - Select provider: OpenRouter, Chutes, or Ollama
@@ -119,7 +108,7 @@ The app supports **3 ways** to provide website content:
 
 - **Start simple**: Try well-structured sites like GitHub or documentation sites
 - **Use free models**: Free OpenRouter models work great for most sites
-- **MHTML for CORS**: If URL fetch fails due to CORS, use MHTML upload
+- **Run Playwright**: If a site needs JS rendering or blocks proxies, use the Playwright crawler endpoint
 - **Local AI**: Ollama is perfect for privacy and no API costs
 - **Save your keys**: Keys stored in browser localStorage (never sent anywhere except to your chosen AI provider)
 
@@ -128,8 +117,7 @@ The app supports **3 ways** to provide website content:
 ## 🔧 Troubleshooting
 
 ### "Failed to fetch website" error
-- **CORS issue**: Use MHTML upload instead
-- **Private site**: Upload directory or MHTML
+- **Enable Playwright**: Start `npm run crawler:serve` and set the endpoint
 - **Check URL**: Ensure it's a valid public URL
 
 ### "AI analysis failed" error
@@ -139,7 +127,7 @@ The app supports **3 ways** to provide website content:
 
 ### Generated theme looks wrong
 - Try a different AI model (results vary)
-- Use directory upload for better CSS analysis
+- Ensure Playwright crawler is running for JS-heavy pages
 - Some sites have complex styling that needs manual tweaking
 
 ### Blank page after deployment
@@ -160,23 +148,9 @@ Usage: Import the CSS into your site
 
 ### 2. Create Stylus Browser Extension Theme
 ```
-Input: URL or MHTML of target site
+Input: URL of target site (Playwright crawler optional)
 Output: UserStyle (.user.less) format
 Usage: Install in Stylus browser extension
-```
-
-### 3. Local Development Testing
-```
-Input: Directory upload (your local site folder)
-Output: All formats (Stylus/LESS/CSS)
-Usage: Test themes before deployment
-```
-
-### 4. Offline Theme Generation
-```
-Input: MHTML file (saved webpage)
-Output: Any format
-Usage: Work without internet or bypass CORS
 ```
 
 ---
@@ -204,10 +178,9 @@ Usage: Work without internet or bypass CORS
    - Premium models (Claude, GPT-4): Complex sites with many colors
    - Local Ollama: Maximum privacy, no API costs
 
-3. **Input Method Selection**:
-   - URL: Quick generation for public sites
-   - MHTML: CORS issues or offline work
-   - Directory: Local development, detailed CSS
+3. **Crawling Tips**:
+   - URL + HTTP proxy: Works for most public sites
+   - Playwright crawler: Capture JS-heavy/interactive pages
 
 4. **Output Format Selection**:
    - UserStyle: Browser extension themes (most common)

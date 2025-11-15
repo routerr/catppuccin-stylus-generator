@@ -1,0 +1,15 @@
+﻿services:
+  - type: web
+    name: catppuccin-playwright
+    env: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "8787"
+
+# 2. One-click deploy on Render
+# Go to https://render.com, click “New +” → “Blueprint”.
+# Paste your repo URL (Render reads render.yaml).
+# Click “Deploy”. Render builds the Dockerfile and gives you an HTTPS URL, e.g. https://catppuccin-playwright.onrender.com.
+# Set the Playwright endpoint in the app to https://catppuccin-playwright.onrender.com/crawl.

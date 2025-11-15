@@ -11,9 +11,12 @@ interface StoredKeys {
   ollama?: string;
   // Custom base URL for Ollama (e.g., https://your-tunnel.example.com)
   ollamaBase?: string;
+  playwrightEndpoint?: string;
+  playwrightKey?: string;
 }
 
 const STORAGE_KEY = 'catppuccin-theme-gen-keys';
+const SETTINGS_KEY = 'catppuccin-theme-gen-settings';
 
 export function saveAPIKeys(keys: StoredKeys): void {
   try {
@@ -39,6 +42,27 @@ export function loadAPIKeys(): StoredKeys {
 
 export function clearAPIKeys(): void {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+export interface StoredSettings {
+  aiAssistedMapping?: boolean;
+}
+
+export function loadSettings(): StoredSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? (JSON.parse(raw) as StoredSettings) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveSettings(settings: StoredSettings): void {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // ignore
+  }
 }
 
 // Convenience helpers specifically for Ollama base URL

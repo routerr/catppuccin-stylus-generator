@@ -2,6 +2,7 @@ import type { ColorMapping, AccentColor, CatppuccinFlavor } from '../../types/ca
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
 import { PRECOMPUTED_ACCENTS, ACCENT_NAMES } from '../../utils/accent-schemes';
+import { createAccentPlan, type AccentPlan } from '../../utils/accent-plan';
 
 // Contrast calculation functions
 function hexToRgb(hex: string): number[] {
@@ -55,6 +56,11 @@ export interface CSSAnalysisData {
     text: Array<{ className: string; properties: any[] }>;
     borders: Array<{ className: string; properties: any[] }>;
   };
+  aiRoleGuesses?: Array<{ className: string; role: string; confidence?: number }>;
+  accentToggles?: {
+    badgeCardTable?: boolean;
+    alerts?: boolean;
+  };
 }
 
 /**
@@ -98,18 +104,19 @@ export function generateUserStyle(
 
   // Calculate accent colors for harmonious color scheme
   const palette = CATPPUCCIN_PALETTES[flavor];
-  const useAltForButtons = Math.random() < 0.5 ? 'alt1' : 'alt2';
+  const accentPlan = createAccentPlan((cssAnalysis as any)?.paletteProfile, flavor, defaultAccent);
+  const useAltForButtons = accentPlan.buttonVariant;
   const useAltBi = 'bi1'; // deterministic: pair main-accent with bi-accent1
   const hoverBiPick = 'bi-accent1'; // deterministic: gradient pairs with bi-accent1
 
   // Extract hover angles from AI mappings (more flexible and dynamic)
   const colorMappings = Array.isArray(mappings) ? mappings : [];
   const hoverAngles = {
-    links: colorMappings.find(m => m.reason?.toLowerCase().includes('link') && m.hoverGradientAngle)?.hoverGradientAngle || Math.floor(Math.random() * 360),
-    buttons: colorMappings.find(m => m.reason?.toLowerCase().includes('button') && m.hoverGradientAngle)?.hoverGradientAngle || Math.floor(Math.random() * 360),
-    cards: colorMappings.find(m => (m.reason?.toLowerCase().includes('card') || m.reason?.toLowerCase().includes('panel')) && m.hoverGradientAngle)?.hoverGradientAngle || Math.floor(Math.random() * 360),
-    badges: colorMappings.find(m => (m.reason?.toLowerCase().includes('badge') || m.reason?.toLowerCase().includes('tag')) && m.hoverGradientAngle)?.hoverGradientAngle || Math.floor(Math.random() * 360),
-    general: Math.floor(Math.random() * 360), // Fallback for unclassified elements
+    links: colorMappings.find(m => m.reason?.toLowerCase().includes('link') && m.hoverGradientAngle)?.hoverGradientAngle || accentPlan.hoverAngles.links,
+    buttons: colorMappings.find(m => m.reason?.toLowerCase().includes('button') && m.hoverGradientAngle)?.hoverGradientAngle || accentPlan.hoverAngles.buttons,
+    cards: colorMappings.find(m => (m.reason?.toLowerCase().includes('card') || m.reason?.toLowerCase().includes('panel')) && m.hoverGradientAngle)?.hoverGradientAngle || accentPlan.hoverAngles.cards,
+    badges: colorMappings.find(m => (m.reason?.toLowerCase().includes('badge') || m.reason?.toLowerCase().includes('tag')) && m.hoverGradientAngle)?.hoverGradientAngle || accentPlan.hoverAngles.badges,
+    general: accentPlan.hoverAngles.general,
   };
 
   // Determine if elements should use text gradients vs background gradients
@@ -591,7 +598,7 @@ ${(() => {
 
     /* Class-specific styling (from CSS analysis) */
     /* These rules will be added if directory analysis is used */
-${generateClassSpecificRules(cssAnalysis, mappings)}
+${generateClassSpecificRules(cssAnalysis, mappings, accentPlan)}
 
     /* Inputs – only change colors, preserve original styling */
     input,
@@ -1190,13 +1197,26 @@ function roleToCssVar(role: string): string {
 /**
  * Generate class-specific CSS rules from CSS analysis data
  */
-function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: ColorMapping[] | MappingOutput): string {
+function generateClassSpecificRules(
+  cssAnalysis?: CSSAnalysisData,
+  mappings?: ColorMapping[] | MappingOutput,
+  accentPlan?: AccentPlan
+): string {
   if (!cssAnalysis || !cssAnalysis.grouped) {
     return '    /* No class-specific analysis available */';
   }
 
   const lines: string[] = [];
   const grouped = cssAnalysis.grouped;
+  const colorCycle = accentPlan?.classColorCycle || ['@accent', '@bi-accent1', '@bi-accent2'];
+  const roleGuessMap = buildRoleGuessMap(cssAnalysis?.aiRoleGuesses);
+  const getColor = (idx: number, className?: string) => {
+    if (className) {
+      const roleColor = resolveColorFromRoleGuess(roleGuessMap[className]);
+      if (roleColor) return roleColor;
+    }
+    return colorCycle[Math.abs(idx) % colorCycle.length];
+  };
 
   // Helper to check if a mapping indicates text-only/invisible background
   const isTextOnlyMapping = (className: string): boolean => {
@@ -1231,13 +1251,13 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
     grouped.buttons.slice(0, 100).forEach((btn, index) => {
       const isTextOnly = isTextOnlyMapping(btn.className);
       const angleVar = getHoverAngleVar(btn.className, 'button');
-
-      // Distribute colors: 70% main-accent, 15% bi-accent1, 15% bi-accent2
-      const colorVar = index % 10 < 7 ? '@accent' : (index % 10 < 9 ? '@bi-accent1' : '@bi-accent2');
-      const gradientCompanion = index % 10 < 7 ? '@bi-accent1' : (index % 10 < 9 ? '@alt1-bi1' : '@alt2-bi1');
+      const colorVar = getColor(index, btn.className);
+      const gradientInfo = getGradientForColor(colorVar);
+      const gradientCompanion = gradientInfo.hover;
+      const activeCompanion = gradientInfo.active;
 
       lines.push('    .' + btn.className + ' {');
-      lines.push('      /* Default state: ' + (index % 10 < 7 ? 'main-accent' : 'bi-accent for variety') + ' (70-30 rule) */');
+      lines.push('      /* Deterministic accent plan based on palette profile */');
       lines.push('      color: ' + colorVar + ';');
 
       if (isTextOnly) {
@@ -1284,7 +1304,7 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
 
       if (!isTextOnly) {
         lines.push('        /* Stronger gradient for active state with bi-accent companion */');
-        lines.push(`        background-image: linear-gradient(${angleVar}, ${gradientCompanion} 0%, ${colorVar} 50%, ${gradientCompanion} 100%) !important;`);
+        lines.push(`        background-image: linear-gradient(${angleVar}, ${activeCompanion} 0%, ${colorVar} 50%, ${activeCompanion} 100%) !important;`);
         lines.push('        color: ' + colorVar + ' !important;');
       } else {
         lines.push('        color: ' + colorVar + ' !important;');
@@ -1299,20 +1319,22 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
   if (grouped.links && grouped.links.length > 0) {
     lines.push('');
     lines.push('    /* Link classes – gradient text on hover (invisible background elements) */');
-    grouped.links.slice(0, 100).forEach((link) => {
+    grouped.links.slice(0, 100).forEach((link, linkIndex) => {
       const cls = link.className.trim();
       if (!cls) return;
       const angleVar = getHoverAngleVar(cls, 'link');
+      const linkColor = getColor(linkIndex + 1, cls);
+      const linkGradient = getGradientForColor(linkColor);
 
       // anchor with class, and anchor inside element with class
       lines.push('    a.' + cls + ', .' + cls + ' a {');
       lines.push('      /* Default state: Catppuccin accent color */');
-      lines.push('      color: @accent !important;');
+      lines.push('      color: ' + linkColor + ' !important;');
       lines.push('    }');
       lines.push('    a.' + cls + ':hover, .' + cls + ' a:hover {');
       lines.push('      /* Apply gradient to text (text-only elements) */');
       lines.push('      @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
-      lines.push(`        background: linear-gradient(${angleVar}, @accent 0%, @hover-bi 100%) !important;`);
+      lines.push(`        background: linear-gradient(${angleVar}, ${linkColor} 0%, ${linkGradient.hover} 100%) !important;`);
       lines.push('        -webkit-background-clip: text !important;');
       lines.push('        background-clip: text !important;');
       lines.push('        -webkit-text-fill-color: transparent !important;');
@@ -1335,12 +1357,12 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
       lines.push('          color: @link-fallback !important;');
       lines.push('        }');
       lines.push('        & when not (@link-contrast < 4.5) {');
-      lines.push('          color: @accent !important;');
+      lines.push('          color: ' + linkColor + ' !important;');
       lines.push('        }');
       lines.push('      }');
       lines.push('    }');
       lines.push('    a.' + cls + ':active, .' + cls + ' a:active, a.' + cls + '.active, .' + cls + ' a.active {');
-      lines.push('      color: @alt1-main;');
+      lines.push('      color: ' + linkGradient.active + ';');
       lines.push('    }');
     });
   }
@@ -1349,9 +1371,11 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
   if (grouped.backgrounds && grouped.backgrounds.length > 0) {
     lines.push('');
     lines.push('    /* Background classes */');
-    grouped.backgrounds.slice(0, 100).forEach(bg => {
+    grouped.backgrounds.slice(0, 100).forEach((bg, bgIndex) => {
+      const name = bg.className;
+      const bgColor = getColor(bgIndex + 2);
       lines.push('    .' + bg.className + ' {');
-      lines.push('      background: @surface0 !important;');
+      lines.push('      background: fade(' + bgColor + ', 35%) !important;');
       lines.push('    }');
     });
   }
@@ -1360,9 +1384,10 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
   if (grouped.text && grouped.text.length > 0) {
     lines.push('');
     lines.push('    /* Text classes */');
-    grouped.text.slice(0, 100).forEach(txt => {
+    grouped.text.slice(0, 100).forEach((txt, textIndex) => {
+      const textColor = getColor(textIndex + 3, txt.className);
       lines.push('    .' + txt.className + ' {');
-      lines.push('      color: @text !important;');
+      lines.push('      color: ' + textColor + ' !important;');
       lines.push('    }');
     });
   }
@@ -1382,5 +1407,89 @@ function generateClassSpecificRules(cssAnalysis?: CSSAnalysisData, mappings?: Co
     });
   }
 
+  const badgeToggle = cssAnalysis?.accentToggles?.badgeCardTable ?? true;
+  if (badgeToggle) {
+    // Accent plan coverage for common badge/card/table elements even without explicit grouping
+    lines.push('');
+    lines.push('    /* Accent plan for badges, cards, and tables (deterministic rotation) */');
+    const badgeColor = getColor(0);
+    const badgeGradient = getGradientForColor(badgeColor);
+    lines.push('    .badge, .tag, .chip, .pill {');
+    lines.push('      color: ' + badgeColor + ' !important;');
+    lines.push('      background: fade(' + badgeColor + ', 18%) !important;');
+    lines.push('      border-color: fade(' + badgeColor + ', 35%) !important;');
+    lines.push('    }');
+    lines.push('    .badge:hover, .tag:hover, .chip:hover, .pill:hover {');
+    lines.push(`      background-image: linear-gradient(@hover-angle-badges, fade(${badgeColor}, 25%), fade(${badgeGradient.hover}, 25%)) !important;`);
+    lines.push('      color: @text !important;');
+    lines.push('    }');
+
+    const cardColor = getColor(1);
+    lines.push('    .card, .panel, .container, .box, .paper, .table, table {');
+    lines.push('      border-color: @overlay1 !important;');
+    lines.push('      background: fade(@surface0, 92%) !important;');
+    lines.push('    }');
+    lines.push('    .card:hover, .panel:hover, .container:hover, .box:hover, .paper:hover {');
+    lines.push(`      background-image: linear-gradient(@hover-angle-cards, fade(${cardColor}, 8%), fade(${cardColor}, 3%)) !important;`);
+    lines.push('    }');
+
+    const tableAccent = getColor(2);
+    lines.push('    table thead {');
+    lines.push('      background: fade(' + tableAccent + ', 14%) !important;');
+    lines.push('      color: @text !important;');
+    lines.push('    }');
+    lines.push('    table tbody tr:hover {');
+    lines.push(`      background-image: linear-gradient(@hover-angle-general, fade(${tableAccent}, 10%), fade(${tableAccent}, 6%)) !important;`);
+    lines.push('    }');
+  }
+
+  const alertsToggle = cssAnalysis?.accentToggles?.alerts ?? true;
+  if (alertsToggle) {
+    lines.push('');
+    lines.push('    /* Alerts / notifications accent coverage */');
+    const alertColor = getColor(3);
+    const alertGradient = getGradientForColor(alertColor);
+    lines.push('    .alert, .notification, .toast, .banner, .notice {');
+    lines.push('      background: fade(' + alertColor + ', 20%) !important;');
+    lines.push('      color: @text !important;');
+      lines.push('      border-color: fade(' + alertColor + ', 35%) !important;');
+    lines.push('    }');
+    lines.push('    .alert:hover, .notification:hover, .toast:hover, .banner:hover, .notice:hover {');
+    lines.push(`      background-image: linear-gradient(@hover-angle-general, fade(${alertColor}, 24%), fade(${alertGradient.hover}, 24%)) !important;`);
+    lines.push('    }');
+  }
+
   return lines.join('\n');
+}
+
+function getGradientForColor(colorVar: string): { hover: string; active: string } {
+  switch (colorVar) {
+    case '@bi-accent1':
+      return { hover: '@alt1-bi1', active: '@alt1-bi1' };
+    case '@bi-accent2':
+      return { hover: '@alt2-bi1', active: '@alt2-bi1' };
+    default:
+      return { hover: '@bi-accent1', active: '@bi-accent1' };
+  }
+}
+
+function buildRoleGuessMap(guesses?: Array<{ className: string; role: string; confidence?: number }>) {
+  const map: Record<string, string[]> = {};
+  (guesses || []).forEach((g) => {
+    const name = g.className?.trim();
+    if (!name) return;
+    if (!map[name]) map[name] = [];
+    map[name].push((g.role || '').toLowerCase());
+  });
+  return map;
+}
+
+function resolveColorFromRoleGuess(roles?: string[]) {
+  if (!roles || roles.length === 0) return undefined;
+  const set = new Set(roles.map((r) => r.toLowerCase()));
+  if (set.has('primary') || set.has('cta') || set.has('accent')) return '@accent';
+  if (set.has('secondary') || set.has('link') || set.has('nav')) return '@bi-accent1';
+  if (set.has('tertiary') || set.has('badge') || set.has('tag')) return '@bi-accent2';
+  if (set.has('danger') || set.has('error') || set.has('alert')) return '@danger';
+  return undefined;
 }

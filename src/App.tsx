@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
 import { InputSelector } from './components/InputSelector';
 import { APIKeyConfig } from './components/APIKeyConfig';
 import { ServiceSelector } from './components/ServiceSelector';
 import { ThemePreview } from './components/ThemePreview';
 import { ThinkingProcess, type ThinkingStep } from './components/ThinkingProcess';
-import type { AIProvider, ThemePackage, CrawlerResult } from './types/theme';
+import type { AIProvider, ThemePackage, CrawlerResult, FetcherService } from './types/theme';
+import type { PaletteDiagnostics } from './services/palette-profile';
+import { loadSettings, saveSettings } from './utils/storage';
 import { fetchWebsiteContent } from './services/fetcher';
 import { analyzeWebsiteColors } from './services/ai';
 import { createUserStylePackage } from './services/generators';
-import { MHTMLParser } from './utils/mhtml-parser';
-import { parseWebpageDirectory, groupCSSClassesByPurpose } from './utils/directory-parser';
 import { useVersion } from './hooks/useVersion';
 import catppuccinLogo from '/catppuccin.png';
 
@@ -24,16 +23,25 @@ function App() {
   const [themePackage, setThemePackage] = useState<ThemePackage | null>(null);
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
   const [discoveredOllamaModels, setDiscoveredOllamaModels] = useState<string[]>([]);
+  const [crawlerWarnings, setCrawlerWarnings] = useState<string[]>([]);
   const version = useVersion();
 
   // Regeneration support state
   const [lastCrawlerResult, setLastCrawlerResult] = useState<CrawlerResult | null>(null);
-  const [lastSource, setLastSource] = useState<string | null>(null);
+  const [lastSource, setLastSource] = useState<FetcherService>('direct-fetch');
   const [lastAIConfig, setLastAIConfig] = useState<{ provider: AIProvider; model: string; apiKey: string } | null>(null);
-  const [lastUrl, setLastUrl] = useState<string | null>(null);
-  const [lastUploadedFileName, setLastUploadedFileName] = useState<string>('');
-  const [lastUploadedDirPath, setLastUploadedDirPath] = useState<string>('');
+  const [lastAiMappingChoice, setLastAiMappingChoice] = useState<boolean | null>(null);
   const [hasCompleted, setHasCompleted] = useState(false);
+  const [paletteDiagnostics, setPaletteDiagnostics] = useState<PaletteDiagnostics | null>(null);
+  const [useAiMapping, setUseAiMapping] = useState<boolean>(() => {
+    const settings = loadSettings();
+    return settings.aiAssistedMapping ?? false;
+  });
+  const [accentBadgeCardTable, setAccentBadgeCardTable] = useState(true);
+  const [accentAlerts, setAccentAlerts] = useState(true);
+  const [lastPaletteProfile, setLastPaletteProfile] = useState<any | null>(null);
+  const [lastCrawlAt, setLastCrawlAt] = useState<string | null>(null);
+  const [parseErrorToast, setParseErrorToast] = useState<string | null>(null);
   
 
   const aiChangedSinceLast = !!(
@@ -43,16 +51,14 @@ function App() {
       lastAIConfig.apiKey !== aiKey
     )
   );
-  const canRegenerate = hasCompleted && aiChangedSinceLast;
+  const mappingChangedSinceLast = lastAiMappingChoice !== null && lastAiMappingChoice !== useAiMapping;
+  const canRegenerate = hasCompleted && (aiChangedSinceLast || mappingChangedSinceLast);
+  const canQuickRerun = !!lastCrawlerResult;
 
   const updateStep = (id: string, updates: Partial<ThinkingStep>) => {
     setThinkingSteps(prev => prev.map(step =>
       step.id === id ? { ...step, ...updates, timestamp: Date.now() } : step
     ));
-  };
-
-  const addStep = (step: ThinkingStep) => {
-    setThinkingSteps(prev => [...prev, { ...step, timestamp: Date.now() }]);
   };
 
   const handleGenerate = async (url: string) => {
@@ -66,13 +72,15 @@ function App() {
     setProgress('Starting...');
     setThemePackage(null);
     setHasCompleted(false);
-    setLastUrl(url);
-    setLastUploadedFileName('');
-    setLastUploadedDirPath('');
+    setPaletteDiagnostics(null);
+    setCrawlerWarnings([]);
+    saveSettings({ aiAssistedMapping: useAiMapping });
+    setLastPaletteProfile(null);
+    setLastCrawlAt(null);
 
     try {
       // Fast regenerate: use cached content if available
-      if (canRegenerate && lastCrawlerResult && lastSource === 'direct-fetch') {
+      if (canRegenerate && lastCrawlerResult) {
         // Skip fetching, use cached content
         setThinkingSteps([
           { id: 'analyze', title: 'AI Color Analysis', description: 'Re-analyzing color scheme with new AI config', status: 'in_progress' },
@@ -80,7 +88,9 @@ function App() {
           { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
         ]);
         setProgress('Using cached content for fast regeneration...');
-        await processContent(lastCrawlerResult, 'direct-fetch');
+        setPaletteDiagnostics(lastCrawlerResult.cssAnalysis?.paletteProfile?.diagnostics || null);
+        setLastPaletteProfile(lastCrawlerResult.cssAnalysis?.paletteProfile || null);
+        await processContent(lastCrawlerResult, lastSource);
         return;
       }
 
@@ -113,11 +123,19 @@ function App() {
         content: fetchResult.html,
         html: fetchResult.html,
         colors: fetchResult.colors,
+        cssAnalysis: fetchResult.cssAnalysis,
       };
 
+      if (fetchResult.warnings?.length) {
+        setCrawlerWarnings(fetchResult.warnings);
+      }
+
       setLastCrawlerResult(crawlerResult);
-      setLastSource('direct-fetch');
-      await processContent(crawlerResult, 'direct-fetch');
+      setLastSource(fetchResult.fetcher);
+      setPaletteDiagnostics(crawlerResult.cssAnalysis?.paletteProfile?.diagnostics || null);
+       setLastPaletteProfile(crawlerResult.cssAnalysis?.paletteProfile || null);
+      setLastCrawlAt(new Date().toLocaleString());
+      await processContent(crawlerResult, fetchResult.fetcher);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setProgress('');
@@ -125,176 +143,17 @@ function App() {
     }
   };
 
-  const handleFileUpload = async (file: File) => {
-    if (aiProvider !== 'ollama' && !aiKey) {
-      setError('Please provide your AI API key');
-      return;
-    }
-
-    setIsProcessing(true);
-    setError('');
-    setProgress('Starting...');
-    setThemePackage(null);
-    setHasCompleted(false);
-    setLastUrl(null);
-    setLastUploadedDirPath('');
-
-    try {
-      // Check if this is the same file as last time
-      const isSameFile = file.name === lastUploadedFileName;
-
-      // Fast regenerate: use cached content if available AND same file
-      if (canRegenerate && lastCrawlerResult && lastSource === 'mhtml-upload' && isSameFile) {
-        // Skip parsing, use cached content
-        setThinkingSteps([
-          { id: 'analyze', title: 'AI Color Analysis', description: 'Re-analyzing color scheme with new AI config', status: 'in_progress' },
-          { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
-          { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
-        ]);
-        setProgress('Using cached content for fast regeneration...');
-        await processContent(lastCrawlerResult, 'mhtml-upload');
-        return;
-      }
-
-      // Normal generation: parse MHTML file
-      setThinkingSteps([
-        { id: 'parse', title: 'Parsing MHTML File', description: 'Extracting website content from file', status: 'in_progress' },
-        { id: 'analyze', title: 'AI Color Analysis', description: 'Analyzing color scheme with AI', status: 'pending' },
-        { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
-        { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
-      ]);
-
-      // Step 1: Parse MHTML file
-      setProgress('Parsing MHTML file...');
-      const crawlerResult = await MHTMLParser.parseFile(file);
-
-      updateStep('parse', {
-        status: 'completed',
-        details: `Parsed ${file.name} - Found ${crawlerResult.colors.length} colors`
-      });
-
-      setLastCrawlerResult(crawlerResult);
-      setLastSource('mhtml-upload');
-      setLastUploadedFileName(file.name);
-      await processContent(crawlerResult, 'mhtml-upload');
-    } catch (err) {
-      const currentStep = thinkingSteps.find(s => s.status === 'in_progress');
-      if (currentStep) {
-        updateStep(currentStep.id, { status: 'error', details: err instanceof Error ? err.message : 'Parse failed' });
-      }
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      setProgress('');
-      setIsProcessing(false);
-    }
-  };
-
-  const handleDirectoryUpload = async (files: FileList) => {
-    if (aiProvider !== 'ollama' && !aiKey) {
-      setError('Please provide your AI API key');
-      return;
-    }
-
-    setIsProcessing(true);
-    setError('');
-    setProgress('Starting...');
-    setThemePackage(null);
-    setHasCompleted(false);
-    setLastUrl(null);
-    setLastUploadedFileName('');
-
-    try {
-      // Check if this is the same directory as last time
-      const dirPath = files[0]?.webkitRelativePath?.split('/')[0] || '';
-      const isSameDirectory = dirPath === lastUploadedDirPath && dirPath !== '';
-
-      // Fast regenerate: use cached content if available AND same directory
-      if (canRegenerate && lastCrawlerResult && lastSource === 'directory-upload' && isSameDirectory) {
-        // Skip parsing, use cached content
-        setThinkingSteps([
-          { id: 'analyze', title: 'AI Color & Class Mapping', description: 'Re-analyzing colors with new AI config', status: 'in_progress' },
-          { id: 'map', title: 'Mapping to Catppuccin', description: 'Creating detailed color mappings', status: 'pending' },
-          { id: 'generate', title: 'Generating Enhanced Theme', description: 'Creating theme with class-specific rules', status: 'pending' },
-        ]);
-        setProgress('Using cached content for fast regeneration...');
-        await processContent(lastCrawlerResult, 'directory-upload');
-        return;
-      }
-
-      // Normal generation: parse directory
-      setThinkingSteps([
-        { id: 'parse', title: 'Analyzing Directory', description: 'Parsing HTML and CSS files from directory', status: 'in_progress' },
-        { id: 'css-analyze', title: 'CSS Class Analysis', description: 'Identifying CSS classes and their usage', status: 'pending' },
-        { id: 'analyze', title: 'AI Color & Class Mapping', description: 'Analyzing colors and generating class-specific mappings', status: 'pending' },
-        { id: 'map', title: 'Mapping to Catppuccin', description: 'Creating detailed color and class mappings', status: 'pending' },
-        { id: 'generate', title: 'Generating Enhanced Theme', description: 'Creating theme with class-specific rules', status: 'pending' },
-      ]);
-
-      // Step 1: Parse directory
-      setProgress('Analyzing webpage directory...');
-      const analysis = await parseWebpageDirectory(files);
-
-      updateStep('parse', {
-        status: 'completed',
-        details: `Found ${analysis.colors.length} colors, ${analysis.cssClasses.length} CSS classes`
-      });
-
-      // Step 2: Group CSS classes
-      updateStep('css-analyze', { status: 'in_progress' });
-      setProgress('Analyzing CSS classes...');
-
-      const groupedClasses = groupCSSClassesByPurpose(analysis.cssClasses);
-      const totalClasses = Object.values(groupedClasses).reduce((sum, arr) => sum + arr.length, 0);
-
-      updateStep('css-analyze', {
-        status: 'completed',
-        details: `Categorized ${totalClasses} classes: ${groupedClasses.buttons.length} buttons, ${groupedClasses.links.length} links, ${groupedClasses.backgrounds.length} backgrounds`
-      });
-
-      // Convert to CrawlerResult format with enhanced data
-      const crawlerResult: CrawlerResult & { cssAnalysis?: any } = {
-        url: 'local-directory',
-        title: analysis.title,
-        content: analysis.html,
-        html: analysis.html,
-        colors: analysis.colors,
-        cssAnalysis: {
-          classes: analysis.cssClasses,
-          grouped: groupedClasses,
-          inlineStyles: analysis.inlineStyles,
-          linkedStyles: analysis.linkedStyles,
-          structure: analysis.structure,
-        },
-      };
-
-      setLastCrawlerResult(crawlerResult);
-      setLastSource('directory-upload');
-      setLastUploadedDirPath(dirPath);
-      await processContent(crawlerResult, 'directory-upload');
-    } catch (err) {
-      const currentStep = thinkingSteps.find(s => s.status === 'in_progress');
-      if (currentStep) {
-        updateStep(currentStep.id, {
-          status: 'error',
-          details: err instanceof Error ? err.message : 'Parse failed'
-        });
-      }
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      setProgress('');
-      setIsProcessing(false);
-    }
-  };
-
-  const processContent = async (crawlerResult: CrawlerResult, source: string) => {
+  const processContent = async (crawlerResult: CrawlerResult, source: FetcherService) => {
     try {
       // Step 2: Analyze colors with AI
       updateStep('analyze', { status: 'in_progress' });
       setProgress('Analyzing colors with AI...');
 
-      const { analysis, mappings } = await analyzeWebsiteColors(crawlerResult, {
+      const { analysis, mappings, classRoles } = await analyzeWebsiteColors(crawlerResult, {
         provider: aiProvider,
         apiKey: aiKey,
         model: aiModel,
-      });
+      }, { aiClassMapping: useAiMapping });
 
       updateStep('analyze', {
         status: 'completed',
@@ -319,13 +178,25 @@ function App() {
       updateStep('generate', { status: 'in_progress' });
       setProgress('Generating UserStyle theme...');
 
+      // Attach AI role guesses to cssAnalysis for regeneration
+      const cachedGuesses = (crawlerResult as any).cssAnalysis?.aiRoleGuesses;
+      const combinedRoleGuesses = classRoles ?? analysis.classRoles ?? cachedGuesses;
+      const updatedCssAnalysis = {
+        ...((crawlerResult as any).cssAnalysis || {}),
+        aiRoleGuesses: combinedRoleGuesses,
+        accentToggles: {
+          badgeCardTable: accentBadgeCardTable,
+          alerts: accentAlerts,
+        },
+      };
+
       const pkg = createUserStylePackage(
         crawlerResult.url,
         mappings,
         analysis.accentColors,
         source as any,
         aiModel,
-        (crawlerResult as any).cssAnalysis
+        updatedCssAnalysis
       );
 
       updateStep('generate', {
@@ -334,7 +205,10 @@ function App() {
       });
 
       setThemePackage(pkg);
+      // Persist last crawler + cssAnalysis (including AI role guesses) for fast regenerate
+      setLastCrawlerResult({ ...crawlerResult, cssAnalysis: updatedCssAnalysis });
       setLastAIConfig({ provider: aiProvider, model: aiModel, apiKey: aiKey });
+      setLastAiMappingChoice(useAiMapping);
       setHasCompleted(true);
       setProgress('');
     } catch (err) {
@@ -346,10 +220,49 @@ function App() {
           details: err instanceof Error ? err.message : 'Processing failed'
         });
       }
+      const message = err instanceof Error ? err.message : String(err);
+      // Detect parse/JSON errors and surface a toast
+      if (/json|parse/i.test(message)) {
+        setParseErrorToast('AI response could not be parsed. Try again or switch models.');
+        setTimeout(() => setParseErrorToast(null), 6000);
+      }
       throw err;
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleRegenerateFromCache = async () => {
+    if (!lastCrawlerResult) return;
+    setIsProcessing(true);
+    setError('');
+    setProgress('Re-running with cached crawl...');
+    setPaletteDiagnostics(lastCrawlerResult.cssAnalysis?.paletteProfile?.diagnostics || null);
+    setLastPaletteProfile(lastCrawlerResult.cssAnalysis?.paletteProfile || null);
+    setThinkingSteps([
+      { id: 'analyze', title: 'AI Color Analysis', description: 'Re-analyzing color scheme with current AI settings', status: 'in_progress' },
+      { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
+      { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
+    ]);
+    try {
+      await processContent(lastCrawlerResult, lastSource);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'An error occurred');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDownloadPaletteProfile = () => {
+    const profile = lastPaletteProfile;
+    if (!profile) return;
+    const blob = new Blob([JSON.stringify(profile, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${new URL(profile.url || lastCrawlerResult?.url || 'profile://').hostname || 'palette'}.palette-profile.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -426,18 +339,152 @@ function App() {
             <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
               <h2 className="text-2xl font-bold mb-6 text-ctp-accent">Generate Theme</h2>
 
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-ctp-text font-semibold">AI-assisted selector mapping</p>
+                  <p className="text-xs text-ctp-subtext0">
+                    Classifies selectors (buttons, alerts, badges, etc.) to guide accent rotation. Stored locally.
+                    {useAiMapping && aiProvider === 'ollama' && (
+                      <span className="ml-1 text-ctp-green font-semibold">Ollama mapping active (local, no API key needed).</span>
+                    )}
+                  </p>
+                </div>
+                <label className="inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={useAiMapping}
+                    onChange={(e) => {
+                      setUseAiMapping(e.target.checked);
+                      saveSettings({ aiAssistedMapping: e.target.checked });
+                    }}
+                  />
+                  <div className="w-11 h-6 bg-ctp-surface2 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ctp-accent rounded-full peer peer-checked:bg-ctp-accent flex items-center px-1 transition">
+                    <div className="w-4 h-4 bg-ctp-base rounded-full transition-transform peer-checked:translate-x-5" />
+                  </div>
+                </label>
+              </div>
+
               <InputSelector
                 onURLSubmit={handleGenerate}
-                onFileSelect={handleFileUpload}
-                onDirectorySelect={handleDirectoryUpload}
                 disabled={isProcessing}
                 canRegenerate={canRegenerate}
               />
+              <div className="mt-3 flex flex-wrap gap-3 items-center">
+                <button
+                  type="button"
+                  onClick={handleRegenerateFromCache}
+                  disabled={!canQuickRerun || isProcessing}
+                  className={`px-3 py-2 rounded-md text-sm font-medium border ${
+                    canQuickRerun && !isProcessing
+                      ? 'bg-ctp-surface1 hover:bg-ctp-surface2 text-ctp-text border-ctp-surface2'
+                      : 'bg-ctp-surface1/50 text-ctp-overlay1 border-ctp-surface2 cursor-not-allowed'
+                  }`}
+                  title={canQuickRerun ? 'Reuse the last crawl without refetching' : 'Run a crawl first to enable quick re-run'}
+                >
+                  Re-run with same crawl{lastCrawlerResult?.url ? ` (${new URL(lastCrawlerResult.url).hostname})` : ''}
+                </button>
+                {lastCrawlAt && (
+                  <span className="text-xs text-ctp-subtext0">Last crawl: {lastCrawlAt}</span>
+                )}
+                <div className="flex items-center gap-2 text-xs text-ctp-subtext0">
+                  <span className="font-semibold text-ctp-subtext1">Accent coverage</span>
+                  <label className="inline-flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={accentBadgeCardTable}
+                      onChange={(e) => setAccentBadgeCardTable(e.target.checked)}
+                      className="h-4 w-4 rounded border-ctp-surface2 text-ctp-accent focus:ring-ctp-accent"
+                    />
+                    <span>Badges/Cards/Tables</span>
+                  </label>
+                  <label className="inline-flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={accentAlerts}
+                      onChange={(e) => setAccentAlerts(e.target.checked)}
+                      className="h-4 w-4 rounded border-ctp-surface2 text-ctp-accent focus:ring-ctp-accent"
+                    />
+                    <span>Alerts/Notifications</span>
+                  </label>
+                </div>
+              </div>
+
+              {crawlerWarnings.length > 0 && (
+                <div className="mt-3 text-xs text-ctp-yellow bg-ctp-surface1/70 border border-ctp-surface2 rounded-lg p-3">
+                  {crawlerWarnings.map((w, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <span className="text-ctp-yellow">•</span>
+                      <span>{w}</span>
+                    </div>
+                  ))}
+                  <div className="mt-1 text-ctp-subtext1">The app will continue with direct HTTP fetch as a fallback.</div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Right Column - Preview & Thinking Process */}
+          {/* Right Column - Diagnostics & Preview */}
           <div className="space-y-6">
+            {paletteDiagnostics && (
+              <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 border border-ctp-surface2">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <h3 className="text-xl font-semibold text-ctp-accent">Palette Diagnostics</h3>
+                  <button
+                    type="button"
+                    onClick={handleDownloadPaletteProfile}
+                    disabled={!lastPaletteProfile}
+                    className={`text-xs px-3 py-1.5 rounded-md border ${
+                      lastPaletteProfile
+                        ? 'border-ctp-accent text-ctp-accent hover:bg-ctp-accent/10'
+                        : 'border-ctp-surface2 text-ctp-overlay1 cursor-not-allowed'
+                    }`}
+                    title={lastPaletteProfile ? 'Download palette profile JSON' : 'Run a crawl to enable download'}
+                  >
+                    Download profile JSON
+                  </button>
+                </div>
+                <div className="text-sm space-y-2 text-ctp-subtext0">
+                  <p>
+                    <span className="text-ctp-subtext1">CSS Variables:</span>{' '}
+                    <span className="text-ctp-text">{paletteDiagnostics.cssVariableCount}</span>
+                  </p>
+                  <p>
+                    <span className="text-ctp-subtext1">Inferred Roles:</span>{' '}
+                    <span className="text-ctp-text">{paletteDiagnostics.inferredRoles.length}</span>
+                  </p>
+                  {paletteDiagnostics.warnings.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-ctp-yellow font-medium">Warnings</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {paletteDiagnostics.warnings.map((warning, idx) => (
+                          <li key={idx}>{warning}</li>
+                        ))}
+                      </ul>
+                      <div className="text-xs text-ctp-subtext1">
+                        Tips: include more CSS variables or inline styles, ensure Playwright crawler is connected for computed styles, and prefer sites with semantic tokens (e.g., `--color-*`).
+                      </div>
+                    </div>
+                  )}
+                  {paletteDiagnostics.inferredRoles.slice(0, 10).length > 0 && (
+                    <div>
+                      <p className="text-ctp-subtext1 font-medium">Sample Roles</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {paletteDiagnostics.inferredRoles.slice(0, 10).map((role) => (
+                          <li key={role}>{role}</li>
+                        ))}
+                      </ul>
+                      {paletteDiagnostics.inferredRoles.length > 10 && (
+                        <p className="text-xs text-ctp-overlay1">
+                          +{paletteDiagnostics.inferredRoles.length - 10} more
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Thinking Process Display */}
             {(isProcessing || thinkingSteps.length > 0) && (
               <ThinkingProcess steps={thinkingSteps} />
@@ -446,6 +493,8 @@ function App() {
             {!isProcessing && <ThemePreview themePackage={themePackage} />}
           </div>
         </div>
+
+        {parseErrorToast && <ParseErrorToast message={parseErrorToast} />}
 
         <footer className="text-center text-ctp-overlay0 text-sm mt-12 pb-8">
           <p className="mb-2">
@@ -495,3 +544,17 @@ function App() {
 }
 
 export default App;
+
+// Simple toast for parse errors
+/* eslint-disable jsx-a11y/no-redundant-roles */
+function ParseErrorToast({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="fixed bottom-6 right-6 z-50 max-w-sm bg-ctp-surface0 border border-ctp-red text-ctp-red px-4 py-3 rounded-lg shadow-lg"
+    >
+      <div className="font-semibold text-sm">Parse Error</div>
+      <div className="text-xs text-ctp-text">{message}</div>
+    </div>
+  );
+}

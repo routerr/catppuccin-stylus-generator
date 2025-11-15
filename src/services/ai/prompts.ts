@@ -4,6 +4,7 @@
 
 import type { ExtendedCrawlerResult } from './types';
 import { generateAccentSystemGuide } from '../../utils/accent-schemes';
+import type { CSSAnalysisData } from '../generators/userstyle';
 
 /**
  * Create a prompt for detecting dark/light mode
@@ -224,12 +225,34 @@ Return ONLY valid JSON with this exact structure (no code blocks, no markdown, n
     },
     ...
   ]
+}`;
 }
 
-Remember: Output ONLY the JSON. No explanations, no markdown, no code blocks. Just pure JSON.`;
-}
+export function createClassMappingPrompt(crawlerResult: ExtendedCrawlerResult): string {
+  const grouped = (crawlerResult.cssAnalysis as CSSAnalysisData | undefined)?.grouped;
+  let listSection = 'No grouped classes provided.';
+  if (grouped) {
+    listSection = [
+      'BUTTONS: ' + grouped.buttons.map(c => c.className).join(', '),
+      'LINKS: ' + grouped.links.map(c => c.className).join(', '),
+      'BACKGROUNDS: ' + grouped.backgrounds.map(c => c.className).join(', '),
+      'TEXT: ' + grouped.text.map(c => c.className).join(', '),
+      'BORDERS: ' + grouped.borders.map(c => c.className).join(', '),
+    ].join('\\n');
+  }
 
-/**
+  return [
+    'You are a UI role classifier. Return ONLY JSON. For each provided class name, guess its semantic role in the UI.',
+    '',
+    'ROLES to use: ["primary", "secondary", "tertiary", "link", "nav", "badge", "tag", "card", "panel", "background", "text", "danger", "warning", "success", "info"].',
+    '',
+    'Output JSON: [{ "className": "...", "role": "primary|secondary|...|background|text|danger", "confidence": 0.0-1.0 }]',
+    '',
+    'CLASSES:',
+    listSection,
+  ].join('\\n');
+}
+/** 
  * Create a prompt for AI-assisted JSON extraction from malformed responses
  */
 export function createJSONExtractionPrompt(rawResponse: string): string {

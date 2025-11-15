@@ -119,8 +119,7 @@ export function ThemePreview({ themePackage }: ThemePreviewProps) {
           <div className="text-sm text-ctp-subtext0 space-y-1">
             <p>Source: <span className="text-ctp-text">
               {themePackage.metadata.crawlerUsed === 'direct-fetch' && 'Direct HTTP Fetch'}
-              {themePackage.metadata.crawlerUsed === 'mhtml-upload' && 'MHTML File Upload'}
-              {themePackage.metadata.crawlerUsed === 'directory-upload' && 'Directory Upload'}
+              {themePackage.metadata.crawlerUsed === 'playwright-crawler' && 'Playwright Crawler'}
             </span></p>
             <p>AI Model: <span className="text-ctp-text">{themePackage.metadata.aiModelUsed}</span></p>
             <p>Generated: <span className="text-ctp-text">{new Date(themePackage.timestamp).toLocaleString()}</span></p>

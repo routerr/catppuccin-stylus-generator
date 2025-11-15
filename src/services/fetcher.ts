@@ -1,3 +1,8 @@
+import type { FetcherService } from '../types/theme';
+import { loadAPIKeys } from '../utils/storage';
+import type { PaletteProfile } from './palette-profile';
+import { buildPaletteProfile } from './palette-profile';
+
 // Direct HTTP/HTTPS fetcher - replaces crawler services
 // Fetches HTML, CSS, and extracts color information directly
 
@@ -7,6 +12,10 @@ export interface FetchResult {
   html: string;
   css: string[];
   colors: string[];
+  fetcher: FetcherService;
+  warnings?: string[];
+  paletteProfile?: PaletteProfile;
+  cssAnalysis?: any;
   error?: string;
 }
 
@@ -20,6 +29,21 @@ const CORS_PROXIES = [
 let currentProxyIndex = 0;
 
 export async function fetchWebsiteContent(url: string): Promise<FetchResult> {
+  const warnings: string[] = [];
+  const crawlerResult = await fetchWithPlaywright(url);
+  if (!crawlerResult) {
+    warnings.push('Playwright endpoint unavailable, fell back to HTTP fetch.');
+  } else if (crawlerResult.warnings?.length) {
+    warnings.push(...crawlerResult.warnings);
+  }
+  const result = crawlerResult || (await fetchWithProxies(url));
+  if (warnings.length) {
+    result.warnings = [...(result.warnings || []), ...warnings];
+  }
+  return result;
+}
+
+async function fetchWithProxies(url: string): Promise<FetchResult> {
   // Try multiple CORS proxies if one fails
   let lastError: Error | null = null;
 
@@ -44,7 +68,7 @@ export async function fetchWebsiteContent(url: string): Promise<FetchResult> {
 
       // If we got here, the fetch was successful
       console.log(`Successfully fetched with proxy ${proxyAttempt + 1}`);
-      return await processHTML(html, url);
+      return await processHTML(html, url, 'direct-fetch');
 
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
@@ -61,10 +85,63 @@ export async function fetchWebsiteContent(url: string): Promise<FetchResult> {
   );
 }
 
-async function processHTML(html: string, url: string): Promise<FetchResult> {
-  // Extract title
-  const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
-  const title = titleMatch ? titleMatch[1].trim() : 'Untitled';
+async function fetchWithPlaywright(url: string): Promise<FetchResult | null> {
+  const keys = typeof window !== 'undefined' ? loadAPIKeys() : {};
+  const endpoint = keys.playwrightEndpoint?.trim();
+  if (!endpoint) return null;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(keys.playwrightKey ? { Authorization: `Bearer ${keys.playwrightKey}` } : {}),
+      },
+      body: JSON.stringify({ url }),
+      // Abort after 30s to avoid hanging UI
+      signal: (AbortSignal as any)?.timeout ? (AbortSignal as any).timeout(30000) : undefined,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Playwright crawler responded with ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data?.html) {
+      throw new Error('Crawler response missing HTML content');
+    }
+
+    const html = String(data.html);
+    const styles = Array.isArray(data.styles) ? data.styles : [];
+
+    const paletteProfile = buildPaletteProfile({
+      url: data.url || url,
+      html,
+      css: styles.join('\n'),
+    });
+
+    return {
+      url: data.url || url,
+      title: data.title || extractTitle(html),
+      html: html.slice(0, 50000),
+      css: styles.map((css: string) => css.slice(0, 100000)),
+      colors: extractColors(html, styles),
+      fetcher: 'playwright-crawler',
+      warnings: [],
+      paletteProfile,
+      cssAnalysis: {
+        ...(data.cssAnalysis || {}),
+        paletteProfile,
+      },
+    };
+  } catch (error) {
+    console.warn('Playwright crawler failed, falling back to direct fetch:', error);
+    return null;
+  }
+}
+
+async function processHTML(html: string, url: string, fetcher: FetcherService): Promise<FetchResult> {
+  const title = extractTitle(html);
 
   // Extract CSS links
   const cssLinks = extractCSSLinks(html, url);
@@ -81,13 +158,29 @@ async function processHTML(html: string, url: string): Promise<FetchResult> {
   // Extract colors from HTML and CSS
   const colors = extractColors(html, allCSS);
 
+  const paletteProfile = buildPaletteProfile({
+    url,
+    html,
+    css: allCSS.join('\n'),
+  });
+
   return {
     url,
     title,
     html: html.slice(0, 50000), // Limit HTML size
     css: allCSS,
     colors,
+    fetcher,
+    paletteProfile,
+    cssAnalysis: {
+      paletteProfile,
+    },
   };
+}
+
+function extractTitle(html: string): string {
+  const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+  return titleMatch ? titleMatch[1].trim() : 'Untitled';
 }
 
 function extractCSSLinks(html: string, baseUrl: string): string[] {

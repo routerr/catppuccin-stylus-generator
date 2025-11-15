@@ -13,6 +13,8 @@
     "test:role": "npx tsx __tests__/test-role-mapper.ts",
     "test:color": "npx tsx __tests__/test-color-classification.ts",
     "test:contrast": "npx tsx __tests__/test-contrast-validation.ts",
+    "test:palette": "npx tsx __tests__/test-palette-profile.ts",
+    "crawler:serve": "node scripts/playwright-server.mjs",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
@@ -28,6 +30,7 @@
     "autoprefixer": "^10.4.16",
     "gh-pages": "^6.3.0",
     "postcss": "^8.4.32",
+    "playwright": "^1.47.1",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.3.3",
     "vite": "^5.0.8"

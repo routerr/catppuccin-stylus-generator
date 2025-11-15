@@ -1,8 +1,26 @@
 import type { AIModel } from '../../types/theme';
 import type { CrawlerResult } from '../../types/theme';
 import type { ColorAnalysisResult, ExtendedCrawlerResult } from './types';
-import { createModeDetectionPrompt, createColorAnalysisPrompt } from './prompts';
+import { createModeDetectionPrompt, createColorAnalysisPrompt, createClassMappingPrompt } from './prompts';
 import { parseColorAnalysisResponse, extractJSONWithAI, detectWebsiteMode } from './base';
+
+async function fetchWithRetry(url: string, init: RequestInit, retries = 1): Promise<Response> {
+  let attempt = 0;
+  let lastError: any;
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, init);
+      if (res.status === 429 || res.status === 503) throw new Error(`HTTP ${res.status}`);
+      return res;
+    } catch (e) {
+      lastError = e;
+      if (attempt === retries) break;
+      await new Promise(r => setTimeout(r, 500));
+    }
+    attempt += 1;
+  }
+  throw lastError || new Error('Request failed');
+}
 
 // OpenRouter API endpoint
 const OPENROUTER_API_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
@@ -105,7 +123,8 @@ export const OPENROUTER_MODELS: AIModel[] = [
 export async function analyzeColorsWithOpenRouter(
   crawlerResult: CrawlerResult,
   apiKey: string,
-  model: string
+  model: string,
+  options?: { aiClassMapping?: boolean }
 ): Promise<ColorAnalysisResult> {
   const extendedResult: ExtendedCrawlerResult = crawlerResult as ExtendedCrawlerResult;
 
@@ -127,7 +146,7 @@ export async function analyzeColorsWithOpenRouter(
   try {
     // Stage 1: AI analyzes colors (may return messy output)
     console.log('Stage 1: Analyzing colors with OpenRouter AI...');
-    const response = await fetch(OPENROUTER_API_ENDPOINT, {
+    const response = await fetchWithRetry(OPENROUTER_API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -150,6 +169,7 @@ export async function analyzeColorsWithOpenRouter(
         temperature: 0.3,
         max_tokens: 2000,
       }),
+      signal: (AbortSignal as any)?.timeout ? (AbortSignal as any).timeout(30000) : undefined,
     });
 
     if (!response.ok) {
@@ -168,7 +188,8 @@ export async function analyzeColorsWithOpenRouter(
     try {
       console.log('Attempting direct JSON parsing...');
       const result = parseColorAnalysisResponse(content);
-      return { ...result, mode: detectedMode };
+      const classRoles = options?.aiClassMapping ? await requestClassMapping(apiKey, model, extendedResult) : undefined;
+      return { ...result, mode: detectedMode, classRoles };
     } catch (parseError) {
       // Stage 2: If direct parsing fails, use AI to extract JSON
       console.log('Direct parsing failed, using AI to extract JSON...');
@@ -179,9 +200,60 @@ export async function analyzeColorsWithOpenRouter(
         model,
         rawResponse: content,
       });
-      return { ...result, mode: detectedMode };
+      const classRoles = options?.aiClassMapping ? await requestClassMapping(apiKey, model, extendedResult) : undefined;
+      return { ...result, mode: detectedMode, classRoles };
     }
   } catch (error) {
     throw new Error(`Failed to analyze colors with OpenRouter: ${error}`);
+  }
+}
+
+async function requestClassMapping(apiKey: string, model: string, crawlerResult: ExtendedCrawlerResult) {
+  const prompt = createClassMappingPrompt(crawlerResult);
+
+  const response = await fetchWithRetry(OPENROUTER_API_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : undefined,
+      'X-Title': 'Catppuccin Theme Generator',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: 'You are a UI role classifier.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.1,
+      max_tokens: 1200,
+    }),
+    signal: (AbortSignal as any)?.timeout ? (AbortSignal as any).timeout(30000) : undefined,
+  });
+
+  if (!response.ok) {
+    console.warn('AI-assisted mapping failed (OpenRouter)', response.statusText);
+    return [];
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) return [];
+
+  try {
+    return JSON.parse(content);
+  } catch {
+    try {
+      const extracted = await extractJSONWithAI({
+        apiEndpoint: OPENROUTER_API_ENDPOINT,
+        apiKey,
+        model,
+        rawResponse: content,
+      });
+      return extracted as any[];
+    } catch (err) {
+      console.warn('Failed to parse class mapping JSON', err);
+      return [];
+    }
   }
 }

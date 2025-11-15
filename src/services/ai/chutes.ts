@@ -1,8 +1,26 @@
 import type { AIModel } from '../../types/theme';
 import type { CrawlerResult } from '../../types/theme';
 import type { ColorAnalysisResult, ExtendedCrawlerResult } from './types';
-import { createModeDetectionPrompt, createColorAnalysisPrompt } from './prompts';
+import { createModeDetectionPrompt, createColorAnalysisPrompt, createClassMappingPrompt } from './prompts';
 import { parseColorAnalysisResponse, extractJSONWithAI, detectWebsiteMode } from './base';
+
+async function fetchWithRetry(url: string, init: RequestInit, retries = 1): Promise<Response> {
+  let attempt = 0;
+  let lastError: any;
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, init);
+      if (res.status === 429 || res.status === 503) throw new Error(`HTTP ${res.status}`);
+      return res;
+    } catch (e) {
+      lastError = e;
+      if (attempt === retries) break;
+      await new Promise(r => setTimeout(r, 500));
+    }
+    attempt += 1;
+  }
+  throw lastError || new Error('Request failed');
+}
 
 // Chutes AI API endpoint
 const CHUTES_API_ENDPOINT = 'https://llm.chutes.ai/v1/chat/completions';
@@ -91,7 +109,8 @@ export const CHUTES_MODELS: AIModel[] = [
 export async function analyzeColorsWithChutes(
   crawlerResult: CrawlerResult,
   apiKey: string,
-  model: string
+  model: string,
+  options?: { aiClassMapping?: boolean }
 ): Promise<ColorAnalysisResult> {
   const extendedResult: ExtendedCrawlerResult = crawlerResult as ExtendedCrawlerResult;
 
@@ -114,7 +133,7 @@ export async function analyzeColorsWithChutes(
   try {
     // Stage 1: AI analyzes colors (may return messy output)
     console.log('Stage 1: Analyzing colors with Chutes AI...');
-    const response = await fetch(CHUTES_API_ENDPOINT, {
+    const response = await fetchWithRetry(CHUTES_API_ENDPOINT, {
       method: 'POST',
       mode: 'cors',
       headers: {
@@ -136,6 +155,7 @@ export async function analyzeColorsWithChutes(
         temperature: 0.3,
         max_tokens: 2000,
       }),
+      signal: (AbortSignal as any)?.timeout ? (AbortSignal as any).timeout(30000) : undefined,
     });
 
     if (!response.ok) {
@@ -154,7 +174,8 @@ export async function analyzeColorsWithChutes(
     try {
       console.log('Attempting direct JSON parsing...');
       const result = parseColorAnalysisResponse(content);
-      return { ...result, mode: detectedMode };
+      const classRoles = options?.aiClassMapping ? await requestClassMappingChutes(apiKey, model, extendedResult) : undefined;
+      return { ...result, mode: detectedMode, classRoles };
     } catch (parseError) {
       // Stage 2: If direct parsing fails, use AI to extract JSON
       console.log('Direct parsing failed, using AI to extract JSON...');
@@ -165,9 +186,39 @@ export async function analyzeColorsWithChutes(
         model,
         rawResponse: content,
       });
-      return { ...result, mode: detectedMode };
+      const classRoles = options?.aiClassMapping ? await requestClassMappingChutes(apiKey, model, extendedResult) : undefined;
+      return { ...result, mode: detectedMode, classRoles };
     }
   } catch (error) {
     throw new Error(`Failed to analyze colors with Chutes AI: ${error}`);
   }
+}
+
+async function requestClassMappingChutes(apiKey: string, model: string, crawlerResult: ExtendedCrawlerResult) {
+  const prompt = createClassMappingPrompt(crawlerResult);
+  const response = await fetchWithRetry(CHUTES_API_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': apiKey,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: 'You are a UI role classifier.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.1,
+      max_tokens: 1200,
+    }),
+    signal: (AbortSignal as any)?.timeout ? (AbortSignal as any).timeout(30000) : undefined,
+  });
+  if (!response.ok) {
+    console.warn('AI-assisted mapping failed (Chutes)', response.statusText);
+    return [];
+  }
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) return [];
+  try { return JSON.parse(content); } catch { return []; }
 }

@@ -23,7 +23,7 @@ Transform any website into beautiful Catppuccin themes without changing the layo
 
 Built with:
 - **Framework**: React 19 + Vite + TypeScript
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS, Catppuccin colors
 - **AI Integration**: OpenRouter, Chutes AI, Ollama
 - **Client-side Processing**: No backend required
 
@@ -40,6 +40,7 @@ Supports all 4 Catppuccin flavors:
 - Intelligent mapping to Catppuccin's 26-color palette
 - 15 customizable accent colors (Blue, Lavender, Mauve, etc.)
 - Analogous harmony system (±72° bi-accents)
+- Deterministic accent plan seeded from each site’s palette profile (no randomness)
 
 ### 🔒 Perfect Layout Preservation
 - **Colors only** - Zero layout, spacing, or sizing changes
@@ -48,9 +49,13 @@ Supports all 4 Catppuccin flavors:
 - CSS exclusion system for original design elements
 
 ### 📥 Multiple Input Methods
-- **Direct URL Fetch** - Enter any website URL
-- **MHTML Upload** - Upload saved webpage archives
-- **Directory Upload** - Upload complete site directories with CSS
+- **Direct URL Fetch** - Enter any website URL and crawl it automatically
+- **Playwright Integration** - Optional microservice captures fully rendered pages (JS, lazy-loaded content)
+
+### 🧭 Diagnostics & Caching
+- Palette diagnostics (CSS var count, inferred roles, warnings) in the right column
+- Per-site palette profile caching in localStorage for faster regenerations
+- Fallback warnings when Playwright is unavailable (automatic switch to HTTP fetch)
 
 ### 🤖 Flexible AI Options
 - **OpenRouter** - Free & premium models (DeepSeek, Llama, Gemma, Claude, GPT)
@@ -59,9 +64,6 @@ Supports all 4 Catppuccin flavors:
 
 ### 📦 Multiple Output Formats
 - **UserStyle** (.user.less) - Comprehensive multi-flavor theme
-- **Stylus** (.styl) - Stylus preprocessor format
-- **LESS** (.less) - LESS preprocessor format
-- **CSS** (.css) - Pure CSS output
 
 ## How It Works
 
@@ -78,12 +80,12 @@ graph LR
     style F fill:#a6e3a1
 ```
 
-1. **Input**: Provide website URL, MHTML file, or directory
+1. **Input**: Provide website URL (optionally backed by the Playwright crawler)
 2. **Fetch**: Extract HTML, CSS, and computed styles
 3. **Analyze**: AI identifies colors and UI patterns
 4. **Map**: Colors mapped to Catppuccin palette intelligently
-5. **Generate**: Theme created with strict layout preservation
-6. **Download**: Get UserStyle/Stylus/LESS/CSS files
+5. **Generate**: Theme created with specific format
+6. **Copy**: Get LESS codes
 
 ## Layout Preservation
 
@@ -92,10 +94,7 @@ This is a **color-only theme generator**. The AI is specifically instructed to:
 ### ✅ ONLY Modify
 - `color` - Text colors
 - `background-color` - Background colors
-- `border-color` - Border colors (not width!)
-- `box-shadow` - Shadow colors (not spread/blur)
-- `outline-color` - Outline colors
-- SVG `fill` and `stroke` colors
+
 
 ### ❌ NEVER Modify
 - Layout properties (`width`, `height`, `padding`, `margin`)
@@ -105,11 +104,6 @@ This is a **color-only theme generator**. The AI is specifically instructed to:
 - Flex/Grid (`display`, `flex-direction`, `justify-content`)
 - Opacity, z-index, overflow
 
-### 🎯 Special Protections
-- **Gradient Text**: Elements with `bg-clip-text` keep original colors
-- **Brand Elements**: Colorful gradients preserved for visual identity
-- **CSS Exclusions**: Multiple protection layers in generated stylesheets
-
 ## Content Input Methods
 
 ### Direct URL Fetch
@@ -117,22 +111,16 @@ This is a **color-only theme generator**. The AI is specifically instructed to:
 // Enter any public website URL
 https://example.com
 ```
-Direct HTTP/HTTPS fetching - no external crawler needed!
+Direct HTTP fetching is built in. For sites that require JS rendering, set up the Playwright crawler and provide its endpoint in **API Key Configuration → Playwright Crawler**. When configured, the app will prefer Playwright and fall back to HTTP proxies automatically.
 
-### MHTML Upload
+### Playwright Crawler (Optional)
+Run the bundled service locally:
+```bash
+npm install
+npm run crawler:serve
+# defaults to http://localhost:8787/crawl
 ```
-Save webpage as .mhtml (Chrome: Save As → Webpage, Complete)
-Upload the .mhtml file for offline analysis
-```
-
-### Directory Upload
-```
-Upload complete website directory with:
-- HTML files
-- CSS files
-- Asset files
-```
-Best for detailed CSS analysis and local testing.
+Then paste `http://localhost:8787/crawl` into the Playwright endpoint field and (optionally) set a bearer token for authentication.
 
 ## AI Provider Options
 
@@ -157,9 +145,7 @@ Best for detailed CSS analysis and local testing.
 ### Quick Start
 
 1. **Choose Input Method**
-   - Enter website URL, or
-   - Upload MHTML file, or
-   - Upload website directory
+   - Enter website URL (Playwright crawler optional but recommended)
 
 2. **Configure AI Provider**
    - Select provider (OpenRouter/Chutes/Ollama)
@@ -176,20 +162,44 @@ Best for detailed CSS analysis and local testing.
    - Watch AI thinking process
    - Preview generated theme
 
-5. **Download & Install**
-   - Download .user.less file
+5. **Copy to clipboard & Install**
+   - Copy the generated code
    - Install in Stylus browser extension
    - Enjoy your Catppuccin theme!
 
 See [QUICKSTART.md](QUICKSTART.md) for detailed step-by-step instructions.
+
+## Playwright Crawler Setup
+
+The Playwright service ships with this repo so you can capture computed styles and lazy-rendered UI:
+
+```bash
+npm install
+npx playwright install chromium
+npm run crawler:serve
+# defaults to http://localhost:8787/crawl
+```
+
+Optional environment variables:
+- `CRAWLER_PORT` to change the port (default `8787`)
+- `CRAWLER_KEY` to require a bearer token for requests
+
+Expose the endpoint via a tunnel (Cloudflare, ngrok, etc.) if you’re running the UI on GitHub Pages or another remote host. Finally, open **API Key Configuration → Playwright Crawler** and paste the endpoint + key. The app will automatically use Playwright when those fields are present and fall back to the built-in HTTP fetcher when not.
+
+If you see `Playwright Chromium browser is not installed`, run:
+```bash
+npx playwright install chromium
+# or on Linux servers
+npx playwright install --with-deps chromium
+```
+and restart `npm run crawler:serve`.
 
 ## Technical Architecture
 
 ### Processing Pipeline
 ```
 Input → Fetch Content → Extract Colors & Styles →
-AI Analysis → Color Mapping → Theme Generation →
-Layout Preservation → Output (UserStyle/Stylus/LESS/CSS)
+AI Analysis → Color Mapping → Theme Generation → Output (LESS)
 ```
 
 ### Project Structure
@@ -250,25 +260,27 @@ npm run deploy
 - DeepSeek R1
 - Llama 3.2
 - Gemini Pro
-- GPT-4/5
+- GPT-5.Codex
+- GPT-5.1/Codex
 
 ### Development Tools
-- React 19 + Vite
+- React 19 + Vite 6
 - TypeScript
 - Tailwind CSS
-- OpenRouter/Chutes/Ollama APIs
 - Claude Code (Development)
+- OpenAI Codex (Development)
+- Gemini Code Assistant (Development)
 - Roo Code (Development)
+- GitHub Copilot (Development)
 
 ## Future Roadmap
-
-- [ ] SCSS/PostCSS output formats
-- [ ] Live theme preview with website simulation
-- [ ] Batch processing multiple URLs
+- [ ] Per-site caching UX: “Re-run with same crawl” (reuse palette profile & class-role guesses while changing model/mapping)
+- [ ] Diagnostics upgrades: warning tips and palette profile JSON download
+- [ ] Playwright status badge (Connected/Fallback + last test time)
+- [ ] Guardrails: retry on 429/503 and clearer parse-error toasts for AI calls
+- [ ] Style polish toggles: alerts/notifications plus configurable badge/card/table accent coverage
 - [ ] Theme sharing/export to GitHub
 - [ ] Browser extension integration
-- [ ] Advanced color mapping controls
-- [ ] Theme testing/validation tools
 
 See [AGENTS.md](AGENTS.md) for implementation guide and enhancement details.
 

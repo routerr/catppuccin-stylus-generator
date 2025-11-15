@@ -2,7 +2,9 @@ import type { AIModel } from '../../types/theme';
 import type { WebsiteColorAnalysis, ColorMapping } from '../../types/catppuccin';
 import type { CrawlerResult } from '../../types/theme';
 import { getOllamaBaseFromStorage, loadAPIKeys } from '../../utils/storage';
-import { generateAccentSystemGuide } from '../../utils/accent-schemes';
+import { createColorAnalysisPrompt, createClassMappingPrompt, createModeDetectionPrompt } from './prompts';
+import { parseColorAnalysisResponse, extractJSONManually } from './base';
+import type { ColorAnalysisResult, ExtendedCrawlerResult } from './types';
 
 // Ollama models (local). These are common tags; your local install may vary.
 export const OLLAMA_MODELS: AIModel[] = [
@@ -114,10 +116,13 @@ async function postOllama(path: string, body: any) {
 
 export async function analyzeColorsWithOllama(
   crawlerResult: CrawlerResult,
-  model: string
-): Promise<{ analysis: WebsiteColorAnalysis; mappings: ColorMapping[]; mode: 'dark' | 'light' }> {
+  model: string,
+  options?: { aiClassMapping?: boolean }
+): Promise<ColorAnalysisResult> {
+  const extendedResult: ExtendedCrawlerResult = crawlerResult as ExtendedCrawlerResult;
+
   // Step 1: Detect dark/light mode using AI
-  const modePrompt = `You are a web design expert. Analyze the following website content and CSS and answer with ONLY "dark" or "light" (no explanation, no markdown, just the word). Is this site primarily dark mode or light mode?\n\nWebsite: ${crawlerResult.url} | ${crawlerResult.title}\nContent: ${crawlerResult.content.slice(0, 2000)}\nCSS: ${crawlerResult.cssAnalysis ? JSON.stringify(crawlerResult.cssAnalysis).slice(0, 2000) : ''}`;
+  const modePrompt = createModeDetectionPrompt(extendedResult);
 
   let detectedMode: 'dark' | 'light' = 'light';
   try {
@@ -139,7 +144,8 @@ export async function analyzeColorsWithOllama(
   }
 
   // Step 2: Color analysis, pass detected mode to prompt
-  const prompt = createColorAnalysisPrompt({ ...crawlerResult, detectedMode });
+  extendedResult.detectedMode = detectedMode;
+  const prompt = createColorAnalysisPrompt(extendedResult);
 
   try {
     // Stage 1: AI analyzes colors (may return messy output)
@@ -164,16 +170,38 @@ export async function analyzeColorsWithOllama(
     try {
       console.log('Attempting direct JSON parsing...');
       const result = parseColorAnalysisResponse(content);
-      return { ...result, mode: detectedMode };
+      const classRoles = options?.aiClassMapping ? await requestClassMappingOllama(model, extendedResult) : undefined;
+      return { ...result, mode: detectedMode, classRoles };
     } catch (parseError) {
       // Stage 2: If direct parsing fails, use AI to extract JSON
       console.log('Direct parsing failed, using AI to extract JSON...');
       console.log('Parse error:', parseError);
       const result = await extractJSONWithOllama(content, model);
-      return { ...result, mode: detectedMode };
+      const classRoles = options?.aiClassMapping ? await requestClassMappingOllama(model, extendedResult) : undefined;
+      return { ...result, mode: detectedMode, classRoles };
     }
   } catch (error) {
     throw new Error(`Failed to analyze colors with Ollama: ${error}`);
+  }
+}
+
+async function requestClassMappingOllama(model: string, crawlerResult: ExtendedCrawlerResult) {
+  const prompt = createClassMappingPrompt(crawlerResult);
+  try {
+    const data = await postOllama('/api/chat', {
+      model,
+      messages: [
+        { role: 'system', content: 'You are a UI role classifier. Respond with JSON array of {className, role, confidence} entries.' },
+        { role: 'user', content: prompt },
+      ],
+      stream: false,
+      options: { temperature: 0.1 },
+    });
+    const content: string = data?.message?.content || data?.response;
+    return parseClassMapping(content);
+  } catch (err) {
+    console.warn('AI-assisted mapping failed (Ollama)', err);
+    return [];
   }
 }
 
@@ -216,249 +244,29 @@ async function extractJSONWithOllama(
   }
 }
 
-// Manual JSON extraction function (no AI, pure logic)
-function extractJSONManually(text: string): { analysis: WebsiteColorAnalysis; mappings: ColorMapping[] } {
-  let cleanText = text;
-  const thinkingPatterns = [
-    /<think>[\s\S]*?<\/think>/gi,
-    /<thinking>[\s\S]*?<\/thinking>/gi,
-    /<thought>[\s\S]*?<\/thought>/gi,
-    /<reasoning>[\s\S]*?<\/reasoning>/gi,
-    /<reflection>[\s\S]*?<\/reflection>/gi,
-  ];
-  thinkingPatterns.forEach(pattern => {
-    cleanText = cleanText.replace(pattern, '');
-  });
 
-  const unclosedMatch = cleanText.match(/^[\s\S]*?<\/(think|thinking|thought|reasoning|reflection)>/i);
-  if (unclosedMatch) {
-    cleanText = cleanText.replace(/^[\s\S]*?<\/(think|thinking|thought|reasoning|reflection)>/i, '');
+function parseClassMapping(content: string): Array<{ className: string; role: string; confidence?: number }> {
+  if (!content) return [];
+  const cleaned = content.replace(/```json/gi, '```').replace(/```/g, '').trim();
+  const candidates: string[] = [];
+
+  const start = cleaned.indexOf('[');
+  const end = cleaned.lastIndexOf(']');
+  if (start !== -1 && end > start) {
+    candidates.push(cleaned.slice(start, end + 1));
   }
+  candidates.push(cleaned);
 
-  const firstBrace = cleanText.indexOf('{');
-  if (firstBrace === -1) throw new Error('No JSON object found in text');
-
-  let braceCount = 0;
-  let inString = false;
-  let escapeNext = false;
-  let jsonEnd = -1;
-  for (let i = firstBrace; i < cleanText.length; i++) {
-    const char = cleanText[i];
-    if (escapeNext) { escapeNext = false; continue; }
-    if (char === '\\') { escapeNext = true; continue; }
-    if (char === '"') { inString = !inString; continue; }
-    if (!inString) {
-      if (char === '{') braceCount++;
-      else if (char === '}') { braceCount--; if (braceCount === 0) { jsonEnd = i; break; } }
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray((parsed as any).classRoles)) return (parsed as any).classRoles;
+      if (Array.isArray((parsed as any).roles)) return (parsed as any).roles;
+    } catch {
+      // ignore parse errors and try next candidate
     }
   }
-  if (jsonEnd === -1) throw new Error('No complete JSON object found (unmatched braces)');
-  const jsonStr = cleanText.substring(firstBrace, jsonEnd + 1);
-  const parsed = JSON.parse(jsonStr);
-  if (!parsed.analysis || !parsed.mappings) {
-    if (typeof parsed === 'object') {
-      for (const key of Object.keys(parsed)) {
-        const value = (parsed as any)[key];
-        if (value && typeof value === 'object' && value.analysis && value.mappings) {
-          return { analysis: value.analysis, mappings: value.mappings };
-        }
-      }
-    }
-    throw new Error('Invalid JSON structure: missing analysis or mappings');
-  }
-  return { analysis: parsed.analysis, mappings: parsed.mappings };
-}
 
-function createColorAnalysisPrompt(crawler: CrawlerResult & { cssAnalysis?: any; detectedMode?: 'dark' | 'light' }) {
-  const modeText = crawler.detectedMode ? `MODE DETECTED: ${crawler.detectedMode}` : '';
-  // Enhanced CSS class information if available
-  let cssClassInfo = '';
-  const anyCrawler: any = crawler as any;
-  if (anyCrawler.cssAnalysis && anyCrawler.cssAnalysis.grouped) {
-    const grouped = anyCrawler.cssAnalysis.grouped;
-    cssClassInfo = `\n\nCSS CLASS ANALYSIS (use this for precise class-specific mappings):
-Button classes (${grouped.buttons.length}): ${grouped.buttons.slice(0, 10).map((c: any) => c.className).join(', ')}
-Link classes (${grouped.links.length}): ${grouped.links.slice(0, 10).map((c: any) => c.className).join(', ')}
-Background classes (${grouped.backgrounds.length}): ${grouped.backgrounds.slice(0, 10).map((c: any) => c.className).join(', ')}
-Text classes (${grouped.text.length}): ${grouped.text.slice(0, 10).map((c: any) => c.className).join(', ')}
-Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((c: any) => c.className).join(', ')}
-\nIMPORTANT: Generate mappings that include these specific class names for more targeted styling.`;
-  }
-
-  // Determine flavor based on detected mode
-  const flavor = (crawler.detectedMode === 'dark') ? 'mocha' : 'latte';
-  const accentGuide = generateAccentSystemGuide(flavor);
-
-  return `You are a color analysis expert specializing in mapping website colors to the Catppuccin palette.
-
-  Website: ${crawler.url} | ${crawler.title}
-  ${modeText}
-  Detected colors: ${(crawler.colors || []).slice(0, 30).join(', ')}
-  ${cssClassInfo}
-  Content snippet: ${crawler.content.slice(0, 1500)}
-
-  ${accentGuide}
-
-  ═════════════════════════════════════════════════════════════════════
-  CRITICAL LAYOUT PRESERVATION RULES - READ THIS CAREFULLY
-  ═════════════════════════════════════════════════════════════════════
-
-  YOU MUST ONLY CHANGE COLORS. DO NOT CHANGE ANYTHING ELSE.
-
-  NEVER MODIFY THESE PROPERTIES (this breaks layouts):
-  ❌ width, height, min-width, min-height, max-width, max-height
-  ❌ padding, margin, padding-top, padding-bottom, padding-left, padding-right
-  ❌ margin-top, margin-bottom, margin-left, margin-right
-  ❌ border-width, border-radius, border-style
-  ❌ font-size, font-weight, font-family, line-height
-  ❌ display, position, top, left, right, bottom
-  ❌ flex, grid, flex-direction, justify-content, align-items
-  ❌ transform, translate, scale, rotate
-  ❌ z-index, overflow, opacity (except for fade() function in colors)
-
-  ONLY MODIFY COLOR PROPERTIES:
-  ✓ color (text color)
-  ✓ background-color, background (gradient colors only)
-  ✓ border-color (not border-width!)
-  ✓ box-shadow (color values only, preserve blur/spread)
-  ✓ outline-color (not outline-width!)
-  ✓ fill, stroke (for SVGs, color only)
-
-  BORDER RULES:
-  - If original has NO border → DO NOT add borders
-  - If original has border → ONLY change border-color, NEVER border-width or border-style
-  - DO NOT add accent borders to buttons unless original uses colored borders
-
-  BACKGROUND RULES:
-  - Preserve transparent backgrounds if original is transparent
-  - DO NOT add backgrounds where none exist
-  - Match parent background when appropriate
-
-  GRADIENT TEXT RULES (CRITICAL - HIGHEST PRIORITY):
-  ════════════════════════════════════════════════════════════════════
-  ⚠️  EXTREMELY IMPORTANT: PRESERVE ORIGINAL GRADIENT COLORS  ⚠️
-  ════════════════════════════════════════════════════════════════════
-
-  Elements with gradient text (Tailwind/modern CSS) MUST keep their ORIGINAL colors:
-  - class="bg-clip-text text-transparent" → SKIP entirely, do NOT map
-  - class="bg-gradient-to-*" → SKIP entirely, do NOT map
-  - class="from-* via-* to-*" → SKIP entirely, do NOT map
-  - Gradient colors (green/moss, rose/pink, indigo/purple, etc.) → DO NOT map to Catppuccin
-
-  WHY: These gradients are intentional branding/visual elements. Changing them to
-  Catppuccin colors destroys the visual impact and breaks the site's identity.
-
-  ACTION: Completely ignore gradient text when analyzing. Do NOT include any gradient
-  colors in your color mappings. These elements will keep 100% of their original colors.
-
-  EXAMPLES to COMPLETELY SKIP:
-  ❌ <span class="from-moss bg-gradient-to-br via-rose-300 via-60% to-indigo-500 bg-clip-text text-transparent">Breakthrough</span>
-  ❌ Any element with bg-clip-text, text-transparent, bg-gradient-*, from-*, via-*, to-*
-  ❌ Colors only used in gradients: moss, rose, indigo shades in gradient context
-
-  The theme must look IDENTICAL to the original except for colors.
-
-  ═════════════════════════════════════════════════════════════════════
-
-  TASK: Analyze the website's color usage and map to Catppuccin colors.
-
-  KEY RULES:
-  1. CRITICAL - MOST COMMON ELEMENTS: ALL <a> tags, text links, and button text → ALWAYS main-accent (these are most frequent!)
-  2. COLOR DISTRIBUTION (70-30 Rule): Use main-accent for 70-80% of elements, bi-accents for 20-30% variety
-  3. Main-colors = main-accent (PRIMARY) + bi-accent1 (variety) + bi-accent2 (variety)
-  4. MAJORITY of colored elements → main-accent (buttons, links, headings, borders, active states)
-  5. SOME elements for variety → bi-accent1 or bi-accent2 (randomly: badges, tags, icons)
-  6. Each main-color uses its OWN bi-accents for gradients
-  7. Preserve semantic meaning (green=success, red=error, etc.)
-  8. CRITICAL: Main-accent should DOMINATE. Bi-accents are accents, not equal alternatives!
-
-  DEFAULT STATE STYLING:
-  TEXT COLORS: Apply Catppuccin colors
-  - Links, button text, navigation → main-accent color
-  - Headings, emphasized text → accent colors
-  - Body text → Catppuccin text colors
-
-  BACKGROUNDS & BORDERS: Preserve or map to Catppuccin base colors
-  - Keep original OR map to base, surface0, surface1, surface2
-  - Match parent/universal background when appropriate
-
-  HOVER STATE STYLING:
-  TEXT CLARITY:
-  - Prefer SOLID text colors first; only use gradient text when supported by background-clip: text
-  - Never switch text color to 'base' unless it provides strictly higher contrast than 'text'
-  TEXT GRADIENTS (links, text buttons):
-  - Apply gradient to TEXT using background-clip: text
-  - Angles: 45deg, 225deg, or 315deg
-  - Example: a:hover { background: linear-gradient(45deg, blue, sapphire); -webkit-background-clip: text; }
-
-  BACKGROUND GRADIENTS (solid buttons, cards):
-  - Apply gradient to BACKGROUND
-  - Angles: 135deg or 225deg
-  - CRITICAL: Adjust text color for readability when background changes
-  - Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); color: @text; }
-  - Ensure minimum contrast ratio of 4.5:1 for normal text and 3:1 for large text according to WCAG guidelines to ensure readability.
-  - Example: .btn:hover { background: linear-gradient(135deg, blue, sapphire); }
-  - Different angles: 135deg or 225deg
-
-  HOVER GRADIENT DETECTION RULES (NEW):
-  CRITICAL: Analyze each interactive element to determine hover gradient behavior:
-
-  1. VISIBLE BACKGROUND ELEMENTS (gradient to background on hover):
-     - Elements with visible background colors different from their parent
-     - Elements with visible borders (border-width > 0 and not transparent)
-     - Set: hasVisibleBackground: true OR hasBorder: true
-     - Hover effect: Apply linear-gradient to background with random angle (0-360°)
-
-  2. INVISIBLE BACKGROUND ELEMENTS (gradient to text on hover):
-     - Text-only elements with transparent/invisible backgrounds (same as parent)
-     - No visible borders
-     - Set: isTextOnly: true, hasVisibleBackground: false, hasBorder: false
-     - Hover effect: Apply linear-gradient to text using background-clip technique
-
-  3. FOR EACH MAPPING, DETECT AND SET:
-     - hasVisibleBackground: true if element has visible background different from parent
-     - hasBorder: true if element has borders (border-width > 0 and not transparent)
-     - isTextOnly: true if element is text-only with invisible background
-     - hoverGradientAngle: random integer between 0-360 degrees
-
-  OUTPUT FORMAT (JSON only, no markdown):
-  {
-    "analysis": {
-      "primaryColors": ["#HEX1", "#HEX2"],
-      "accentColors": ["#HEX3", "#HEX4"],
-      "backgroundColor": "#HEX5",
-      "textColor": "#HEX6"
-    },
-    "mappings": [
-      {"originalColor": "#HEX1", "catppuccinColor": "blue", "reason": "Primary CTA buttons", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 135},
-      {"originalColor": "#HEX2", "catppuccinColor": "sapphire", "reason": "Secondary buttons (blue's bi-accent1)", "hasVisibleBackground": true, "hasBorder": false, "isTextOnly": false, "hoverGradientAngle": 225},
-      {"originalColor": "#HEX3", "catppuccinColor": "lavender", "reason": "Badges and tags (blue's bi-accent2)", "hasVisibleBackground": false, "hasBorder": false, "isTextOnly": true, "hoverGradientAngle": 315}
-    ]
-  }
-
-  CRITICAL: Output ONLY the JSON object. No markdown, no commentary. If you are a reasoning model, put your thinking before the JSON and then output ONLY the JSON object.`;
-}
-
-function parseColorAnalysisResponse(content: string): { analysis: WebsiteColorAnalysis; mappings: ColorMapping[] } {
-  let jsonStr = content.trim();
-  jsonStr = jsonStr.replace(/<think>[\s\S]*?<\/think>/gi, '');
-  jsonStr = jsonStr.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
-  jsonStr = jsonStr.replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '');
-  jsonStr = jsonStr.replace(/<thought>[\s\S]*?<\/thought>/gi, '');
-  jsonStr = jsonStr.replace(/<analysis>[\s\S]*?<\/analysis>/gi, '');
-  const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (codeBlockMatch) jsonStr = codeBlockMatch[1].trim();
-  const firstBrace = jsonStr.indexOf('{');
-  if (firstBrace === -1) throw new Error('No JSON object found - response contains no opening brace');
-  let braceCount = 0; let jsonEnd = -1;
-  for (let i = firstBrace; i < jsonStr.length; i++) {
-    if (jsonStr[i] === '{') braceCount++;
-    if (jsonStr[i] === '}') { braceCount--; if (braceCount === 0) { jsonEnd = i; break; } }
-  }
-  if (jsonEnd === -1) throw new Error('No complete JSON object found - unmatched braces');
-  jsonStr = jsonStr.substring(firstBrace, jsonEnd + 1);
-  const parsed = JSON.parse(jsonStr);
-  if (!parsed.analysis || !parsed.mappings) throw new Error('Invalid JSON structure');
-  if (!Array.isArray(parsed.mappings) || parsed.mappings.length === 0) throw new Error('Invalid mappings');
-  return { analysis: parsed.analysis, mappings: parsed.mappings };
+  return [];
 }

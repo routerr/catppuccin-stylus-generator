@@ -6,7 +6,7 @@ import { generateCssTheme } from './css';
 import { generateUserStyle } from './userstyle';
 import { hexToRgb, nearestAccentByRGB } from '../../utils/accent-schemes';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
- 
+import { convertProfileToMapping, type PaletteProfile } from '../palette-profile';
 
 /**
  * generateTheme
@@ -20,9 +20,15 @@ export function generateTheme(
   url: string,
   cssAnalysis?: any
 ): GeneratedTheme {
+  const paletteProfile = cssAnalysis?.paletteProfile as PaletteProfile | undefined;
+  let resolvedMappings: ColorMapping[] | MappingOutput = colorMappings;
+  if (paletteProfile && !(resolvedMappings as MappingOutput).roleMap) {
+    resolvedMappings = convertProfileToMapping(paletteProfile, flavor);
+  }
+
   // If caller provided MappingOutput, use RoleMap path and skip legacy filtering.
-  if ((colorMappings as MappingOutput).roleMap) {
-    const mappingOutput = colorMappings as MappingOutput;
+  if ((resolvedMappings as MappingOutput).roleMap) {
+    const mappingOutput = resolvedMappings as MappingOutput;
     const output: ThemeOutput = {
       stylus: generateStylusTheme(flavor, mappingOutput, url, undefined, 'mauve', cssAnalysis),
       less: generateLessTheme(flavor, mappingOutput, url, undefined, 'mauve', cssAnalysis),
@@ -39,7 +45,7 @@ export function generateTheme(
   }
 
   // Legacy path (ColorMapping[])
-  const legacyMappings = colorMappings as ColorMapping[];
+  const legacyMappings = resolvedMappings as ColorMapping[];
 
   // Convert ColorMapping array to Map for generators
   const mappingMap = new Map(
@@ -103,8 +109,12 @@ export function createUserStylePackage(
   let userStyle: string;
   const primaryAccent = accentColors.length > 0 ? accentColors[0] : '#cba6f7'; // default to mauve hex
   const defaultAccent = nearestAccentByRGB(hexToRgb(primaryAccent), CATPPUCCIN_PALETTES.mocha);
+  const paletteProfile = cssAnalysis?.paletteProfile as PaletteProfile | undefined;
 
-  if ((colorMappings as MappingOutput).roleMap) {
+  if (paletteProfile) {
+    const mappingFromProfile = convertProfileToMapping(paletteProfile, 'mocha');
+    userStyle = generateUserStyle(mappingFromProfile, url, undefined, cssAnalysis, 'mocha', defaultAccent);
+  } else if ((colorMappings as MappingOutput).roleMap) {
     userStyle = generateUserStyle(colorMappings as MappingOutput, url, undefined, cssAnalysis, 'mocha', defaultAccent);
   } else {
     const legacy = colorMappings as ColorMapping[];
