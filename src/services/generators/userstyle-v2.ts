@@ -123,7 +123,28 @@ function buildUserstyleDocument(
   }
   lines.push('}');
 
-  return lines.join('\n');
+  const output = lines.join('\n');
+
+  // Final validation: ensure braces are balanced
+  if (!hasMatchedBraces(output)) {
+    console.error('❌ Generated LESS has unmatched braces! Attempting to fix...');
+    // Count missing braces
+    let depth = 0;
+    for (const char of output) {
+      if (char === '{') depth++;
+      else if (char === '}') depth--;
+    }
+    if (depth > 0) {
+      // Missing closing braces - add them
+      return output + '\n}'.repeat(depth);
+    } else if (depth < 0) {
+      // Too many closing braces - remove them from the end
+      const fixed = output.split('\n').slice(0, Math.abs(depth));
+      return fixed.join('\n');
+    }
+  }
+
+  return output;
 }
 
 function buildVariableSection(mappings: VariableMapping[], includeComments: boolean): string {
@@ -169,12 +190,21 @@ function buildSvgSection(
   }
 
   processedSVGs.forEach(processed => {
-    const block = generateSVGLESS(processed).trim();
-    if (!block) {
-      return;
+    try {
+      const block = generateSVGLESS(processed).trim();
+      if (!block) {
+        return;
+      }
+      // Validate that the block has matched braces
+      if (!hasMatchedBraces(block)) {
+        console.warn(`⚠️  Skipping SVG with unmatched braces: ${processed.selector}`);
+        return;
+      }
+      lines.push(block);
+      lines.push('');
+    } catch (error) {
+      console.warn(`⚠️  Failed to generate LESS for SVG: ${processed.selector}`, error);
     }
-    lines.push(block);
-    lines.push('');
   });
 
   if (lines[lines.length - 1] === '') {
@@ -191,10 +221,16 @@ function buildSelectorSection(mappings: SelectorMapping[], includeComments: bool
 
   const lines: string[] = [];
   mappings.forEach(mapping => {
+    const selector = sanitizeSelector(mapping.selector);
+    if (!selector) {
+      console.warn(`⚠️  Skipping mapping with invalid selector: ${mapping.selector}`);
+      return;
+    }
+
     if (includeComments) {
       lines.push(`/* ${mapping.reason} */`);
     }
-    lines.push(`${mapping.selector} {`);
+    lines.push(`${selector} {`);
     COLOR_PROPERTIES.forEach(property => {
       const color = mapping.properties[property];
       if (!color) {
@@ -219,11 +255,17 @@ function buildGradientSection(mappings: SelectorMapping[], includeComments: bool
 
   const lines: string[] = [];
   gradientRules.forEach(mapping => {
+    const selector = sanitizeSelector(mapping.selector);
+    if (!selector) {
+      console.warn(`⚠️  Skipping gradient with invalid selector: ${mapping.selector}`);
+      return;
+    }
+
     const gradient = mapping.hoverGradient!;
     if (includeComments) {
-      lines.push(`/* Hover gradient for ${mapping.selector} */`);
+      lines.push(`/* Hover gradient for ${selector} */`);
     }
-    lines.push(`${mapping.selector}:hover {`);
+    lines.push(`${selector}:hover {`);
     const mainToken = toToken(gradient.mainColor);
     const accentToken = toToken(gradient.biAccent);
     lines.push(`${INDENT}background: linear-gradient(${Math.round(gradient.angle)}deg, ${mainToken}, ${accentToken});`);
@@ -419,3 +461,32 @@ const COLOR_PROPERTIES: Array<keyof SelectorMapping['properties']> = [
   'fill',
   'stroke',
 ];
+
+/**
+ * Check if a string has balanced braces
+ */
+function hasMatchedBraces(text: string): boolean {
+  let depth = 0;
+  for (const char of text) {
+    if (char === '{') {
+      depth++;
+    } else if (char === '}') {
+      depth--;
+      if (depth < 0) {
+        return false;
+      }
+    }
+  }
+  return depth === 0;
+}
+
+/**
+ * Sanitize a CSS selector to prevent syntax errors
+ */
+function sanitizeSelector(selector: string): string {
+  // Remove dangerous characters that could break CSS syntax
+  return selector
+    .replace(/[{}]/g, '') // Remove braces
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+}

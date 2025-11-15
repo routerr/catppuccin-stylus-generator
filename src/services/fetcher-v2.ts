@@ -11,6 +11,15 @@ import { detectDesignSystem } from '../utils/deep-analysis/design-system';
 import { discoverSelectors, filterColorSelectors, getSelectorStats } from '../utils/deep-analysis/selector-discovery';
 import { DEFAULT_DEEP_ANALYSIS_CONFIG } from '../types/deep-analysis';
 
+// CORS proxy options - we need these because browsers block direct cross-origin requests
+const CORS_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://api.codetabs.com/v1/proxy?quest=',
+];
+
+let currentProxyIndex = 0;
+
 /**
  * Fetch website with complete deep analysis
  */
@@ -100,7 +109,7 @@ export async function fetchWithDeepAnalysis(
 }
 
 /**
- * Fetch basic HTML content
+ * Fetch basic HTML content with CORS proxy fallback
  */
 async function fetchBasicContent(url: string): Promise<{
   html: string;
@@ -109,65 +118,102 @@ async function fetchBasicContent(url: string): Promise<{
   externalStylesheets: string[];
   inlineStyles: string[];
 }> {
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-    });
+  // Try multiple CORS proxies if one fails
+  let lastError: Error | null = null;
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  for (let proxyAttempt = 0; proxyAttempt < CORS_PROXIES.length; proxyAttempt++) {
+    try {
+      currentProxyIndex = proxyAttempt;
+      const proxiedUrl = CORS_PROXIES[currentProxyIndex] + encodeURIComponent(url);
+
+      console.log(`🌐 Fetching HTML with proxy ${proxyAttempt + 1}/${CORS_PROXIES.length}...`);
+
+      const response = await fetch(proxiedUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const html = await response.text();
+      console.log(`✅ Successfully fetched HTML with proxy ${proxyAttempt + 1}`);
+
+      return await processBasicContent(html, url);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`⚠️  Proxy ${proxyAttempt + 1} failed:`, lastError.message);
+      // Continue to next proxy
     }
-
-    const html = await response.text();
-
-    // Extract title
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    const title = titleMatch ? titleMatch[1].trim() : new URL(url).hostname;
-
-    // Extract text content (simplified)
-    const content = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .substring(0, 5000); // Limit to 5000 chars
-
-    // Extract external stylesheets
-    const externalStylesheets: string[] = [];
-    const linkRegex = /<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi;
-    let match;
-
-    while ((match = linkRegex.exec(html)) !== null) {
-      const href = match[1];
-      const absoluteUrl = new URL(href, url).href;
-      externalStylesheets.push(absoluteUrl);
-    }
-
-    // Extract inline styles
-    const inlineStyles: string[] = [];
-    const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
-
-    while ((match = styleRegex.exec(html)) !== null) {
-      inlineStyles.push(match[1]);
-    }
-
-    return {
-      html,
-      title,
-      content,
-      externalStylesheets,
-      inlineStyles,
-    };
-  } catch (error) {
-    throw new Error(`Failed to fetch ${url}: ${error}`);
   }
+
+  // All proxies failed
+  throw new Error(
+    `Failed to fetch website after trying ${CORS_PROXIES.length} CORS proxies. ` +
+    `Last error: ${lastError?.message || 'Unknown error'}. ` +
+    `The website may be blocking proxy requests or is temporarily unavailable.`
+  );
 }
 
 /**
- * Fetch all CSS (external stylesheets + inline styles)
+ * Process fetched HTML content
+ */
+async function processBasicContent(html: string, url: string): Promise<{
+  html: string;
+  title: string;
+  content: string;
+  externalStylesheets: string[];
+  inlineStyles: string[];
+}> {
+  // Extract title
+  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  const title = titleMatch ? titleMatch[1].trim() : new URL(url).hostname;
+
+  // Extract text content (simplified)
+  const content = html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, 5000); // Limit to 5000 chars
+
+  // Extract external stylesheets
+  const externalStylesheets: string[] = [];
+  const linkRegex = /<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi;
+  let match;
+
+  while ((match = linkRegex.exec(html)) !== null) {
+    const href = match[1];
+    try {
+      const absoluteUrl = new URL(href, url).href;
+      externalStylesheets.push(absoluteUrl);
+    } catch (e) {
+      console.warn(`Invalid stylesheet URL: ${href}`);
+    }
+  }
+
+  // Extract inline styles
+  const inlineStyles: string[] = [];
+  const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+
+  while ((match = styleRegex.exec(html)) !== null) {
+    inlineStyles.push(match[1]);
+  }
+
+  return {
+    html,
+    title,
+    content,
+    externalStylesheets,
+    inlineStyles,
+  };
+}
+
+/**
+ * Fetch all CSS (external stylesheets + inline styles) using CORS proxies
  */
 async function fetchAllCSS(baseUrl: string, html: string): Promise<string> {
   let allCSS = '';
@@ -196,12 +242,15 @@ async function fetchAllCSS(baseUrl: string, html: string): Promise<string> {
 
   // Fetch external stylesheets (limit to 10 to avoid overload)
   const fetchLimit = Math.min(stylesheetUrls.length, 10);
-  console.log(`📄 Fetching ${fetchLimit} external stylesheets...`);
+  console.log(`📄 Fetching ${fetchLimit} external stylesheets with CORS proxy...`);
 
   for (let i = 0; i < fetchLimit; i++) {
     const cssUrl = stylesheetUrls[i];
     try {
-      const response = await fetch(cssUrl, {
+      // Use CORS proxy for external CSS files
+      const proxiedUrl = CORS_PROXIES[currentProxyIndex] + encodeURIComponent(cssUrl);
+
+      const response = await fetch(proxiedUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
@@ -209,14 +258,19 @@ async function fetchAllCSS(baseUrl: string, html: string): Promise<string> {
 
       if (response.ok) {
         const css = await response.text();
-        allCSS += `\n\n/* External CSS: ${cssUrl} */\n${css}\n`;
-        console.log(`   ✓ Fetched: ${cssUrl}`);
+        // Limit CSS size to prevent memory issues
+        const truncatedCSS = css.length > 100000 ? css.slice(0, 100000) : css;
+        allCSS += `\n\n/* External CSS: ${cssUrl} */\n${truncatedCSS}\n`;
+        console.log(`   ✅ Fetched CSS (${css.length} bytes): ${cssUrl}`);
+      } else {
+        console.warn(`   ⚠️  HTTP ${response.status} for CSS: ${cssUrl}`);
       }
     } catch (error) {
-      console.warn(`   ✗ Failed to fetch CSS: ${cssUrl}`, error);
+      console.warn(`   ❌ Failed to fetch CSS: ${cssUrl}`, error);
     }
   }
 
+  console.log(`📊 Total CSS collected: ${allCSS.length} characters`);
   return allCSS;
 }
 

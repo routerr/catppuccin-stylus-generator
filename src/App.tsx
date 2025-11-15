@@ -35,6 +35,11 @@ function App() {
   const [flavor, setFlavor] = useState<CatppuccinFlavor>('mocha');
   const [accent, setAccent] = useState<AccentColor>('blue');
 
+  // V3 Generator state
+  const [useV3Generator, setUseV3Generator] = useState(false);
+  const [enableCascadingGradients, setEnableCascadingGradients] = useState(true);
+  const [gradientCoverage, setGradientCoverage] = useState<'minimal' | 'standard' | 'comprehensive'>('comprehensive');
+
   // Regeneration support state
   const [lastCrawlerResult, setLastCrawlerResult] = useState<CrawlerResult | null>(null);
   const [lastSource, setLastSource] = useState<string | null>(null);
@@ -329,6 +334,13 @@ function App() {
             useAIForSVGs: true,
             useAIForSelectors: true,
           },
+          useV3Generator,
+          userstyleV3: useV3Generator ? {
+            defaultFlavor: flavor,
+            defaultAccent: accent,
+            enableCascadingGradients,
+            gradientCoverage,
+          } : undefined,
         });
 
         updateStep('analyze', {
@@ -527,6 +539,12 @@ function App() {
                 onFlavorChange={setFlavor}
                 onAccentChange={setAccent}
                 disabled={isProcessing}
+                useV3Generator={useV3Generator}
+                onUseV3GeneratorChange={setUseV3Generator}
+                enableCascadingGradients={enableCascadingGradients}
+                onEnableCascadingGradientsChange={setEnableCascadingGradients}
+                gradientCoverage={gradientCoverage}
+                onGradientCoverageChange={setGradientCoverage}
               />
             </div>
 
