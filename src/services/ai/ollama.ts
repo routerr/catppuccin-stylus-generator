@@ -1,70 +1,73 @@
-import type { AIModel } from '../../types/theme';
-import type { WebsiteColorAnalysis, ColorMapping } from '../../types/catppuccin';
-import type { CrawlerResult } from '../../types/theme';
-import { getOllamaBaseFromStorage, loadAPIKeys } from '../../utils/storage';
-import { generateAccentSystemGuide } from '../../utils/accent-schemes';
+import type { AIModel } from "../../types/theme";
+import type {
+  WebsiteColorAnalysis,
+  ColorMapping,
+} from "../../types/catppuccin";
+import type { CrawlerResult } from "../../types/theme";
+import { getOllamaBaseFromStorage, loadAPIKeys } from "../../utils/storage";
+import { generateAccentSystemGuide } from "../../utils/accent-schemes";
 
 // Ollama models (local). These are common tags; your local install may vary.
 export const OLLAMA_MODELS: AIModel[] = [
   {
-    id: 'llama3.1:8b-instruct',
-    name: 'Llama 3.1 8B Instruct (local)',
-    provider: 'ollama',
+    id: "llama3.1:8b-instruct",
+    name: "Llama 3.1 8B Instruct (local)",
+    provider: "ollama",
     isFree: true,
   },
   {
-    id: 'qwen2.5:7b-instruct',
-    name: 'Qwen2.5 7B Instruct (local)',
-    provider: 'ollama',
+    id: "qwen2.5:7b-instruct",
+    name: "Qwen2.5 7B Instruct (local)",
+    provider: "ollama",
     isFree: true,
   },
   {
-    id: 'mistral:7b-instruct',
-    name: 'Mistral 7B Instruct (local)',
-    provider: 'ollama',
+    id: "mistral:7b-instruct",
+    name: "Mistral 7B Instruct (local)",
+    provider: "ollama",
     isFree: true,
   },
   // Cloud examples (require Ollama Cloud API key)
   {
-    id: 'gpt-oss:120b-cloud',
-    name: 'GPT-OSS 120B (cloud)',
-    provider: 'ollama',
+    id: "gpt-oss:120b-cloud",
+    name: "GPT-OSS 120B (cloud)",
+    provider: "ollama",
     isFree: false,
   },
   {
-    id: 'deepseek-v3.1:671b-cloud',
-    name: 'Deepseek V3.1 671B (cloud)',
-    provider: 'ollama',
+    id: "deepseek-v3.1:671b-cloud",
+    name: "Deepseek V3.1 671B (cloud)",
+    provider: "ollama",
     isFree: false,
   },
   {
-    id: 'glm-4.6:cloud',
-    name: 'GLM 4.6 (cloud)',
-    provider: 'ollama',
+    id: "glm-4.6:cloud",
+    name: "GLM 4.6 (cloud)",
+    provider: "ollama",
     isFree: false,
   },
   {
-    id: 'gpt-oss:20b-cloud',
-    name: 'GPT-OSS 20B (cloud)',
-    provider: 'ollama',
+    id: "gpt-oss:20b-cloud",
+    name: "GPT-OSS 20B (cloud)",
+    provider: "ollama",
     isFree: false,
   },
   {
-    id: 'kimi-k2:1t-cloud',
-    name: 'Kimi K2 1T (cloud)',
-    provider: 'ollama',
+    id: "kimi-k2:1t-cloud",
+    name: "Kimi K2 1T (cloud)",
+    provider: "ollama",
     isFree: false,
   },
   {
-    id: 'qwen3-coder:480b-cloud',
-    name: 'Qwen3 Coder 480B (cloud)',
-    provider: 'ollama',
+    id: "qwen3-coder:480b-cloud",
+    name: "Qwen3 Coder 480B (cloud)",
+    provider: "ollama",
     isFree: false,
   },
   {
-    id: 'minimax-m2:cloud',
-    name: 'MiniMax M2 (cloud)',
-    provider: 'ollama',
+    id: "minimax-m2:cloud",
+    name: "MiniMax M2 (cloud)",
+    provider: "ollama",
     isFree: false,
   },
 ];
@@ -75,14 +78,14 @@ function getOllamaBases(): string[] {
   const { ollama: cloudKey } = loadAPIKeys();
   // If cloud key is present, prefer Ollama Cloud API host
   if (cloudKey) {
-    bases.push('https://ollama.com');
+    bases.push("https://ollama.com");
   }
   const custom = getOllamaBaseFromStorage();
-  if (custom && typeof custom === 'string' && custom.trim()) {
+  if (custom && typeof custom === "string" && custom.trim()) {
     bases.push(custom.trim());
   }
-  bases.push('/ollama');
-  bases.push('http://localhost:11434');
+  bases.push("/ollama");
+  bases.push("http://localhost:11434");
   return bases;
 }
 
@@ -93,12 +96,14 @@ async function postOllama(path: string, body: any) {
   for (const base of bases) {
     try {
       const url = `${base}${path}`;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (base.startsWith('https://ollama.com') && cloudKey) {
-        headers['Authorization'] = `Bearer ${cloudKey}`;
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (base.startsWith("https://ollama.com") && cloudKey) {
+        headers["Authorization"] = `Bearer ${cloudKey}`;
       }
       const res = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers,
         body: JSON.stringify(body),
       });
@@ -109,33 +114,81 @@ async function postOllama(path: string, body: any) {
       // try next base
     }
   }
-  throw lastErr || new Error('Failed to reach Ollama server');
+  throw lastErr || new Error("Failed to reach Ollama server");
 }
 
 export async function analyzeColorsWithOllama(
   crawlerResult: CrawlerResult,
-  model: string
-): Promise<{ analysis: WebsiteColorAnalysis; mappings: ColorMapping[]; mode: 'dark' | 'light' }> {
-  // Step 1: Detect dark/light mode using AI
-  const modePrompt = `You are a web design expert. Analyze the following website content and CSS and answer with ONLY "dark" or "light" (no explanation, no markdown, just the word). Is this site primarily dark mode or light mode?\n\nWebsite: ${crawlerResult.url} | ${crawlerResult.title}\nContent: ${crawlerResult.content.slice(0, 2000)}\nCSS: ${crawlerResult.cssAnalysis ? JSON.stringify(crawlerResult.cssAnalysis).slice(0, 2000) : ''}`;
-
-  let detectedMode: 'dark' | 'light' = 'light';
-  try {
-    const modeData = await postOllama('/api/chat', {
+  model: string,
+  customPrompt?: string
+): Promise<
+  | {
+      analysis: WebsiteColorAnalysis;
+      mappings: ColorMapping[];
+      mode: "dark" | "light";
+    }
+  | string
+> {
+  // If custom prompt is provided, use it directly (for deep analysis)
+  if (customPrompt) {
+    console.log("Using custom deep analysis prompt with Ollama");
+    const data = await postOllama("/api/chat", {
       model,
       messages: [
-        { role: 'system', content: 'You are a web design expert. Only answer "dark" or "light".' },
-        { role: 'user', content: modePrompt },
+        {
+          role: "system",
+          content: "You are a color mapping expert. Return only valid JSON.",
+        },
+        {
+          role: "user",
+          content: customPrompt,
+        },
+      ],
+      stream: false,
+      options: { temperature: 0.3 },
+    });
+
+    const content: string = data?.message?.content || data?.response;
+    if (!content) throw new Error("No response from Ollama");
+    return content;
+  }
+
+  // Original generic flow below
+  // Step 1: Detect dark/light mode using AI
+  const modePrompt = `You are a web design expert. Analyze the following website content and CSS and answer with ONLY "dark" or "light" (no explanation, no markdown, just the word). Is this site primarily dark mode or light mode?\n\nWebsite: ${
+    crawlerResult.url
+  } | ${crawlerResult.title}\nContent: ${crawlerResult.content.slice(
+    0,
+    2000
+  )}\nCSS: ${
+    crawlerResult.cssAnalysis
+      ? JSON.stringify(crawlerResult.cssAnalysis).slice(0, 2000)
+      : ""
+  }`;
+
+  let detectedMode: "dark" | "light" = "light";
+  try {
+    const modeData = await postOllama("/api/chat", {
+      model,
+      messages: [
+        {
+          role: "system",
+          content:
+            'You are a web design expert. Only answer "dark" or "light".',
+        },
+        { role: "user", content: modePrompt },
       ],
       stream: false,
       options: { temperature: 0.0 },
     });
-    const modeText: string = modeData?.message?.content?.trim()?.toLowerCase() || modeData?.response?.trim()?.toLowerCase();
-    if (modeText === 'dark' || modeText === 'light') {
+    const modeText: string =
+      modeData?.message?.content?.trim()?.toLowerCase() ||
+      modeData?.response?.trim()?.toLowerCase();
+    if (modeText === "dark" || modeText === "light") {
       detectedMode = modeText;
     }
   } catch (e) {
-    console.warn('Ollama mode detection failed, defaulting to light mode.', e);
+    console.warn("Ollama mode detection failed, defaulting to light mode.", e);
   }
 
   // Step 2: Color analysis, pass detected mode to prompt
@@ -143,32 +196,33 @@ export async function analyzeColorsWithOllama(
 
   try {
     // Stage 1: AI analyzes colors (may return messy output)
-    console.log('Stage 1: Analyzing colors with Ollama...');
-    const data = await postOllama('/api/chat', {
+    console.log("Stage 1: Analyzing colors with Ollama...");
+    const data = await postOllama("/api/chat", {
       model,
       messages: [
         {
-          role: 'system',
-          content: 'You are a color analysis expert specializing in web design. Analyze website colors and provide structured JSON responses.',
+          role: "system",
+          content:
+            "You are a color analysis expert specializing in web design. Analyze website colors and provide structured JSON responses.",
         },
-        { role: 'user', content: prompt },
+        { role: "user", content: prompt },
       ],
       stream: false,
       options: { temperature: 0.3 },
     });
 
     const content: string = data?.message?.content || data?.response;
-    if (!content) throw new Error('No response from Ollama');
+    if (!content) throw new Error("No response from Ollama");
 
     // Try to parse directly first
     try {
-      console.log('Attempting direct JSON parsing...');
+      console.log("Attempting direct JSON parsing...");
       const result = parseColorAnalysisResponse(content);
       return { ...result, mode: detectedMode };
     } catch (parseError) {
       // Stage 2: If direct parsing fails, use AI to extract JSON
-      console.log('Direct parsing failed, using AI to extract JSON...');
-      console.log('Parse error:', parseError);
+      console.log("Direct parsing failed, using AI to extract JSON...");
+      console.log("Parse error:", parseError);
       const result = await extractJSONWithOllama(content, model);
       return { ...result, mode: detectedMode };
     }
@@ -182,32 +236,41 @@ async function extractJSONWithOllama(
   messyResponse: string,
   model: string
 ): Promise<{ analysis: WebsiteColorAnalysis; mappings: ColorMapping[] }> {
-  console.log('Stage 2: Attempting Ollama-powered JSON extraction...');
+  console.log("Stage 2: Attempting Ollama-powered JSON extraction...");
 
   // First, try manual extraction without AI
   try {
-    console.log('Attempting manual extraction first...');
+    console.log("Attempting manual extraction first...");
     const manuallyExtracted = extractJSONManually(messyResponse);
-    console.log('Manual extraction successful!');
+    console.log("Manual extraction successful!");
     return manuallyExtracted;
   } catch (manualError) {
-    console.log('Manual extraction failed, trying Ollama extraction...', manualError);
+    console.log(
+      "Manual extraction failed, trying Ollama extraction...",
+      manualError
+    );
   }
 
-  const extractionPrompt = `CRITICAL: You MUST output ONLY the JSON object. NO thinking tags, NO explanations, NO markdown.\n\nFind the JSON object in the text below and output it EXACTLY as-is.\n\nTEXT:\n${messyResponse.slice(0, 3000)}\n\nOUTPUT FORMAT: Just the JSON object starting with { and ending with }`;
+  const extractionPrompt = `CRITICAL: You MUST output ONLY the JSON object. NO thinking tags, NO explanations, NO markdown.\n\nFind the JSON object in the text below and output it EXACTLY as-is.\n\nTEXT:\n${messyResponse.slice(
+    0,
+    3000
+  )}\n\nOUTPUT FORMAT: Just the JSON object starting with { and ending with }`;
 
-  const data = await postOllama('/api/chat', {
+  const data = await postOllama("/api/chat", {
     model,
     messages: [
-      { role: 'system', content: 'Output only JSON. No thinking. No markdown. Just JSON.' },
-      { role: 'user', content: extractionPrompt },
+      {
+        role: "system",
+        content: "Output only JSON. No thinking. No markdown. Just JSON.",
+      },
+      { role: "user", content: extractionPrompt },
     ],
     stream: false,
     options: { temperature: 0.0 },
   });
 
   const content: string = data?.message?.content || data?.response;
-  if (!content) throw new Error('No response from JSON extraction');
+  if (!content) throw new Error("No response from JSON extraction");
 
   try {
     return extractJSONManually(content);
@@ -217,7 +280,10 @@ async function extractJSONWithOllama(
 }
 
 // Manual JSON extraction function (no AI, pure logic)
-function extractJSONManually(text: string): { analysis: WebsiteColorAnalysis; mappings: ColorMapping[] } {
+function extractJSONManually(text: string): {
+  analysis: WebsiteColorAnalysis;
+  mappings: ColorMapping[];
+} {
   let cleanText = text;
   const thinkingPatterns = [
     /<think>[\s\S]*?<\/think>/gi,
@@ -226,17 +292,22 @@ function extractJSONManually(text: string): { analysis: WebsiteColorAnalysis; ma
     /<reasoning>[\s\S]*?<\/reasoning>/gi,
     /<reflection>[\s\S]*?<\/reflection>/gi,
   ];
-  thinkingPatterns.forEach(pattern => {
-    cleanText = cleanText.replace(pattern, '');
+  thinkingPatterns.forEach((pattern) => {
+    cleanText = cleanText.replace(pattern, "");
   });
 
-  const unclosedMatch = cleanText.match(/^[\s\S]*?<\/(think|thinking|thought|reasoning|reflection)>/i);
+  const unclosedMatch = cleanText.match(
+    /^[\s\S]*?<\/(think|thinking|thought|reasoning|reflection)>/i
+  );
   if (unclosedMatch) {
-    cleanText = cleanText.replace(/^[\s\S]*?<\/(think|thinking|thought|reasoning|reflection)>/i, '');
+    cleanText = cleanText.replace(
+      /^[\s\S]*?<\/(think|thinking|thought|reasoning|reflection)>/i,
+      ""
+    );
   }
 
-  const firstBrace = cleanText.indexOf('{');
-  if (firstBrace === -1) throw new Error('No JSON object found in text');
+  const firstBrace = cleanText.indexOf("{");
+  if (firstBrace === -1) throw new Error("No JSON object found in text");
 
   let braceCount = 0;
   let inString = false;
@@ -244,56 +315,99 @@ function extractJSONManually(text: string): { analysis: WebsiteColorAnalysis; ma
   let jsonEnd = -1;
   for (let i = firstBrace; i < cleanText.length; i++) {
     const char = cleanText[i];
-    if (escapeNext) { escapeNext = false; continue; }
-    if (char === '\\') { escapeNext = true; continue; }
-    if (char === '"') { inString = !inString; continue; }
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+    if (char === "\\") {
+      escapeNext = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
     if (!inString) {
-      if (char === '{') braceCount++;
-      else if (char === '}') { braceCount--; if (braceCount === 0) { jsonEnd = i; break; } }
+      if (char === "{") braceCount++;
+      else if (char === "}") {
+        braceCount--;
+        if (braceCount === 0) {
+          jsonEnd = i;
+          break;
+        }
+      }
     }
   }
-  if (jsonEnd === -1) throw new Error('No complete JSON object found (unmatched braces)');
+  if (jsonEnd === -1)
+    throw new Error("No complete JSON object found (unmatched braces)");
   const jsonStr = cleanText.substring(firstBrace, jsonEnd + 1);
   const parsed = JSON.parse(jsonStr);
   if (!parsed.analysis || !parsed.mappings) {
-    if (typeof parsed === 'object') {
+    if (typeof parsed === "object") {
       for (const key of Object.keys(parsed)) {
         const value = (parsed as any)[key];
-        if (value && typeof value === 'object' && value.analysis && value.mappings) {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.analysis &&
+          value.mappings
+        ) {
           return { analysis: value.analysis, mappings: value.mappings };
         }
       }
     }
-    throw new Error('Invalid JSON structure: missing analysis or mappings');
+    throw new Error("Invalid JSON structure: missing analysis or mappings");
   }
   return { analysis: parsed.analysis, mappings: parsed.mappings };
 }
 
-function createColorAnalysisPrompt(crawler: CrawlerResult & { cssAnalysis?: any; detectedMode?: 'dark' | 'light' }) {
-  const modeText = crawler.detectedMode ? `MODE DETECTED: ${crawler.detectedMode}` : '';
+function createColorAnalysisPrompt(
+  crawler: CrawlerResult & {
+    cssAnalysis?: any;
+    detectedMode?: "dark" | "light";
+  }
+) {
+  const modeText = crawler.detectedMode
+    ? `MODE DETECTED: ${crawler.detectedMode}`
+    : "";
   // Enhanced CSS class information if available
-  let cssClassInfo = '';
+  let cssClassInfo = "";
   const anyCrawler: any = crawler as any;
   if (anyCrawler.cssAnalysis && anyCrawler.cssAnalysis.grouped) {
     const grouped = anyCrawler.cssAnalysis.grouped;
     cssClassInfo = `\n\nCSS CLASS ANALYSIS (use this for precise class-specific mappings):
-Button classes (${grouped.buttons.length}): ${grouped.buttons.slice(0, 10).map((c: any) => c.className).join(', ')}
-Link classes (${grouped.links.length}): ${grouped.links.slice(0, 10).map((c: any) => c.className).join(', ')}
-Background classes (${grouped.backgrounds.length}): ${grouped.backgrounds.slice(0, 10).map((c: any) => c.className).join(', ')}
-Text classes (${grouped.text.length}): ${grouped.text.slice(0, 10).map((c: any) => c.className).join(', ')}
-Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((c: any) => c.className).join(', ')}
+Button classes (${grouped.buttons.length}): ${grouped.buttons
+      .slice(0, 10)
+      .map((c: any) => c.className)
+      .join(", ")}
+Link classes (${grouped.links.length}): ${grouped.links
+      .slice(0, 10)
+      .map((c: any) => c.className)
+      .join(", ")}
+Background classes (${grouped.backgrounds.length}): ${grouped.backgrounds
+      .slice(0, 10)
+      .map((c: any) => c.className)
+      .join(", ")}
+Text classes (${grouped.text.length}): ${grouped.text
+      .slice(0, 10)
+      .map((c: any) => c.className)
+      .join(", ")}
+Border classes (${grouped.borders.length}): ${grouped.borders
+      .slice(0, 10)
+      .map((c: any) => c.className)
+      .join(", ")}
 \nIMPORTANT: Generate mappings that include these specific class names for more targeted styling.`;
   }
 
   // Determine flavor based on detected mode
-  const flavor = (crawler.detectedMode === 'dark') ? 'mocha' : 'latte';
+  const flavor = crawler.detectedMode === "dark" ? "mocha" : "latte";
   const accentGuide = generateAccentSystemGuide(flavor);
 
   return `You are a color analysis expert specializing in mapping website colors to the Catppuccin palette.
 
   Website: ${crawler.url} | ${crawler.title}
   ${modeText}
-  Detected colors: ${(crawler.colors || []).slice(0, 30).join(', ')}
+  Detected colors: ${(crawler.colors || []).slice(0, 30).join(", ")}
   ${cssClassInfo}
   Content snippet: ${crawler.content.slice(0, 1500)}
 
@@ -445,26 +559,42 @@ Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((
   CRITICAL: Output ONLY the JSON object. No markdown, no commentary. If you are a reasoning model, put your thinking before the JSON and then output ONLY the JSON object.`;
 }
 
-function parseColorAnalysisResponse(content: string): { analysis: WebsiteColorAnalysis; mappings: ColorMapping[] } {
+function parseColorAnalysisResponse(content: string): {
+  analysis: WebsiteColorAnalysis;
+  mappings: ColorMapping[];
+} {
   let jsonStr = content.trim();
-  jsonStr = jsonStr.replace(/<think>[\s\S]*?<\/think>/gi, '');
-  jsonStr = jsonStr.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
-  jsonStr = jsonStr.replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '');
-  jsonStr = jsonStr.replace(/<thought>[\s\S]*?<\/thought>/gi, '');
-  jsonStr = jsonStr.replace(/<analysis>[\s\S]*?<\/analysis>/gi, '');
+  jsonStr = jsonStr.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  jsonStr = jsonStr.replace(/<thinking>[\s\S]*?<\/thinking>/gi, "");
+  jsonStr = jsonStr.replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "");
+  jsonStr = jsonStr.replace(/<thought>[\s\S]*?<\/thought>/gi, "");
+  jsonStr = jsonStr.replace(/<analysis>[\s\S]*?<\/analysis>/gi, "");
   const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   if (codeBlockMatch) jsonStr = codeBlockMatch[1].trim();
-  const firstBrace = jsonStr.indexOf('{');
-  if (firstBrace === -1) throw new Error('No JSON object found - response contains no opening brace');
-  let braceCount = 0; let jsonEnd = -1;
+  const firstBrace = jsonStr.indexOf("{");
+  if (firstBrace === -1)
+    throw new Error(
+      "No JSON object found - response contains no opening brace"
+    );
+  let braceCount = 0;
+  let jsonEnd = -1;
   for (let i = firstBrace; i < jsonStr.length; i++) {
-    if (jsonStr[i] === '{') braceCount++;
-    if (jsonStr[i] === '}') { braceCount--; if (braceCount === 0) { jsonEnd = i; break; } }
+    if (jsonStr[i] === "{") braceCount++;
+    if (jsonStr[i] === "}") {
+      braceCount--;
+      if (braceCount === 0) {
+        jsonEnd = i;
+        break;
+      }
+    }
   }
-  if (jsonEnd === -1) throw new Error('No complete JSON object found - unmatched braces');
+  if (jsonEnd === -1)
+    throw new Error("No complete JSON object found - unmatched braces");
   jsonStr = jsonStr.substring(firstBrace, jsonEnd + 1);
   const parsed = JSON.parse(jsonStr);
-  if (!parsed.analysis || !parsed.mappings) throw new Error('Invalid JSON structure');
-  if (!Array.isArray(parsed.mappings) || parsed.mappings.length === 0) throw new Error('Invalid mappings');
+  if (!parsed.analysis || !parsed.mappings)
+    throw new Error("Invalid JSON structure");
+  if (!Array.isArray(parsed.mappings) || parsed.mappings.length === 0)
+    throw new Error("Invalid mappings");
   return { analysis: parsed.analysis, mappings: parsed.mappings };
 }

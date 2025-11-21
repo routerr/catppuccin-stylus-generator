@@ -692,11 +692,9 @@ function App() {
             <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
               <APIKeyConfig
                 aiProvider={aiProvider}
-                onKeyChange={(key) => setAIKey(key)}
-                onPickModel={(m) => setAIModel(m)}
-                onModelsDiscovered={(models) =>
-                  setDiscoveredOllamaModels(models)
-                }
+                onKeyChange={setAIKey}
+                onPickModel={setAIModel}
+                onModelsDiscovered={setDiscoveredOllamaModels}
               />
             </div>
 
