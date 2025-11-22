@@ -164,6 +164,10 @@ async function processHTML(html: string, url: string, fetcher: FetcherService): 
     css: allCSS.join('\n'),
   });
 
+  if (paletteProfile.diagnostics.cssVariableCount === 0) {
+    paletteProfile.diagnostics.warnings.push('No CSS variables detected; try Playwright crawler or include external CSS for richer mapping.');
+  }
+
   return {
     url,
     title,

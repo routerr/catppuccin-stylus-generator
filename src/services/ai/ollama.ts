@@ -94,7 +94,7 @@ async function postOllama(path: string, body: any) {
   const { ollama: cloudKey } = loadAPIKeys();
   for (const base of bases) {
     let attempt = 0;
-    while (attempt <= 1) {
+    while (attempt <= 2) {
       try {
         const url = `${base}${path}`;
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -113,10 +113,10 @@ async function postOllama(path: string, body: any) {
         return await res.json();
       } catch (e) {
         lastErr = e;
-        if (attempt === 1) {
+        if (attempt === 2) {
           break; // move to next base
         }
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
       }
       attempt += 1;
     }
