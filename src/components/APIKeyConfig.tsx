@@ -23,6 +23,8 @@ export function APIKeyConfig({ aiProvider, onKeyChange, onPickModel, onModelsDis
   const [playwrightKey, setPlaywrightKey] = useState('');
   const [playwrightStatus, setPlaywrightStatus] = useState<'idle'|'testing'|'ok'|'fallback'|'error'>('idle');
   const [playwrightLastTest, setPlaywrightLastTest] = useState<string | null>(null);
+  const [playwrightLastError, setPlaywrightLastError] = useState<string | null>(null);
+  const [playwrightLastRtt, setPlaywrightLastRtt] = useState<number | null>(null);
 
   useEffect(() => {
     // Load saved keys
@@ -110,7 +112,9 @@ export function APIKeyConfig({ aiProvider, onKeyChange, onPickModel, onModelsDis
   const testPlaywright = async () => {
     if (!playwrightEndpoint.trim()) return;
     setPlaywrightStatus('testing');
+    setPlaywrightLastError(null);
     const controller = (AbortController as any)?.timeout ? (AbortController as any).timeout(10000) : new AbortController();
+    const started = Date.now();
     try {
       const res = await fetch(playwrightEndpoint.trim(), {
         method: 'POST',
@@ -126,11 +130,13 @@ export function APIKeyConfig({ aiProvider, onKeyChange, onPickModel, onModelsDis
         const message = data?.error ? `${data.error}` : `HTTP ${res.status}`;
         throw new Error(message);
       }
+      setPlaywrightLastRtt(Date.now() - started);
       setPlaywrightStatus('ok');
       setPlaywrightLastTest(new Date().toLocaleTimeString());
     } catch (e) {
       console.warn('Playwright test failed', e);
       setPlaywrightStatus('fallback');
+      setPlaywrightLastError(e instanceof Error ? e.message : String(e));
       setPlaywrightLastTest(new Date().toLocaleTimeString());
     }
   };
@@ -279,7 +285,7 @@ export function APIKeyConfig({ aiProvider, onKeyChange, onPickModel, onModelsDis
                 ? 'Error'
                 : 'Idle'}
             </span>
-            {playwrightLastTest && <span className="text-ctp-subtext0">Last test: {playwrightLastTest}</span>}
+            {playwrightLastTest && <span className="text-ctp-subtext0">Last test: {playwrightLastTest}{playwrightLastRtt ? ` • ${playwrightLastRtt}ms` : ''}</span>}
           </div>
         </div>
         <p className="text-xs text-ctp-subtext0">
@@ -308,6 +314,9 @@ export function APIKeyConfig({ aiProvider, onKeyChange, onPickModel, onModelsDis
           >
             Test Playwright endpoint
           </button>
+          {playwrightLastError && (
+            <span className="text-[11px] text-ctp-yellow">Last error: {playwrightLastError}</span>
+          )}
         </div>
         <div className="space-y-2">
           <label className="block text-xs font-medium text-ctp-subtext1">Crawler API Key (optional)</label>

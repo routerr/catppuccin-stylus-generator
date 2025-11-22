@@ -414,8 +414,6 @@ ${(() => {
       /* Default state: Apply Catppuccin text color */
       color: @accent !important;
 
-      position: relative;
-
       &:hover,
       &:focus-visible {
         /* Remove underline on hover for clean look */
@@ -1210,12 +1208,49 @@ function generateClassSpecificRules(
   const grouped = cssAnalysis.grouped;
   const colorCycle = accentPlan?.classColorCycle || ['@accent', '@bi-accent1', '@bi-accent2'];
   const roleGuessMap = buildRoleGuessMap(cssAnalysis?.aiRoleGuesses);
+
+  const hintColorFromClass = (className?: string) => {
+    if (!className) return undefined;
+    const lower = className.toLowerCase();
+    // Navigation / secondary UI
+    if (/(nav|menu|tab|secondary|subnav|sidebar|pill-nav)/.test(lower)) return '@bi-accent1';
+    // Badges / tags / chips
+    if (/(badge|tag|chip|pill|label)/.test(lower)) return '@bi-accent2';
+    // Status semantics
+    if (/(success|ok|check)/.test(lower)) return '@green';
+    if (/(warn|warning|caution)/.test(lower)) return '@yellow';
+    if (/(danger|error|alert|critical)/.test(lower)) return '@red';
+    if (/(info|notice)/.test(lower)) return '@sapphire';
+    return undefined;
+  };
+
+  const seedOffset = accentPlan?.seed ? accentPlan.seed % colorCycle.length : 0;
+
+  const pickColorForRole = (roles?: string[], fallbackIdx?: number) => {
+    if (roles && roles.length > 0) {
+      const set = new Set(roles.map((r) => r.toLowerCase()));
+      if (set.has('primary') || set.has('cta') || set.has('accent')) return '@accent';
+      if (set.has('secondary') || set.has('nav') || set.has('link')) return '@bi-accent1';
+      if (set.has('badge') || set.has('tag') || set.has('tertiary')) return '@bi-accent2';
+      if (set.has('danger') || set.has('error') || set.has('alert')) return '@red';
+      if (set.has('warning')) return '@yellow';
+      if (set.has('success')) return '@green';
+      if (set.has('info')) return '@sapphire';
+    }
+    if (typeof fallbackIdx === 'number') {
+      return colorCycle[Math.abs(fallbackIdx) % colorCycle.length];
+    }
+    return '@accent';
+  };
+
   const getColor = (idx: number, className?: string) => {
     if (className) {
-      const roleColor = resolveColorFromRoleGuess(roleGuessMap[className]);
+      const roleColor = pickColorForRole(roleGuessMap[className], idx);
       if (roleColor) return roleColor;
+      const hintColor = hintColorFromClass(className);
+      if (hintColor) return hintColor;
     }
-    return colorCycle[Math.abs(idx) % colorCycle.length];
+    return colorCycle[(Math.abs(idx) + seedOffset) % colorCycle.length];
   };
 
   // Helper to check if a mapping indicates text-only/invisible background
@@ -1408,7 +1443,14 @@ function generateClassSpecificRules(
   }
 
   const badgeToggle = cssAnalysis?.accentToggles?.badgeCardTable ?? true;
-  if (badgeToggle) {
+  const hasExplicitGroups =
+    (grouped.buttons?.length || 0) +
+    (grouped.links?.length || 0) +
+    (grouped.backgrounds?.length || 0) +
+    (grouped.text?.length || 0) +
+    (grouped.borders?.length || 0) > 0;
+
+  if (badgeToggle && !hasExplicitGroups) {
     // Accent plan coverage for common badge/card/table elements even without explicit grouping
     lines.push('');
     lines.push('    /* Accent plan for badges, cards, and tables (deterministic rotation) */');
@@ -1444,7 +1486,7 @@ function generateClassSpecificRules(
   }
 
   const alertsToggle = cssAnalysis?.accentToggles?.alerts ?? true;
-  if (alertsToggle) {
+  if (alertsToggle && !hasExplicitGroups) {
     lines.push('');
     lines.push('    /* Alerts / notifications accent coverage */');
     const alertColor = getColor(3);
@@ -1490,6 +1532,9 @@ function resolveColorFromRoleGuess(roles?: string[]) {
   if (set.has('primary') || set.has('cta') || set.has('accent')) return '@accent';
   if (set.has('secondary') || set.has('link') || set.has('nav')) return '@bi-accent1';
   if (set.has('tertiary') || set.has('badge') || set.has('tag')) return '@bi-accent2';
-  if (set.has('danger') || set.has('error') || set.has('alert')) return '@danger';
+  if (set.has('danger') || set.has('error') || set.has('alert')) return '@red';
+  if (set.has('warning')) return '@yellow';
+  if (set.has('success')) return '@green';
+  if (set.has('info')) return '@sapphire';
   return undefined;
 }

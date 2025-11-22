@@ -93,22 +93,32 @@ async function postOllama(path: string, body: any) {
   const bases = getOllamaBases();
   const { ollama: cloudKey } = loadAPIKeys();
   for (const base of bases) {
-    try {
-      const url = `${base}${path}`;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (base.startsWith('https://ollama.com') && cloudKey) {
-        headers['Authorization'] = `Bearer ${cloudKey}`;
+    let attempt = 0;
+    while (attempt <= 1) {
+      try {
+        const url = `${base}${path}`;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (base.startsWith('https://ollama.com') && cloudKey) {
+          headers['Authorization'] = `Bearer ${cloudKey}`;
+        }
+        const res = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+        if (res.status === 429 || res.status === 503) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (e) {
+        lastErr = e;
+        if (attempt === 1) {
+          break; // move to next base
+        }
+        await new Promise((r) => setTimeout(r, 500));
       }
-      const res = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      lastErr = e;
-      // try next base
+      attempt += 1;
     }
   }
   throw lastErr || new Error('Failed to reach Ollama server');

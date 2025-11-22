@@ -119,8 +119,15 @@ Run the bundled service locally:
 npm install
 npm run crawler:serve
 # defaults to http://localhost:8787/crawl
+# env: CRAWLER_PORT=8787, CRAWLER_KEY=your-token, CRAWLER_TIMEOUT=60000 (ms)
 ```
 Then paste `http://localhost:8787/crawl` into the Playwright endpoint field and (optionally) set a bearer token for authentication.
+Tip: Playwright is best for JS-heavy pages. For richer CSS/class discovery (e.g., when external styles are blocked in the browser context), you can stick to the built-in HTTP fetch; the app will auto-fallback when the crawler is unreachable.
+
+### Contrast & Diagnostics
+- Palette profiles now emit basic contrast warnings (e.g., text vs background, accent vs surface) and will auto-fallback to safer palette text when needed.
+- Palette Diagnostics panel surfaces warnings plus tips to improve coverage (connect Playwright, include CSS variables, prefer semantic tokens).
+- Class colors favor role guesses and class-name hints: primary/CTA → accent, secondary/nav/link → bi-accent1, badge/tag → bi-accent2; status roles map to Catppuccin greens/yellows/reds/sapphires.
 
 ## AI Provider Options
 

@@ -462,6 +462,26 @@ function ensureRole(roleMap: RoleMap, role: RoleKey, color: CatppuccinColor, fla
   }
 }
 
+function contrastRatioHex(a: string, b: string): number {
+  const rgbA = hexToRgb(a);
+  const rgbB = hexToRgb(b);
+  const luminance = (c: { r: number; g: number; b: number }) => {
+    const toLinear = (v: number) => {
+      const n = v / 255;
+      return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
+    };
+    const r = toLinear(c.r);
+    const g = toLinear(c.g);
+    const b2 = toLinear(c.b);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b2;
+  };
+  const l1 = luminance(rgbA);
+  const l2 = luminance(rgbB);
+  const hi = Math.max(l1, l2);
+  const lo = Math.min(l1, l2);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 function buildDerivedScales(accent: AccentDistribution, flavor: CatppuccinFlavor): DerivedScales {
   const palette = CATPPUCCIN_PALETTES[flavor];
   const derived: DerivedScales = {};
@@ -531,6 +551,46 @@ export function convertProfileToMapping(profile: PaletteProfile, flavor: Catppuc
   roleMap['secondary.text'] = CATPPUCCIN_PALETTES[flavor].base;
 
   const derivedScales = buildDerivedScales(profile.accents, flavor);
+  const warnings: string[] = [...(profile.diagnostics.warnings || [])];
+
+  // Basic contrast check: text.primary vs background.primary
+  const bgHex = roleMap['background.primary']?.hex;
+  const textHex = roleMap['text.primary']?.hex;
+  if (bgHex && textHex) {
+    const ratio = contrastRatioHex(bgHex, textHex);
+    if (ratio < 4.5) {
+      const fallbackText = CATPPUCCIN_PALETTES[flavor].text.hex;
+      const fallbackRatio = contrastRatioHex(bgHex, fallbackText);
+      if (fallbackRatio > ratio) {
+        roleMap['text.primary'] = CATPPUCCIN_PALETTES[flavor].text;
+      }
+      warnings.push(`Contrast warning: text.primary vs background.primary = ${ratio.toFixed(2)} (<4.5 AA).`);
+    }
+  }
+  // Secondary text vs base/mantle
+  const bg2Hex = roleMap['background.secondary']?.hex || roleMap['background.primary']?.hex;
+  const text2Hex = roleMap['text.secondary']?.hex;
+  if (bg2Hex && text2Hex) {
+    const ratio2 = contrastRatioHex(bg2Hex, text2Hex);
+    if (ratio2 < 3.0) {
+      const safer = CATPPUCCIN_PALETTES[flavor].text.hex;
+      const saferRatio = contrastRatioHex(bg2Hex, safer);
+      if (saferRatio > ratio2) {
+        roleMap['text.secondary'] = CATPPUCCIN_PALETTES[flavor].text;
+      }
+      warnings.push(`Contrast warning: text.secondary vs background.secondary = ${ratio2.toFixed(2)} (<3.0 AA-large).`);
+    }
+  }
+
+  // Interactive states (primary buttons/links) — keep within palette
+  const accentHex = roleMap['accent.interactive']?.hex || CATPPUCCIN_PALETTES[flavor].mauve.hex;
+  const surfaceHex = roleMap['surface.0']?.hex || roleMap['background.primary']?.hex;
+  if (accentHex && surfaceHex) {
+    const ratioBtn = contrastRatioHex(accentHex, surfaceHex);
+    if (ratioBtn < 3.0) {
+      warnings.push(`Contrast warning: accent.interactive vs surface.0 = ${ratioBtn.toFixed(2)} (<3.0).`);
+    }
+  }
 
   return {
     roleMap,
@@ -540,7 +600,7 @@ export function convertProfileToMapping(profile: PaletteProfile, flavor: Catppuc
       primaryAccent: accentPrimary,
       secondaryAccent: profile.accents.biAccents.first,
       contrastValidated: false,
-      warnings: profile.diagnostics.warnings,
+      warnings,
     },
   };
 }

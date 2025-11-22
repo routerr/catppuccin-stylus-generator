@@ -2,6 +2,7 @@ import type { CatppuccinFlavor, CatppuccinColor, ColorMapping, AccentColor } fro
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
 import { computeAccentSetFor } from '../../utils/accent-schemes';
+import { createAccentPlan } from '../../utils/accent-plan';
 
 // Contrast calculation functions
 function hexToRgb(hex: string): number[] {
@@ -57,17 +58,10 @@ export function generateLessTheme(
   defaultAccent: AccentColor = 'mauve',
   cssAnalysis?: any
 ): string {
-  const palette = CATPPUCCIN_PALETTINOTE(flaworCheck(flavor)) || CATPPUCCIN_PALETTES[flavor];
+  const palette = CATPPUCCIN_PALETTES[flavor];
+  const accentPlan = createAccentPlan((cssAnalysis as any)?.paletteProfile, flavor, defaultAccent);
   const pre = computeAccentSetFor(palette, defaultAccent);
-  const hoverAngle = Math.floor(Math.random() * 180); // 0-179deg
-  // Approx 40/20/20 style distribution (summing to 100 across 3 segments)
-  const hoverMain = 38 + Math.floor(Math.random() * 8); // 38-45%
-  const hoverRemain = 100 - hoverMain; // 55-62%
-  // split remainder across two parts, each <=45%
-  let hoverB1 = Math.max(18, Math.floor(Math.random() * Math.max(18, hoverRemain - 18)));
-  let hoverB2 = hoverRemain - hoverB1;
-  if (hoverB1 > 45) { hoverB2 += (hoverB1 - 45); hoverB1 = 45; }
-  if (hoverB2 > 45) { hoverB1 += (hoverB2 - 45); hoverB2 = 45; }
+  const hoverAngle = accentPlan.hoverAngles.links;
   const date = new Date().toISOString().split('T')[0];
 
   // Header
@@ -97,7 +91,7 @@ export function generateLessTheme(
   // Alt accent sets (bi-accents as main-colors with their own bi-accents)
   const bi1Set = computeAccentSetFor(palette, pre.biAccent1);
   const bi2Set = computeAccentSetFor(palette, pre.biAccent2);
-  const useAltForSecondary = Math.random() < 0.5 ? 'alt1' : 'alt2';
+  const useAltForSecondary = accentPlan.buttonVariant;
   less += `@alt1-main: @${pre.biAccent1};\n`;
   less += `@alt1-bi1: @${bi1Set.biAccent1};\n`;
   less += `@alt1-bi2: @${bi1Set.biAccent2};\n`;

@@ -3,12 +3,14 @@ import { chromium } from 'playwright';
 
 const PORT = Number(process.env.CRAWLER_PORT || process.env.PORT || 8787);
 const AUTH_KEY = process.env.CRAWLER_KEY;
+const TIMEOUT = Number(process.env.CRAWLER_TIMEOUT || 60000);
 
 async function crawl(url) {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle' });
+    page.setDefaultNavigationTimeout(TIMEOUT);
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
     const html = await page.content();
     const title = await page.title();
     const styles = await page.evaluate(() => {

@@ -7,6 +7,25 @@ import { generateUserStyle } from './userstyle';
 import { hexToRgb, nearestAccentByRGB } from '../../utils/accent-schemes';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
 import { convertProfileToMapping, type PaletteProfile } from '../palette-profile';
+import type { CatppuccinColor } from '../../types/catppuccin';
+
+function nearestPaletteColorName(hex: string, flavor: CatppuccinFlavor): CatppuccinColor {
+  const palette = CATPPUCCIN_PALETTES[flavor];
+  const target = hexToRgb(hex);
+  let best: { name: CatppuccinColor; dist: number } | null = null;
+  for (const [name, color] of Object.entries(palette)) {
+    const val = color?.rgb;
+    if (!val) continue;
+    const dr = target.r - val.r;
+    const dg = target.g - val.g;
+    const db = target.b - val.b;
+    const dist = dr * dr + dg * dg + db * db;
+    if (!best || dist < best.dist) {
+      best = { name: name as CatppuccinColor, dist };
+    }
+  }
+  return best?.name ?? 'mauve';
+}
 
 /**
  * generateTheme
@@ -29,17 +48,21 @@ export function generateTheme(
   // If caller provided MappingOutput, use RoleMap path and skip legacy filtering.
   if ((resolvedMappings as MappingOutput).roleMap) {
     const mappingOutput = resolvedMappings as MappingOutput;
+    const cssColorMap = new Map<string, CatppuccinColor>();
+    Object.entries(mappingOutput.roleMap || {}).forEach(([role, color]) => {
+      if (color?.hex) {
+        cssColorMap.set(role, nearestPaletteColorName(color.hex, flavor));
+      }
+    });
+    Object.entries(mappingOutput.derivedScales || {}).forEach(([role, color]) => {
+      if (color?.hex && !cssColorMap.has(role)) {
+        cssColorMap.set(role, nearestPaletteColorName(color.hex, flavor));
+      }
+    });
     const output: ThemeOutput = {
       stylus: generateStylusTheme(flavor, mappingOutput, url, undefined, 'mauve', cssAnalysis),
       less: generateLessTheme(flavor, mappingOutput, url, undefined, 'mauve', cssAnalysis),
-      css: generateCssTheme(
-        flavor,
-        new Map(
-          Object.entries(mappingOutput.roleMap || {})
-            .map(([key, value]) => [key, key as import('../../types/catppuccin').CatppuccinColor])
-        ),
-        url
-      ),
+      css: generateCssTheme(flavor, cssColorMap, url),
     };
     return { flavor, output };
   }
@@ -107,7 +130,7 @@ export function createUserStylePackage(
 ): ThemePackage {
   // If MappingOutput provided, generate userStyle from it directly
   let userStyle: string;
-  const primaryAccent = accentColors.length > 0 ? accentColors[0] : '#cba6f7'; // default to mauve hex
+  const primaryAccent = accentColors.length > 0 ? accentColors[0] : CATPPUCCIN_PALETTES.mocha.mauve.hex; // default to palette mauve
   const defaultAccent = nearestAccentByRGB(hexToRgb(primaryAccent), CATPPUCCIN_PALETTES.mocha);
   const paletteProfile = cssAnalysis?.paletteProfile as PaletteProfile | undefined;
 

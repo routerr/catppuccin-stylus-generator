@@ -2,25 +2,7 @@ import type { AIModel } from '../../types/theme';
 import type { CrawlerResult } from '../../types/theme';
 import type { ColorAnalysisResult, ExtendedCrawlerResult } from './types';
 import { createModeDetectionPrompt, createColorAnalysisPrompt, createClassMappingPrompt } from './prompts';
-import { parseColorAnalysisResponse, extractJSONWithAI, detectWebsiteMode } from './base';
-
-async function fetchWithRetry(url: string, init: RequestInit, retries = 1): Promise<Response> {
-  let attempt = 0;
-  let lastError: any;
-  while (attempt <= retries) {
-    try {
-      const res = await fetch(url, init);
-      if (res.status === 429 || res.status === 503) throw new Error(`HTTP ${res.status}`);
-      return res;
-    } catch (e) {
-      lastError = e;
-      if (attempt === retries) break;
-      await new Promise(r => setTimeout(r, 500));
-    }
-    attempt += 1;
-  }
-  throw lastError || new Error('Request failed');
-}
+import { parseColorAnalysisResponse, extractJSONWithAI, detectWebsiteMode, fetchWithRetry } from './base';
 
 // OpenRouter API endpoint
 const OPENROUTER_API_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';

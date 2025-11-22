@@ -211,23 +211,23 @@ function App() {
       setLastAiMappingChoice(useAiMapping);
       setHasCompleted(true);
       setProgress('');
-    } catch (err) {
-      // Mark current step as error
-      const currentStep = thinkingSteps.find(s => s.status === 'in_progress');
-      if (currentStep) {
-        updateStep(currentStep.id, {
-          status: 'error',
-          details: err instanceof Error ? err.message : 'Processing failed'
-        });
-      }
-      const message = err instanceof Error ? err.message : String(err);
-      // Detect parse/JSON errors and surface a toast
-      if (/json|parse/i.test(message)) {
-        setParseErrorToast('AI response could not be parsed. Try again or switch models.');
-        setTimeout(() => setParseErrorToast(null), 6000);
-      }
-      throw err;
-    } finally {
+      } catch (err) {
+        // Mark current step as error
+        const currentStep = thinkingSteps.find(s => s.status === 'in_progress');
+        if (currentStep) {
+          updateStep(currentStep.id, {
+            status: 'error',
+            details: err instanceof Error ? err.message : 'Processing failed'
+          });
+        }
+        const message = err instanceof Error ? err.message : String(err);
+        // Detect parse/JSON errors and surface a toast
+        if (/json|parse/i.test(message)) {
+          setParseErrorToast('AI response could not be parsed. Try again or switch models.');
+          setTimeout(() => setParseErrorToast(null), 6000);
+        }
+        throw err;
+      } finally {
       setIsProcessing(false);
     }
   };
@@ -461,8 +461,13 @@ function App() {
                           <li key={idx}>{warning}</li>
                         ))}
                       </ul>
-                      <div className="text-xs text-ctp-subtext1">
-                        Tips: include more CSS variables or inline styles, ensure Playwright crawler is connected for computed styles, and prefer sites with semantic tokens (e.g., `--color-*`).
+                      <div className="text-xs text-ctp-subtext1 space-y-1">
+                        <div className="font-semibold text-ctp-subtext0">改善建議：</div>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>若是 JS 重站，開啟並測試 Playwright 爬蟲（API Key → Playwright Crawler）；抓不到 CSS 規則會讓角色推斷不足。</li>
+                          <li>提供更多 CSS 變數/內嵌 style：有自訂樣式時，優先在頁面/快照中保留 <code className="px-1 py-0.5 bg-ctp-surface1 rounded text-ctp-text">--color-*</code>、<code className="px-1 py-0.5 bg-ctp-surface1 rounded text-ctp-text">--theme-*</code> 等 token。</li>
+                          <li>避免過度簡化的 HTML：若使用靜態快照/上傳資料夾，請包含主要 CSS 檔，讓 class/變數分析更完整。</li>
+                        </ul>
                       </div>
                     </div>
                   )}

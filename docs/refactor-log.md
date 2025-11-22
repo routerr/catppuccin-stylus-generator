@@ -55,3 +55,20 @@ Documenting milestones, benchmarks, and near-finish states for the Catppuccin th
 - Playwright status badge near the crawler endpoint with last test time.
 - Guardrails: single retry on 429/503 and clearer parse-error toast for AI calls.
 - Style polish: extend accent-plan coverage to alerts/notifications and make badge/card/table accents toggleable in the UI.
+
+## Later Steps (queued)
+- Guardrails & retries: wrap AI calls with one retry on 429/503 and expand parse-error warnings in UI.
+- Accent coverage polish: finer control for alerts/notifications and badge/card/table toggles.
+- Contrast engine (Phase 5): WCAG-AA validation + auto-adjustments for text/background pairs.
+- Docs cleanup: README/Quickstart/Cloud Playwright updated for optional crawler, env `CRAWLER_TIMEOUT`, and tips on when to prefer HTTP fetch for richer CSS/class discovery.
+
+## 2025-11-15 — Guardrail Retry + Docs Refresh
+- Added single-retry/backoff for 429/503 in mode detection and Ollama requests (OpenRouter/Chutes already retried).
+- Prevented badge/card/table/alert accent defaults from overriding when explicit class grouping exists (UserStyle generator).
+- Palette diagnostics panel now shows remediation tips.
+- Updated README/QUICKSTART/Cloud Playwright for optional crawler, `CRAWLER_PORT/KEY/TIMEOUT`, and HTTP vs Playwright guidance for CSS/class coverage.
+
+## 2025-11-15 — Contrast Warnings & Role-Aware Accents
+- Mapping pipeline now emits contrast warnings (text vs backgrounds, accent vs surfaces) and will fallback to palette text when ratios fail; warnings surface in diagnostics.
+- UserStyle class colors now prioritize AI role guesses and class-name hints (CTA → accent, nav/link → bi-accent1, badge/tag → bi-accent2; status roles map to Catppuccin greens/yellows/reds/sapphires). Cycle fallback remains for variety.
+- Playwright badge shows last test time and RTT; last error surfaced when falling back to HTTP.

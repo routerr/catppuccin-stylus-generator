@@ -51,11 +51,13 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ## Step 3: Crawl a URL
 
 - Paste any public URL into the Generate card.
-- For JS-heavy sites, run the bundled Playwright crawler:
+- For JS-heavy sites, run the bundled Playwright crawler (optional):
   ```bash
-  npm run crawler:serve
+  npm run crawler:serve             # defaults to http://localhost:8787/crawl
+  # env: CRAWLER_PORT=8787 CRAWLER_KEY=your-token CRAWLER_TIMEOUT=60000
   ```
   Then paste `http://localhost:8787/crawl` (or your tunnel) + API key into **API Key Configuration → Playwright Crawler**.
+  If you want richer CSS/class discovery and the site works without JS, you can skip Playwright and use the built-in HTTP fetch.
 
 ---
 
@@ -119,6 +121,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ### "Failed to fetch website" error
 - **Enable Playwright**: Start `npm run crawler:serve` and set the endpoint
 - **Check URL**: Ensure it's a valid public URL
+- **Adjust timeout**: For slow sites, run `CRAWLER_TIMEOUT=90000 npm run crawler:serve`
 
 ### "AI analysis failed" error
 - Check your API key is correct
@@ -128,6 +131,8 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ### Generated theme looks wrong
 - Try a different AI model (results vary)
 - Ensure Playwright crawler is running for JS-heavy pages
+- If class coverage drops with Playwright (blocked external CSS), retry with HTTP-only fetch
+- Check Palette Diagnostics for contrast warnings; the generator will auto-fallback to safer text colors when needed. Class colors favor role guesses (CTA → accent, nav/link → bi-accent1, badge/tag → bi-accent2) to keep variety.
 - Some sites have complex styling that needs manual tweaking
 
 ### Blank page after deployment

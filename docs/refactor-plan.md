@@ -171,6 +171,12 @@ This document tracks the end-to-end rebuild to improve generated themes across v
 
 **Benchmark Update Trigger**: GUI with cleaned controls + doc updates merged locally.
 
+**Status — Docs & Tips Updated (2025-11-15)**
+- README/QUICKSTART/Cloud Playwright refreshed for optional crawler, env vars (CRAWLER_PORT/KEY/TIMEOUT), and HTTP vs Playwright guidance.
+- Palette diagnostics panel now surfaces remediation tips when warnings appear.
+- Guardrail retries partially added (429/503 for mode detection + Ollama); full guardrail pass still pending.
+- Contrast warnings now emitted from the palette mapping pipeline; text will fallback to safer palette tokens when ratios fail, and warnings surface in diagnostics. Class colors prioritize AI role guesses and class-name hints to spread accent/bi-accent coverage.
+
 ---
 
 ### Phase 8 — Verification & Rollout

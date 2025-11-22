@@ -15,10 +15,11 @@ You can host the bundled Playwright crawler on Render with a single click. This 
 ## 3. Configure the app
 1. In the Catppuccin Theme Generator UI, open **API Key Configuration → Playwright Crawler**.
 2. Set the endpoint to `https://<service>.onrender.com/crawl`.
-3. (Optional) Add a `CRAWLER_KEY` env var in Render for security, then fill the same key in the app.
+3. (Optional) Add a `CRAWLER_KEY` env var in Render for security, then fill the same key in the app. You can also set `CRAWLER_TIMEOUT` (ms) if some sites need longer than the default 60000.
 
 The UI will now use the cloud Playwright server. No local setup required.
 
 Troubleshooting:
 - If Render logs show “Chromium browser is not installed”, redeploy (the Dockerfile runs `npx playwright install chromium`).
+- If crawls time out on heavier sites, raise `CRAWLER_TIMEOUT` (e.g., `90000`) in Render env vars.
 - Slow cold starts? Playwright needs ~30s for the first launch after idle periods.
