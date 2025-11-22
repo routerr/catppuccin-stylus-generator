@@ -49,7 +49,7 @@ export function ServiceSelector({
     <div className="space-y-6">
       {/* Info Box */}
       <div className="bg-ctp-blue/20 border border-ctp-blue/30 rounded-lg p-4 text-sm text-ctp-blue">
-        <strong>Direct Fetching:</strong> This app now fetches websites directly using HTTP/HTTPS requests. No external crawler API needed!
+        <strong>URL Crawling:</strong> Paste a URL and we&apos;ll fetch it via our HTTP proxy or the Playwright crawler if you configure it in the API Key section.
       </div>
 
       {/* AI Provider Selection */}

@@ -100,12 +100,8 @@ export function generateCssTheme(
   
   // Apply contrast adjustments for hover state
   css += `a:hover, .link:hover {\n`;
-  if (contrast < 4.5) {
-    // For insufficient contrast, use a higher contrast text color
-    css += `  color: #ffffff; /* White text for better contrast */\n`;
-  } else {
-    css += `  color: var(--ctp-accent);\n`;
-  }
+  const safeText = palette.text.hex;
+  css += `  color: ${contrast < 4.5 ? safeText : 'var(--ctp-accent)'};\n`;
   css += `  background: linear-gradient(90deg, var(--ctp-accent) 0%, var(--ctp-bi-accent1) 50%, var(--ctp-bi-accent2) 100%);\n`;
   css += `}\n\n`;
 
@@ -118,11 +114,7 @@ export function generateCssTheme(
   const btnContrast = contrastRatio(btnTextHex, btnBgHex);
   
   css += `.btn-primary:hover {\n`;
-  if (btnContrast < 4.5) {
-    css += `  color: #ffffff; /* White text for better contrast */\n`;
-  } else {
-    css += `  color: var(--ctp-accent);\n`;
-  }
+  css += `  color: ${btnContrast < 4.5 ? safeText : 'var(--ctp-accent)'};\n`;
   css += `  background: linear-gradient(135deg, var(--ctp-accent) 0%, var(--ctp-bi-accent1) 50%, var(--ctp-bi-accent2) 100%);\n`;
   css += `}\n\n`;
 
@@ -135,11 +127,7 @@ export function generateCssTheme(
   const dangerContrast = contrastRatio(dangerTextHex, dangerBgHex);
   
   css += `.btn-destructive:hover {\n`;
-  if (dangerContrast < 4.5) {
-    css += `  color: #ffffff; /* White text for better contrast */\n`;
-  } else {
-    css += `  color: var(--ctp-base);\n`;
-  }
+  css += `  color: ${dangerContrast < 4.5 ? safeText : 'var(--ctp-base)'};\n`;
   css += `  background: linear-gradient(135deg, var(--ctp-red) 0%, var(--ctp-maroon) 50%, var(--ctp-peach) 100%);\n`;
   css += `}\n\n`;
 

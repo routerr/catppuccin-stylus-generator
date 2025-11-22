@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: catppuccin-playwright
+    env: docker
+    plan: free
+    autoDeploy: true
+    dockerfilePath: Dockerfile.playwright
+    envVars:
+      - key: PORT
+        value: "8787"

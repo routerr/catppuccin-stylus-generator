@@ -1,0 +1,540 @@
+{
+  "url": "https://claude.ai",
+  "hash": "95558abe7ee9cbeb793dd76f434a842e",
+  "tokens": {
+    "--accent-brand": {
+      "name": "--accent-brand",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-main-000": {
+      "name": "--accent-main-000",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-main-100": {
+      "name": "--accent-main-100",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-main-200": {
+      "name": "--accent-main-200",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-main-900": {
+      "name": "--accent-main-900",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-pro-000": {
+      "name": "--accent-pro-000",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-pro-100": {
+      "name": "--accent-pro-100",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-pro-200": {
+      "name": "--accent-pro-200",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-pro-900": {
+      "name": "--accent-pro-900",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-secondary-000": {
+      "name": "--accent-secondary-000",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-secondary-100": {
+      "name": "--accent-secondary-100",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-secondary-200": {
+      "name": "--accent-secondary-200",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--accent-secondary-900": {
+      "name": "--accent-secondary-900",
+      "value": "#hslify(@accent)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--bg-000": {
+      "name": "--bg-000",
+      "value": "#hslify(@mantle)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--bg-100": {
+      "name": "--bg-100",
+      "value": "#hslify(@base)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--bg-200": {
+      "name": "--bg-200",
+      "value": "#hslify(@base)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--bg-300": {
+      "name": "--bg-300",
+      "value": "#hslify(@surface0)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--bg-400": {
+      "name": "--bg-400",
+      "value": "#hslify(@surface1)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--bg-500": {
+      "name": "--bg-500",
+      "value": "#hslify(@surface2)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--border-000": {
+      "name": "--border-000",
+      "value": "#hslify(@base)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--border-100": {
+      "name": "--border-100",
+      "value": "#hslify(@crust)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--border-200": {
+      "name": "--border-200",
+      "value": "#hslify(@crust)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--border-300": {
+      "name": "--border-300",
+      "value": "#hslify(@overlay0)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--border-400": {
+      "name": "--border-400",
+      "value": "#hslify(@overlay1)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--border-500": {
+      "name": "--border-500",
+      "value": "#hslify(@overlay2)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--danger-000": {
+      "name": "--danger-000",
+      "value": "#hslify(@maroon)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "semantic"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--danger-100": {
+      "name": "--danger-100",
+      "value": "#hslify(@red)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "semantic"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--danger-200": {
+      "name": "--danger-200",
+      "value": "#hslify(@red)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "semantic"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--danger-900": {
+      "name": "--danger-900",
+      "value": "#hslify(@pink)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "semantic"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--oncolor-000": {
+      "name": "--oncolor-000",
+      "value": "#hslify(darken(@mantle, 5%))[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--oncolor-100": {
+      "name": "--oncolor-100",
+      "value": "#hslify(@mantle)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--oncolor-200": {
+      "name": "--oncolor-200",
+      "value": "#hslify(@mantle)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--oncolor-300": {
+      "name": "--oncolor-300",
+      "value": "#hslify(lighten(@mantle, 5%))[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--text-000": {
+      "name": "--text-000",
+      "value": "#hslify(darken(@text, 5%))[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--text-100": {
+      "name": "--text-100",
+      "value": "#hslify(@text)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--text-200": {
+      "name": "--text-200",
+      "value": "#hslify(@text)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--text-300": {
+      "name": "--text-300",
+      "value": "#hslify(@subtext0)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--text-400": {
+      "name": "--text-400",
+      "value": "#hslify(@subtext1)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--text-500": {
+      "name": "--text-500",
+      "value": "#hslify(@subtext0)[]",
+      "frequency": 0.02564102564102564,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    }
+  },
+  "roles": {
+    "accent.interactive": {
+      "token": "--accent-main-000",
+      "confidence": 0.6102564102564102,
+      "hints": [
+        "Matches interactive accent token",
+        "other"
+      ]
+    },
+    "danger.base": {
+      "token": "--danger-000",
+      "confidence": 0.6102564102564102,
+      "hints": [
+        "Matches danger color",
+        "semantic"
+      ]
+    }
+  },
+  "accents": {
+    "primary": "mauve",
+    "biAccents": {
+      "first": "maroon",
+      "second": "sky"
+    },
+    "weights": {
+      "primary": 0.65,
+      "secondary": 0.25,
+      "tertiary": 0.1
+    },
+    "seed": "9126d585638c426e6d322befc2f5bd3e"
+  },
+  "diagnostics": {
+    "cssVariableCount": 39,
+    "inferredRoles": [
+      "accent.interactive",
+      "danger.base"
+    ],
+    "unmappedTokens": [
+      "--accent-brand",
+      "--accent-main-100",
+      "--accent-main-200",
+      "--accent-main-900",
+      "--accent-pro-000",
+      "--accent-pro-100",
+      "--accent-pro-200",
+      "--accent-pro-900",
+      "--accent-secondary-000",
+      "--accent-secondary-100",
+      "--accent-secondary-200",
+      "--accent-secondary-900",
+      "--bg-000",
+      "--bg-100",
+      "--bg-200",
+      "--bg-300",
+      "--bg-400",
+      "--bg-500",
+      "--border-000",
+      "--border-100",
+      "--border-200",
+      "--border-300",
+      "--border-400",
+      "--border-500",
+      "--danger-100"
+    ],
+    "warnings": []
+  }
+}
