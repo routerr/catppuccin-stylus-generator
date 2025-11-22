@@ -6,14 +6,14 @@ import type {
   SelectorMapping,
   SVGColorMapping,
   ProcessedSVG,
-} from '../../types/deep-analysis';
+} from "../../types/deep-analysis";
 import type {
   CatppuccinFlavor,
   CatppuccinAccent,
   CatppuccinColor,
-} from '../../types/catppuccin';
-import { PRECOMPUTED_ACCENTS } from '../../utils/accent-schemes';
-import { generateSVGLESS } from '../../utils/deep-analysis/svg-analyzer';
+} from "../../types/catppuccin";
+import { PRECOMPUTED_ACCENTS } from "../../utils/accent-schemes";
+import { generateSVGLESS } from "../../utils/deep-analysis/svg-analyzer";
 
 export interface UserstyleV2Config {
   url: string;
@@ -23,28 +23,42 @@ export interface UserstyleV2Config {
   includeComments?: boolean;
 }
 
-const INDENT = '  ';
-const SECTION_COMMENT = '/* -------------------------------------------------------------------------- */';
+const INDENT = "  ";
+const SECTION_COMMENT =
+  "/* -------------------------------------------------------------------------- */";
 
 export function generateUserstyleV2(
   analysis: DeepAnalysisResult,
   mappings: MappingResult,
-  config: UserstyleV2Config,
+  config: UserstyleV2Config
 ): GeneratedTheme {
   const includeComments = config.includeComments ?? true;
-  const version = config.version ?? 'v2';
+  const version = config.version ?? "v2";
   const hostname = safeHostname(config.url);
   const accentSet = PRECOMPUTED_ACCENTS[config.flavor][config.mainAccent];
 
   const sections = {
     variables: buildVariableSection(mappings.variableMappings, includeComments),
-    svgs: buildSvgSection(mappings.svgMappings, mappings.processedSVGs, includeComments),
+    svgs: buildSvgSection(
+      mappings.svgMappings,
+      mappings.processedSVGs,
+      includeComments
+    ),
     selectors: buildSelectorSection(mappings.selectorMappings, includeComments),
     gradients: buildGradientSection(mappings.selectorMappings, includeComments),
-    fallbacks: buildFallbackSection(config.mainAccent, accentSet, includeComments),
+    fallbacks: buildFallbackSection(
+      config.mainAccent,
+      accentSet,
+      includeComments
+    ),
   };
 
-  const less = buildUserstyleDocument(hostname, analysis.mode, sections, includeComments);
+  const less = buildUserstyleDocument(
+    hostname,
+    analysis.mode,
+    sections,
+    includeComments
+  );
   const coverage = computeCoverage(mappings.stats);
 
   return {
@@ -63,30 +77,33 @@ export function generateUserstyleV2(
 
 function buildUserstyleDocument(
   hostname: string,
-  mode: DeepAnalysisResult['mode'],
-  sections: Record<'variables' | 'svgs' | 'selectors' | 'gradients' | 'fallbacks', string>,
-  includeComments: boolean,
+  mode: DeepAnalysisResult["mode"],
+  sections: Record<
+    "variables" | "svgs" | "selectors" | "gradients" | "fallbacks",
+    string
+  >,
+  includeComments: boolean
 ): string {
   const lines: string[] = [];
   if (includeComments) {
-    lines.push('/*');
-    lines.push(' * Catppuccin Masterpiece Theme');
-    lines.push(` * Generated for ${hostname || 'unknown host'}`);
-    lines.push(' * Automatically produced by the deep analysis pipeline.');
-    lines.push(' * Layout preservation guaranteed – colors only.');
-    lines.push(' */');
-    lines.push('');
+    lines.push("/*");
+    lines.push(" * Catppuccin Masterpiece Theme");
+    lines.push(` * Generated for ${hostname || "unknown host"}`);
+    lines.push(" * Automatically produced by the deep analysis pipeline.");
+    lines.push(" * Layout preservation guaranteed – colors only.");
+    lines.push(" */");
+    lines.push("");
   }
 
-  lines.push(`@-moz-document domain("${hostname || '*'}") {`);
+  lines.push(`@-moz-document domain("${hostname || "*"}") {`);
   lines.push(`${INDENT}#catppuccin(@flavor) {`);
 
   const sectionOrder: Array<[keyof typeof sections, string]> = [
-    ['variables', 'SECTION 1: CSS VARIABLES (highest priority)'],
-    ['svgs', 'SECTION 2: SVG REPLACEMENTS'],
-    ['selectors', 'SECTION 3: SITE-SPECIFIC SELECTORS'],
-    ['gradients', 'SECTION 4: HOVER & GRADIENT ENHANCEMENTS'],
-    ['fallbacks', 'SECTION 5: FALLBACK GUARDS'],
+    ["variables", "SECTION 1: CSS VARIABLES (highest priority)"],
+    ["svgs", "SECTION 2: SVG REPLACEMENTS"],
+    ["selectors", "SECTION 3: SITE-SPECIFIC SELECTORS"],
+    ["gradients", "SECTION 4: HOVER & GRADIENT ENHANCEMENTS"],
+    ["fallbacks", "SECTION 5: FALLBACK GUARDS"],
   ];
 
   sectionOrder.forEach(([key, title]) => {
@@ -100,7 +117,7 @@ function buildUserstyleDocument(
       lines.push(`${INDENT}${SECTION_COMMENT}`);
     }
     lines.push(indentBlock(content, 2));
-    lines.push('');
+    lines.push("");
   });
 
   if (includeComments) {
@@ -110,86 +127,103 @@ function buildUserstyleDocument(
   lines.push(`${INDENT}}`);
   const modeSelectors = buildModeSelectors(mode);
   if (modeSelectors.length > 0) {
-    lines.push('');
+    lines.push("");
     if (includeComments) {
       lines.push(`${INDENT}/* Invoke Catppuccin mixin for detected mode */`);
     }
     modeSelectors.forEach((selector, index) => {
-      const suffix = index === modeSelectors.length - 1 ? ' {' : ',';
+      const suffix = index === modeSelectors.length - 1 ? " {" : ",";
       lines.push(`${INDENT}${selector}${suffix}`);
     });
     lines.push(`${INDENT}${INDENT}#catppuccin(@flavor);`);
     lines.push(`${INDENT}}`);
   }
-  lines.push('}');
+  lines.push("}");
 
-  const output = lines.join('\n');
+  const output = lines.join("\n");
 
   // Final validation: ensure braces are balanced
   if (!hasMatchedBraces(output)) {
-    console.error('❌ Generated LESS has unmatched braces! Attempting to fix...');
+    console.error(
+      "❌ Generated LESS has unmatched braces! Attempting to fix..."
+    );
     // Count missing braces
     let depth = 0;
     for (const char of output) {
-      if (char === '{') depth++;
-      else if (char === '}') depth--;
+      if (char === "{") depth++;
+      else if (char === "}") depth--;
     }
     if (depth > 0) {
       // Missing closing braces - add them
-      return output + '\n}'.repeat(depth);
+      return output + "\n}".repeat(depth);
     } else if (depth < 0) {
       // Too many closing braces - remove them from the end
-      const fixed = output.split('\n').slice(0, Math.abs(depth));
-      return fixed.join('\n');
+      const fixed = output.split("\n").slice(0, Math.abs(depth));
+      return fixed.join("\n");
     }
   }
 
   return output;
 }
 
-function buildVariableSection(mappings: VariableMapping[], includeComments: boolean): string {
+function buildVariableSection(
+  mappings: VariableMapping[],
+  includeComments: boolean
+): string {
   if (mappings.length === 0) {
-    return includeComments ? '/* No CSS variables detected for direct mapping */' : '';
+    return includeComments
+      ? "/* No CSS variables detected for direct mapping */"
+      : "";
   }
 
   const lines: string[] = [];
   const declarations: string[] = [];
-  mappings.forEach(mapping => {
+  mappings.forEach((mapping) => {
     const colorToken = toToken(mapping.catppuccin);
-    const comment = includeComments ? ` // ${mapping.reason}` : '';
-    declarations.push(`${INDENT}${mapping.original}: ${colorToken} !important;${comment}`);
+    const comment = includeComments ? ` // ${mapping.reason}` : "";
+    declarations.push(
+      `${INDENT}${mapping.original}: ${colorToken} !important;${comment}`
+    );
   });
 
   if (includeComments) {
-    lines.push('/* Apply Catppuccin colors to existing CSS custom properties */');
+    lines.push(
+      "/* Apply Catppuccin colors to existing CSS custom properties */"
+    );
   }
 
-  lines.push(':root {');
+  lines.push(":root {");
   lines.push(...declarations);
-  lines.push('}');
+  lines.push("}");
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 function buildSvgSection(
   svgMappings: Map<string, SVGColorMapping>,
   processedSVGs: ProcessedSVG[],
-  includeComments: boolean,
+  includeComments: boolean
 ): string {
   if (processedSVGs.length === 0) {
-    return includeComments ? '/* No SVG colors detected – skipping icon replacement */' : '';
+    return includeComments
+      ? "/* No SVG colors detected – skipping icon replacement */"
+      : "";
   }
 
   const lines: string[] = [];
 
   if (includeComments) {
-    lines.push('/* Re-color inline SVG assets using Catppuccin accents */');
-    svgMappings.forEach(mapping => {
-      lines.push(`/* ${mapping.svgPurpose}: ${mapping.originalColor} → ${toToken(mapping.catppuccinColor)} (${mapping.reason}) */`);
+    lines.push("/* Re-color inline SVG assets using Catppuccin accents */");
+    svgMappings.forEach((mapping) => {
+      lines.push(
+        `/* ${mapping.svgPurpose}: ${mapping.originalColor} → ${toToken(
+          mapping.catppuccinColor
+        )} (${mapping.reason}) */`
+      );
     });
   }
 
-  processedSVGs.forEach(processed => {
+  processedSVGs.forEach((processed) => {
     try {
       const block = generateSVGLESS(processed).trim();
       if (!block) {
@@ -197,33 +231,43 @@ function buildSvgSection(
       }
       // Validate that the block has matched braces
       if (!hasMatchedBraces(block)) {
-        console.warn(`⚠️  Skipping SVG with unmatched braces: ${processed.selector}`);
+        console.warn(
+          `⚠️  Skipping SVG with unmatched braces: ${processed.selector}`
+        );
         return;
       }
       lines.push(block);
-      lines.push('');
+      lines.push("");
     } catch (error) {
-      console.warn(`⚠️  Failed to generate LESS for SVG: ${processed.selector}`, error);
+      console.warn(
+        `⚠️  Failed to generate LESS for SVG: ${processed.selector}`,
+        error
+      );
     }
   });
 
-  if (lines[lines.length - 1] === '') {
+  if (lines[lines.length - 1] === "") {
     lines.pop();
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
-function buildSelectorSection(mappings: SelectorMapping[], includeComments: boolean): string {
+function buildSelectorSection(
+  mappings: SelectorMapping[],
+  includeComments: boolean
+): string {
   if (mappings.length === 0) {
-    return includeComments ? '/* No selector-level mappings generated */' : '';
+    return includeComments ? "/* No selector-level mappings generated */" : "";
   }
 
   const lines: string[] = [];
-  mappings.forEach(mapping => {
+  mappings.forEach((mapping) => {
     const selector = sanitizeSelector(mapping.selector);
     if (!selector) {
-      console.warn(`⚠️  Skipping mapping with invalid selector: ${mapping.selector}`);
+      console.warn(
+        `⚠️  Skipping mapping with invalid selector: ${mapping.selector}`
+      );
       return;
     }
 
@@ -231,33 +275,38 @@ function buildSelectorSection(mappings: SelectorMapping[], includeComments: bool
       lines.push(`/* ${mapping.reason} */`);
     }
     lines.push(`${selector} {`);
-    COLOR_PROPERTIES.forEach(property => {
+    COLOR_PROPERTIES.forEach((property) => {
       const color = mapping.properties[property];
       if (!color) {
         return;
       }
       const token = toToken(color);
-      const important = mapping.important ? ' !important' : '';
+      const important = mapping.important ? " !important" : "";
       lines.push(`${INDENT}${kebabCase(property)}: ${token}${important};`);
     });
-    lines.push('}');
-    lines.push('');
+    lines.push("}");
+    lines.push("");
   });
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
-function buildGradientSection(mappings: SelectorMapping[], includeComments: boolean): string {
-  const gradientRules = mappings.filter(mapping => mapping.hoverGradient);
+function buildGradientSection(
+  mappings: SelectorMapping[],
+  includeComments: boolean
+): string {
+  const gradientRules = mappings.filter((mapping) => mapping.hoverGradient);
   if (gradientRules.length === 0) {
-    return includeComments ? '/* No hover gradients generated */' : '';
+    return includeComments ? "/* No hover gradients generated */" : "";
   }
 
   const lines: string[] = [];
-  gradientRules.forEach(mapping => {
+  gradientRules.forEach((mapping) => {
     const selector = sanitizeSelector(mapping.selector);
     if (!selector) {
-      console.warn(`⚠️  Skipping gradient with invalid selector: ${mapping.selector}`);
+      console.warn(
+        `⚠️  Skipping gradient with invalid selector: ${mapping.selector}`
+      );
       return;
     }
 
@@ -268,46 +317,50 @@ function buildGradientSection(mappings: SelectorMapping[], includeComments: bool
     lines.push(`${selector}:hover {`);
     const mainToken = toToken(gradient.mainColor);
     const accentToken = toToken(gradient.biAccent);
-    lines.push(`${INDENT}background: linear-gradient(${Math.round(gradient.angle)}deg, ${mainToken}, ${accentToken});`);
+    lines.push(
+      `${INDENT}background: linear-gradient(${Math.round(
+        gradient.angle
+      )}deg, ${mainToken}, ${accentToken});`
+    );
     lines.push(`${INDENT}color: @text;`);
-    lines.push('}');
-    lines.push('');
+    lines.push("}");
+    lines.push("");
   });
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 function buildFallbackSection(
   mainAccent: CatppuccinAccent,
   accentSet: { biAccent1: CatppuccinAccent; biAccent2: CatppuccinAccent },
-  includeComments: boolean,
+  includeComments: boolean
 ): string {
   const lines: string[] = [];
   if (includeComments) {
-    lines.push('/* Guard gradient text and provide generic color fallbacks */');
+    lines.push("/* Guard gradient text and provide generic color fallbacks */");
   }
 
   const revertDeclarations = [
-    'color: revert !important;',
-    'background: revert !important;',
-    'background-color: revert !important;',
-    'background-image: revert !important;',
-    '-webkit-background-clip: revert !important;',
-    'background-clip: revert !important;',
-    '-webkit-text-fill-color: revert !important;',
-    'text-fill-color: revert !important;',
+    "color: revert !important;",
+    "background: revert !important;",
+    "background-color: revert !important;",
+    "background-image: revert !important;",
+    "-webkit-background-clip: revert !important;",
+    "background-clip: revert !important;",
+    "-webkit-text-fill-color: revert !important;",
+    "text-fill-color: revert !important;",
   ];
 
   const pushRevertBlock = (selectors: string[], comment?: string) => {
-    lines.push(`${selectors.join(',\n')} {`);
+    lines.push(`${selectors.join(",\n")} {`);
     if (includeComments && comment) {
       lines.push(`${INDENT}${comment}`);
     }
-    revertDeclarations.forEach(declaration => {
+    revertDeclarations.forEach((declaration) => {
       lines.push(`${INDENT}${declaration}`);
     });
-    lines.push('}');
-    lines.push('');
+    lines.push("}");
+    lines.push("");
   };
 
   pushRevertBlock(
@@ -318,11 +371,11 @@ function buildFallbackSection(
       '[class*="from-"]',
       '[class*="via-"]',
       '[class*="to-"]',
-      '.bg-clip-text',
-      '.text-transparent',
-      '.text-clip',
+      ".bg-clip-text",
+      ".text-transparent",
+      ".text-clip",
     ],
-    '/* Preserve original gradient text colors */',
+    "/* Preserve original gradient text colors */"
   );
 
   pushRevertBlock(
@@ -352,7 +405,7 @@ function buildFallbackSection(
       'h6 [class*="text-transparent"]',
       'h6 [class*="bg-gradient"]',
     ],
-    '/* Guard gradient descendants from theme overrides */',
+    "/* Guard gradient descendants from theme overrides */"
   );
 
   const headingSelectors = [
@@ -363,48 +416,55 @@ function buildFallbackSection(
     'h5:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"]))',
     'h6:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"]))',
   ];
-  lines.push(`${headingSelectors.join(',\n')} {`);
+  lines.push(`${headingSelectors.join(",\n")} {`);
   if (includeComments) {
-    lines.push(`${INDENT}/* Allow headings to use theme text colors when no gradient children exist */`);
+    lines.push(
+      `${INDENT}/* Allow headings to use theme text colors when no gradient children exist */`
+    );
   }
   lines.push(`${INDENT}color: @text;`);
-  lines.push('}');
-  lines.push('');
+  lines.push("}");
+  lines.push("");
 
-  lines.push(`a:not([class*="bg-clip-text"]):not([class*="text-transparent"]) {`);
+  lines.push(
+    `a:not([class*="bg-clip-text"]):not([class*="text-transparent"]) {`
+  );
   lines.push(`${INDENT}color: ${toToken(mainAccent)};`);
-  lines.push('}');
-  lines.push('');
+  lines.push("}");
+  lines.push("");
 
   lines.push('button, [role="button"] {');
   lines.push(`${INDENT}color: @text;`);
   lines.push(`${INDENT}background-color: ${toToken(mainAccent)};`);
-  lines.push('}');
-  lines.push('');
+  lines.push("}");
+  lines.push("");
 
-  lines.push('input:focus, textarea:focus, select:focus {');
+  lines.push("input:focus, textarea:focus, select:focus {");
   lines.push(`${INDENT}outline-color: ${toToken(accentSet.biAccent1)};`);
-  lines.push('}');
-  lines.push('');
+  lines.push("}");
+  lines.push("");
 
   lines.push('.badge, .tag, [class*="badge"], [class*="tag"] {');
   lines.push(`${INDENT}background-color: ${toToken(accentSet.biAccent2)};`);
   lines.push(`${INDENT}color: @text;`);
-  lines.push('}');
+  lines.push("}");
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
-function computeCoverage(stats: MappingResult['stats']) {
-  const variableCoverage = stats.totalVariables === 0
-    ? 0
-    : Math.round((stats.mappedVariables / stats.totalVariables) * 100);
-  const svgCoverage = stats.totalSVGs === 0
-    ? 0
-    : Math.round((stats.processedSVGs / stats.totalSVGs) * 100);
-  const selectorCoverage = stats.totalSelectors === 0
-    ? 0
-    : Math.round((stats.mappedSelectors / stats.totalSelectors) * 100);
+function computeCoverage(stats: MappingResult["stats"]) {
+  const variableCoverage =
+    stats.totalVariables === 0
+      ? 0
+      : Math.round((stats.mappedVariables / stats.totalVariables) * 100);
+  const svgCoverage =
+    stats.totalSVGs === 0
+      ? 0
+      : Math.round((stats.processedSVGs / stats.totalSVGs) * 100);
+  const selectorCoverage =
+    stats.totalSelectors === 0
+      ? 0
+      : Math.round((stats.mappedSelectors / stats.totalSelectors) * 100);
 
   return {
     variableCoverage,
@@ -415,13 +475,18 @@ function computeCoverage(stats: MappingResult['stats']) {
 
 function safeHostname(url: string): string {
   try {
-    return new URL(url).hostname;
+    const urlObj = new URL(url);
+    if (urlObj.protocol === "file:") {
+      const filename = urlObj.pathname.split("/").pop() || url;
+      return filename.replace(/["';(){}]/g, "");
+    }
+    return urlObj.hostname.replace(/["';(){}]/g, "");
   } catch (error) {
-    return url;
+    return url.replace(/["';(){}]/g, "");
   }
 }
 
-function buildModeSelectors(mode: DeepAnalysisResult['mode']): string[] {
+function buildModeSelectors(mode: DeepAnalysisResult["mode"]): string[] {
   const selectors = [
     `:root[data-mode="${mode}"]`,
     `:root[data-theme="${mode}"]`,
@@ -431,8 +496,8 @@ function buildModeSelectors(mode: DeepAnalysisResult['mode']): string[] {
     `body[data-mode="${mode}"]`,
   ];
 
-  if (mode === 'light') {
-    selectors.push(':root');
+  if (mode === "light") {
+    selectors.push(":root");
   }
 
   return Array.from(new Set(selectors));
@@ -441,9 +506,9 @@ function buildModeSelectors(mode: DeepAnalysisResult['mode']): string[] {
 function indentBlock(block: string, depth: number): string {
   const prefix = INDENT.repeat(depth);
   return block
-    .split('\n')
-    .map(line => (line.length > 0 ? `${prefix}${line}` : ''))
-    .join('\n');
+    .split("\n")
+    .map((line) => (line.length > 0 ? `${prefix}${line}` : ""))
+    .join("\n");
 }
 
 function toToken(color: CatppuccinColor | CatppuccinAccent): string {
@@ -451,15 +516,15 @@ function toToken(color: CatppuccinColor | CatppuccinAccent): string {
 }
 
 function kebabCase(value: string): string {
-  return value.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+  return value.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 }
 
-const COLOR_PROPERTIES: Array<keyof SelectorMapping['properties']> = [
-  'color',
-  'backgroundColor',
-  'borderColor',
-  'fill',
-  'stroke',
+const COLOR_PROPERTIES: Array<keyof SelectorMapping["properties"]> = [
+  "color",
+  "backgroundColor",
+  "borderColor",
+  "fill",
+  "stroke",
 ];
 
 /**
@@ -468,9 +533,9 @@ const COLOR_PROPERTIES: Array<keyof SelectorMapping['properties']> = [
 function hasMatchedBraces(text: string): boolean {
   let depth = 0;
   for (const char of text) {
-    if (char === '{') {
+    if (char === "{") {
       depth++;
-    } else if (char === '}') {
+    } else if (char === "}") {
       depth--;
       if (depth < 0) {
         return false;
@@ -485,8 +550,19 @@ function hasMatchedBraces(text: string): boolean {
  */
 function sanitizeSelector(selector: string): string {
   // Remove dangerous characters that could break CSS syntax
-  return selector
-    .replace(/[{}]/g, '') // Remove braces
-    .replace(/\s+/g, ' ') // Normalize whitespace
+  const cleaned = selector
+    .replace(/[{}]/g, "") // Remove braces
+    .replace(/\s+/g, " ") // Normalize whitespace
     .trim();
+
+  // Check for balanced parentheses
+  let depth = 0;
+  for (const char of cleaned) {
+    if (char === "(") depth++;
+    else if (char === ")") depth--;
+    if (depth < 0) return ""; // Unbalanced (too many closing)
+  }
+  if (depth !== 0) return ""; // Unbalanced (too many opening)
+
+  return cleaned;
 }

@@ -1,0 +1,1196 @@
+
+    @lightFlavor: mocha;
+    @darkFlavor: mocha;
+    @accentColor: blue;
+  /* ==UserStyle==
+@name Openrouter Ai Catppuccin
+@namespace github.com/catppuccin/userstyles/styles/openrouter-ai
+@homepageURL https://github.com/catppuccin/userstyles/tree/main/styles/openrouter-ai
+@version 2025.11.22
+@description Soothing pastel theme for Openrouter Ai
+@author Catppuccin
+@license MIT
+
+@preprocessor less
+@var select lightFlavor "Light Flavor" ["latte:Latte", "frappe:Frappé", "macchiato:Macchiato", "mocha:Mocha*"]
+@var select darkFlavor "Dark Flavor" ["latte:Latte", "frappe:Frappé", "macchiato:Macchiato", "mocha:Mocha*"]
+@var select accentColor "Accent" ["rosewater:Rosewater", "flamingo:Flamingo", "pink:Pink", "mauve:Mauve", "red:Red", "maroon:Maroon", "peach:Peach", "yellow:Yellow", "green:Green", "teal:Teal", "sky:Sky", "sapphire:Sapphire", "blue:Blue*", "lavender:Lavender"]
+==/UserStyle== */
+
+@catppuccin: {
+  @latte: {
+    rosewater: #dc8a78; flamingo: #dd7878; pink: #ea76cb; mauve: #8839ef;
+    red: #d20f39; maroon: #e64553; peach: #fe640b; yellow: #df8e1d;
+    green: #40a02b; teal: #179299; sky: #04a5e5; sapphire: #209fb5;
+    blue: #1e66f5; lavender: #7287fd;
+    text: #4c4f69; subtext1: #5c5f77; subtext0: #6c6f85;
+    overlay2: #7c7f93; overlay1: #8c8fa1; overlay0: #9ca0b0;
+    surface2: #acb0be; surface1: #bcc0cc; surface0: #ccd0da;
+    base: #eff1f5; mantle: #e6e9ef; crust: #dce0e8;
+  };
+  @frappe: {
+    rosewater: #f2d5cf; flamingo: #eebebe; pink: #f4b8e4; mauve: #ca9ee6;
+    red: #e78284; maroon: #ea999c; peach: #ef9f76; yellow: #e5c890;
+    green: #a6d189; teal: #81c8be; sky: #99d1db; sapphire: #85c1dc;
+    blue: #8caaee; lavender: #babbf1;
+    text: #c6d0f5; subtext1: #b5bfe2; subtext0: #a5adce;
+    overlay2: #949cbb; overlay1: #838ba7; overlay0: #737994;
+    surface2: #626880; surface1: #51576d; surface0: #414559;
+    base: #303446; mantle: #292c3c; crust: #232634;
+  };
+  @macchiato: {
+    rosewater: #f4dbd6; flamingo: #f0c6c6; pink: #f5bde6; mauve: #c6a0f6;
+    red: #ed8796; maroon: #ee99a0; peach: #f5a97f; yellow: #eed49f;
+    green: #a6da95; teal: #8bd5ca; sky: #91d7e3; sapphire: #7dc4e4;
+    blue: #8aadf4; lavender: #b7bdf8;
+    text: #cad3f5; subtext1: #b8c0e0; subtext0: #a5adcb;
+    overlay2: #939ab7; overlay1: #8087a2; overlay0: #6e738d;
+    surface2: #5b6078; surface1: #494d64; surface0: #363a4f;
+    base: #24273a; mantle: #1e2030; crust: #181926;
+  };
+  @mocha: {
+    rosewater: #f5e0dc; flamingo: #f2cdcd; pink: #f5c2e7; mauve: #cba6f7;
+    red: #f38ba8; maroon: #eba0ac; peach: #fab387; yellow: #f9e2af;
+    green: #a6e3a1; teal: #94e2d5; sky: #89dceb; sapphire: #74c7ec;
+    blue: #89b4fa; lavender: #b4befe;
+    text: #cdd6f4; subtext1: #bac2de; subtext0: #a6adc8;
+    overlay2: #9399b2; overlay1: #7f849c; overlay0: #6c7086;
+    surface2: #585b70; surface1: #45475a; surface0: #313244;
+    base: #1e1e2e; mantle: #181825; crust: #11111b;
+  };
+};
+
+  #catppuccin(@flavorName, @accentName) {
+    @palette: @catppuccin[@@flavorName];
+    @rosewater: @palette[rosewater];
+    @flamingo: @palette[flamingo];
+    @pink: @palette[pink];
+    @mauve: @palette[mauve];
+    @red: @palette[red];
+    @maroon: @palette[maroon];
+    @peach: @palette[peach];
+    @yellow: @palette[yellow];
+    @green: @palette[green];
+    @teal: @palette[teal];
+    @sky: @palette[sky];
+    @sapphire: @palette[sapphire];
+    @blue: @palette[blue];
+    @lavender: @palette[lavender];
+    @text: @palette[text];
+    @subtext1: @palette[subtext1];
+    @subtext0: @palette[subtext0];
+    @overlay2: @palette[overlay2];
+    @overlay1: @palette[overlay1];
+    @overlay0: @palette[overlay0];
+    @surface2: @palette[surface2];
+    @surface1: @palette[surface1];
+    @surface0: @palette[surface0];
+    @base: @palette[base];
+    @mantle: @palette[mantle];
+    @crust: @palette[crust];
+    @accent: @@accentName;
+
+    color-scheme: if(@flavorName = latte, light, dark);
+  }
+
+  #apply-catppuccin(@flavorName, @accentName) {
+    /* Load official Catppuccin palette */
+    #catppuccin(@flavorName, @accentName);
+
+    /* Load accent scheme */
+    @flavor: @flavorName;
+    #accent-scheme(@accentName, @flavorName);
+
+    ::selection { background-color: fade(@accent, 30%); }
+
+    /* -------------------------------------------------------------------------- */
+    /* SECTION 1: CSS VARIABLES (highest priority) */
+    /* -------------------------------------------------------------------------- */
+    /* Apply Catppuccin colors to existing CSS custom properties */
+    /* Variables dynamically resolve based on active flavor/accent */
+    & {
+      --background: @base !important; /* Background */
+      --text: @text !important; /* Text */
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* SECTION 2: SVG REPLACEMENTS */
+    /* -------------------------------------------------------------------------- */
+    /* No SVG colors detected – skipping icon replacement */
+
+    /* -------------------------------------------------------------------------- */
+    /* SECTION 3: SITE-SPECIFIC SELECTORS */
+    /* -------------------------------------------------------------------------- */
+    /* Primary Button */
+    .btn-primary {
+      color: @base;
+      background-color: @accent;
+    }
+
+
+    /* -------------------------------------------------------------------------- */
+    /* SECTION 4: CASCADING GRADIENT SYSTEM */
+    /* -------------------------------------------------------------------------- */
+    /*
+     * Cascading Gradient System
+     * 
+     * Level 1: Elements using main-accent
+     *   → Gradients: main-accent + bi-accent-1 or bi-accent-2
+     * 
+     * Level 2: Elements using bi-accent-1 (from main-accent)
+     *   → Gradients: bi-accent-1 + bi1-sub-1 or bi1-sub-2
+     * 
+     * Level 3: Elements using bi-accent-2 (from main-accent)
+     *   → Gradients: bi-accent-2 + bi2-sub-1 or bi2-sub-2
+     */
+
+    /* Level 1: Main-accent gradients (70-80% of elements) */
+    /* Hover gradient for .btn-primary */
+    .btn-primary:hover,
+    .btn-primary:focus-visible {
+      background: linear-gradient(45deg, @accent, fade(@bi-accent-1, 12%));
+      color: @text;
+      transition: all 0.3s ease;
+    }
+
+    /* Standard gradient coverage for common interactive elements */
+
+    button:not([class*="gradient"]):not([class*="bg-clip"]):hover,
+    [role="button"]:not([class*="gradient"]):hover,
+    .btn:not([class*="gradient"]):hover,
+    .button:not([class*="gradient"]):hover {
+      background: linear-gradient(135deg, @accent, fade(@bi-accent-1, 12%));
+      transition: all 0.3s ease;
+    }
+
+    a:not([class*="gradient"]):not([class*="bg-clip"]):hover {
+      background: linear-gradient(45deg, @accent, fade(@bi-accent-2, 10%));
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      transition: all 0.3s ease;
+    }
+
+    /* Level 2: Cascading gradients for variety elements (bi-accent-1 as main) */
+
+    .badge:not([class*="gradient"]):hover,
+    .tag:not([class*="gradient"]):hover,
+    [class*="badge"]:not([class*="gradient"]):hover {
+      background: linear-gradient(90deg, @bi-accent-1, fade(@bi1-sub-1, 12%));
+      transition: all 0.3s ease;
+    }
+
+    /* Level 3: Cascading gradients for secondary elements (bi-accent-2 as main) */
+
+    .chip:not([class*="gradient"]):hover,
+    .pill:not([class*="gradient"]):hover,
+    [class*="chip"]:not([class*="gradient"]):hover {
+      background: linear-gradient(90deg, @bi-accent-2, fade(@bi2-sub-1, 12%));
+      transition: all 0.3s ease;
+    }
+
+    /* Comprehensive gradient coverage for maximum visual impact */
+
+    .card:not([class*="gradient"]):hover,
+    .panel:not([class*="gradient"]):hover,
+    [class*="card"]:not([class*="gradient"]):hover {
+      background: linear-gradient(180deg, @surface0, fade(@accent, 5%));
+      border-color: @accent;
+      transition: all 0.3s ease;
+    }
+
+    nav a:not([class*="gradient"]):hover,
+    .nav-item:not([class*="gradient"]):hover,
+    [role="navigation"] a:not([class*="gradient"]):hover {
+      background: linear-gradient(90deg, transparent, fade(@accent, 8%));
+      color: @accent;
+      transition: all 0.3s ease;
+    }
+
+    input:focus:not([class*="gradient"]),
+    textarea:focus:not([class*="gradient"]),
+    select:focus:not([class*="gradient"]) {
+      outline: 2px solid @accent;
+      box-shadow: 0 0 0 4px fade(@bi-accent-1, 15%);
+      transition: all 0.3s ease;
+    }
+
+    .tab:not([class*="gradient"]):hover,
+    [role="tab"]:not([class*="gradient"]):hover {
+      background: linear-gradient(180deg, fade(@bi-accent-1, 8%), transparent);
+      border-bottom-color: @bi-accent-1;
+      transition: all 0.3s ease;
+    }
+
+    li:not([class*="gradient"]):hover,
+    .list-item:not([class*="gradient"]):hover {
+      background: linear-gradient(90deg, transparent, fade(@bi-accent-2, 5%));
+      transition: all 0.3s ease;
+    }
+
+    .dropdown-item:not([class*="gradient"]):hover,
+    [role="menuitem"]:not([class*="gradient"]):hover {
+      background: linear-gradient(90deg, fade(@bi2-sub-1, 10%), @surface1);
+      color: @text;
+      transition: all 0.3s ease;
+    }
+
+    .active:not([class*="gradient"]),
+    .selected:not([class*="gradient"]),
+    [aria-selected="true"]:not([class*="gradient"]) {
+      background: linear-gradient(135deg, @accent, fade(@bi-accent-1, 15%));
+      color: @crust;
+    }
+
+
+    /* -------------------------------------------------------------------------- */
+    /* SECTION 5: FALLBACK GUARDS */
+    /* -------------------------------------------------------------------------- */
+    /* Guard gradient text and provide generic color fallbacks */
+    /* Fallbacks work dynamically with all flavor/accent combinations */
+    [class*="bg-clip-text"],
+    [class*="text-transparent"],
+    [class*="bg-gradient"],
+    [class*="from-"],
+    [class*="via-"],
+    [class*="to-"],
+    .bg-clip-text,
+    .text-transparent,
+    .text-clip {
+      /* Preserve original gradient text colors */
+      color: revert !important;
+      background: revert !important;
+      background-color: revert !important;
+      background-image: revert !important;
+      -webkit-background-clip: revert !important;
+      background-clip: revert !important;
+      -webkit-text-fill-color: revert !important;
+      text-fill-color: revert !important;
+    }
+
+    *[class*="bg-clip-text"],
+    *[class*="text-transparent"],
+    *[class*="bg-gradient"],
+    h1 [class*="bg-clip-text"],
+    h2 [class*="bg-clip-text"],
+    h3 [class*="bg-clip-text"],
+    h4 [class*="bg-clip-text"],
+    h5 [class*="bg-clip-text"],
+    h6 [class*="bg-clip-text"] {
+      /* Guard gradient descendants */
+      color: revert !important;
+      background: revert !important;
+      background-color: revert !important;
+      background-image: revert !important;
+      -webkit-background-clip: revert !important;
+      background-clip: revert !important;
+      -webkit-text-fill-color: revert !important;
+      text-fill-color: revert !important;
+    }
+
+    h1:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h2:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h3:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h4:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h5:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
+    h6:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])) {
+      color: @text;
+    }
+
+    a:not([class*="bg-clip-text"]):not([class*="text-transparent"]) {
+      color: @accent;
+    }
+
+    button, [role="button"] {
+      color: @text;
+      background-color: @accent;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline-color: @bi-accent-1;
+    }
+
+    .badge, .tag, [class*="badge"], [class*="tag"] {
+      background-color: @bi-accent-2;
+      color: @text;
+    }
+
+    code, pre, .code {
+      background-color: @surface0;
+      color: @text;
+      border: 1px solid @surface2;
+    }
+
+    blockquote {
+      border-left: 4px solid @accent;
+      background-color: @surface0;
+    }
+
+  }
+
+/*
+ * Accent Scheme Library - Cascading Bi-Accent System
+ * 
+ * Three-level gradient system:
+ * Level 1: main-accent → bi-accent1, bi-accent2
+ * Level 2: bi-accent1 → bi-accent1's bi-accents
+ * Level 3: bi-accent2 → bi-accent2's bi-accents
+ * 
+ * Usage: #accent-scheme(@mainAccent, @flavor)
+ */
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = blue) and (@flavor = mocha) {
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = rosewater) and (@flavor = latte) {
+  /* Main accent: rosewater */
+  @accent: @rosewater;
+  @bi-accent-1: @flamingo;
+  @bi-accent-2: @pink;
+
+  /* Cascading: bi-accent-1 (flamingo) → its bi-accents */
+  @bi1-sub-1: @rosewater;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (pink) → its bi-accents */
+  @bi2-sub-1: @rosewater;
+  @bi2-sub-2: @lavender;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = flamingo) and (@flavor = latte) {
+  /* Main accent: flamingo */
+  @accent: @flamingo;
+  @bi-accent-1: @rosewater;
+  @bi-accent-2: @pink;
+
+  /* Cascading: bi-accent-1 (rosewater) → its bi-accents */
+  @bi1-sub-1: @flamingo;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (pink) → its bi-accents */
+  @bi2-sub-1: @rosewater;
+  @bi2-sub-2: @lavender;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = pink) and (@flavor = latte) {
+  /* Main accent: pink */
+  @accent: @pink;
+  @bi-accent-1: @rosewater;
+  @bi-accent-2: @lavender;
+
+  /* Cascading: bi-accent-1 (rosewater) → its bi-accents */
+  @bi1-sub-1: @flamingo;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (lavender) → its bi-accents */
+  @bi2-sub-1: @pink;
+  @bi2-sub-2: @sapphire;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = mauve) and (@flavor = latte) {
+  /* Main accent: mauve */
+  @accent: @mauve;
+  @bi-accent-1: @maroon;
+  @bi-accent-2: @sky;
+
+  /* Cascading: bi-accent-1 (maroon) → its bi-accents */
+  @bi1-sub-1: @yellow;
+  @bi1-sub-2: @mauve;
+
+  /* Cascading: bi-accent-2 (sky) → its bi-accents */
+  @bi2-sub-1: @mauve;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = red) and (@flavor = latte) {
+  /* Main accent: red */
+  @accent: @red;
+  @bi-accent-1: @yellow;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (yellow) → its bi-accents */
+  @bi1-sub-1: @green;
+  @bi1-sub-2: @maroon;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = maroon) and (@flavor = latte) {
+  /* Main accent: maroon */
+  @accent: @maroon;
+  @bi-accent-1: @yellow;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (yellow) → its bi-accents */
+  @bi1-sub-1: @green;
+  @bi1-sub-2: @maroon;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = peach) and (@flavor = latte) {
+  /* Main accent: peach */
+  @accent: @peach;
+  @bi-accent-1: @green;
+  @bi-accent-2: @pink;
+
+  /* Cascading: bi-accent-1 (green) → its bi-accents */
+  @bi1-sub-1: @sapphire;
+  @bi1-sub-2: @yellow;
+
+  /* Cascading: bi-accent-2 (pink) → its bi-accents */
+  @bi2-sub-1: @rosewater;
+  @bi2-sub-2: @lavender;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = yellow) and (@flavor = latte) {
+  /* Main accent: yellow */
+  @accent: @yellow;
+  @bi-accent-1: @green;
+  @bi-accent-2: @maroon;
+
+  /* Cascading: bi-accent-1 (green) → its bi-accents */
+  @bi1-sub-1: @sapphire;
+  @bi1-sub-2: @yellow;
+
+  /* Cascading: bi-accent-2 (maroon) → its bi-accents */
+  @bi2-sub-1: @yellow;
+  @bi2-sub-2: @mauve;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = green) and (@flavor = latte) {
+  /* Main accent: green */
+  @accent: @green;
+  @bi-accent-1: @sapphire;
+  @bi-accent-2: @yellow;
+
+  /* Cascading: bi-accent-1 (sapphire) → its bi-accents */
+  @bi1-sub-1: @mauve;
+  @bi1-sub-2: @green;
+
+  /* Cascading: bi-accent-2 (yellow) → its bi-accents */
+  @bi2-sub-1: @green;
+  @bi2-sub-2: @maroon;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = teal) and (@flavor = latte) {
+  /* Main accent: teal */
+  @accent: @teal;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @sapphire;
+  @bi2-sub-2: @yellow;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = sky) and (@flavor = latte) {
+  /* Main accent: sky */
+  @accent: @sky;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @sapphire;
+  @bi2-sub-2: @yellow;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = sapphire) and (@flavor = latte) {
+  /* Main accent: sapphire */
+  @accent: @sapphire;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @sapphire;
+  @bi2-sub-2: @yellow;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = blue) and (@flavor = latte) {
+  /* Main accent: blue */
+  @accent: @blue;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @sapphire;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (sapphire) → its bi-accents */
+  @bi2-sub-1: @mauve;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = lavender) and (@flavor = latte) {
+  /* Main accent: lavender */
+  @accent: @lavender;
+  @bi-accent-1: @pink;
+  @bi-accent-2: @sapphire;
+
+  /* Cascading: bi-accent-1 (pink) → its bi-accents */
+  @bi1-sub-1: @rosewater;
+  @bi1-sub-2: @lavender;
+
+  /* Cascading: bi-accent-2 (sapphire) → its bi-accents */
+  @bi2-sub-1: @mauve;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = rosewater) and (@flavor = frappe) {
+  /* Main accent: rosewater */
+  @accent: @rosewater;
+  @bi-accent-1: @flamingo;
+  @bi-accent-2: @pink;
+
+  /* Cascading: bi-accent-1 (flamingo) → its bi-accents */
+  @bi1-sub-1: @rosewater;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (pink) → its bi-accents */
+  @bi2-sub-1: @rosewater;
+  @bi2-sub-2: @lavender;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = flamingo) and (@flavor = frappe) {
+  /* Main accent: flamingo */
+  @accent: @flamingo;
+  @bi-accent-1: @rosewater;
+  @bi-accent-2: @pink;
+
+  /* Cascading: bi-accent-1 (rosewater) → its bi-accents */
+  @bi1-sub-1: @flamingo;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (pink) → its bi-accents */
+  @bi2-sub-1: @rosewater;
+  @bi2-sub-2: @lavender;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = pink) and (@flavor = frappe) {
+  /* Main accent: pink */
+  @accent: @pink;
+  @bi-accent-1: @rosewater;
+  @bi-accent-2: @lavender;
+
+  /* Cascading: bi-accent-1 (rosewater) → its bi-accents */
+  @bi1-sub-1: @flamingo;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (lavender) → its bi-accents */
+  @bi2-sub-1: @pink;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = mauve) and (@flavor = frappe) {
+  /* Main accent: mauve */
+  @accent: @mauve;
+  @bi-accent-1: @maroon;
+  @bi-accent-2: @sky;
+
+  /* Cascading: bi-accent-1 (maroon) → its bi-accents */
+  @bi1-sub-1: @yellow;
+  @bi1-sub-2: @mauve;
+
+  /* Cascading: bi-accent-2 (sky) → its bi-accents */
+  @bi2-sub-1: @mauve;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = red) and (@flavor = frappe) {
+  /* Main accent: red */
+  @accent: @red;
+  @bi-accent-1: @yellow;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (yellow) → its bi-accents */
+  @bi1-sub-1: @green;
+  @bi1-sub-2: @maroon;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = maroon) and (@flavor = frappe) {
+  /* Main accent: maroon */
+  @accent: @maroon;
+  @bi-accent-1: @yellow;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (yellow) → its bi-accents */
+  @bi1-sub-1: @green;
+  @bi1-sub-2: @maroon;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = peach) and (@flavor = frappe) {
+  /* Main accent: peach */
+  @accent: @peach;
+  @bi-accent-1: @green;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (green) → its bi-accents */
+  @bi1-sub-1: @teal;
+  @bi1-sub-2: @maroon;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = yellow) and (@flavor = frappe) {
+  /* Main accent: yellow */
+  @accent: @yellow;
+  @bi-accent-1: @green;
+  @bi-accent-2: @maroon;
+
+  /* Cascading: bi-accent-1 (green) → its bi-accents */
+  @bi1-sub-1: @teal;
+  @bi1-sub-2: @maroon;
+
+  /* Cascading: bi-accent-2 (maroon) → its bi-accents */
+  @bi2-sub-1: @yellow;
+  @bi2-sub-2: @mauve;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = green) and (@flavor = frappe) {
+  /* Main accent: green */
+  @accent: @green;
+  @bi-accent-1: @teal;
+  @bi-accent-2: @maroon;
+
+  /* Cascading: bi-accent-1 (teal) → its bi-accents */
+  @bi1-sub-1: @blue;
+  @bi1-sub-2: @green;
+
+  /* Cascading: bi-accent-2 (maroon) → its bi-accents */
+  @bi2-sub-1: @yellow;
+  @bi2-sub-2: @mauve;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = teal) and (@flavor = frappe) {
+  /* Main accent: teal */
+  @accent: @teal;
+  @bi-accent-1: @blue;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (blue) → its bi-accents */
+  @bi1-sub-1: @mauve;
+  @bi1-sub-2: @teal;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @teal;
+  @bi2-sub-2: @maroon;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = sky) and (@flavor = frappe) {
+  /* Main accent: sky */
+  @accent: @sky;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @teal;
+  @bi2-sub-2: @maroon;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = sapphire) and (@flavor = frappe) {
+  /* Main accent: sapphire */
+  @accent: @sapphire;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @teal;
+  @bi2-sub-2: @maroon;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = blue) and (@flavor = frappe) {
+  /* Main accent: blue */
+  @accent: @blue;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @teal;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (teal) → its bi-accents */
+  @bi2-sub-1: @blue;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = lavender) and (@flavor = frappe) {
+  /* Main accent: lavender */
+  @accent: @lavender;
+  @bi-accent-1: @pink;
+  @bi-accent-2: @sky;
+
+  /* Cascading: bi-accent-1 (pink) → its bi-accents */
+  @bi1-sub-1: @rosewater;
+  @bi1-sub-2: @lavender;
+
+  /* Cascading: bi-accent-2 (sky) → its bi-accents */
+  @bi2-sub-1: @mauve;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = rosewater) and (@flavor = macchiato) {
+  /* Main accent: rosewater */
+  @accent: @rosewater;
+  @bi-accent-1: @flamingo;
+  @bi-accent-2: @pink;
+
+  /* Cascading: bi-accent-1 (flamingo) → its bi-accents */
+  @bi1-sub-1: @rosewater;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (pink) → its bi-accents */
+  @bi2-sub-1: @flamingo;
+  @bi2-sub-2: @lavender;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = flamingo) and (@flavor = macchiato) {
+  /* Main accent: flamingo */
+  @accent: @flamingo;
+  @bi-accent-1: @rosewater;
+  @bi-accent-2: @pink;
+
+  /* Cascading: bi-accent-1 (rosewater) → its bi-accents */
+  @bi1-sub-1: @flamingo;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (pink) → its bi-accents */
+  @bi2-sub-1: @flamingo;
+  @bi2-sub-2: @lavender;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = pink) and (@flavor = macchiato) {
+  /* Main accent: pink */
+  @accent: @pink;
+  @bi-accent-1: @flamingo;
+  @bi-accent-2: @lavender;
+
+  /* Cascading: bi-accent-1 (flamingo) → its bi-accents */
+  @bi1-sub-1: @rosewater;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (lavender) → its bi-accents */
+  @bi2-sub-1: @pink;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = mauve) and (@flavor = macchiato) {
+  /* Main accent: mauve */
+  @accent: @mauve;
+  @bi-accent-1: @maroon;
+  @bi-accent-2: @sky;
+
+  /* Cascading: bi-accent-1 (maroon) → its bi-accents */
+  @bi1-sub-1: @yellow;
+  @bi1-sub-2: @mauve;
+
+  /* Cascading: bi-accent-2 (sky) → its bi-accents */
+  @bi2-sub-1: @mauve;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = red) and (@flavor = macchiato) {
+  /* Main accent: red */
+  @accent: @red;
+  @bi-accent-1: @yellow;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (yellow) → its bi-accents */
+  @bi1-sub-1: @green;
+  @bi1-sub-2: @flamingo;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = maroon) and (@flavor = macchiato) {
+  /* Main accent: maroon */
+  @accent: @maroon;
+  @bi-accent-1: @yellow;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (yellow) → its bi-accents */
+  @bi1-sub-1: @green;
+  @bi1-sub-2: @flamingo;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = peach) and (@flavor = macchiato) {
+  /* Main accent: peach */
+  @accent: @peach;
+  @bi-accent-1: @green;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (green) → its bi-accents */
+  @bi1-sub-1: @sky;
+  @bi1-sub-2: @yellow;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = yellow) and (@flavor = macchiato) {
+  /* Main accent: yellow */
+  @accent: @yellow;
+  @bi-accent-1: @green;
+  @bi-accent-2: @flamingo;
+
+  /* Cascading: bi-accent-1 (green) → its bi-accents */
+  @bi1-sub-1: @sky;
+  @bi1-sub-2: @yellow;
+
+  /* Cascading: bi-accent-2 (flamingo) → its bi-accents */
+  @bi2-sub-1: @rosewater;
+  @bi2-sub-2: @pink;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = green) and (@flavor = macchiato) {
+  /* Main accent: green */
+  @accent: @green;
+  @bi-accent-1: @sky;
+  @bi-accent-2: @yellow;
+
+  /* Cascading: bi-accent-1 (sky) → its bi-accents */
+  @bi1-sub-1: @mauve;
+  @bi1-sub-2: @green;
+
+  /* Cascading: bi-accent-2 (yellow) → its bi-accents */
+  @bi2-sub-1: @green;
+  @bi2-sub-2: @flamingo;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = teal) and (@flavor = macchiato) {
+  /* Main accent: teal */
+  @accent: @teal;
+  @bi-accent-1: @blue;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (blue) → its bi-accents */
+  @bi1-sub-1: @mauve;
+  @bi1-sub-2: @teal;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @sky;
+  @bi2-sub-2: @yellow;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = sky) and (@flavor = macchiato) {
+  /* Main accent: sky */
+  @accent: @sky;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @sky;
+  @bi2-sub-2: @yellow;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = sapphire) and (@flavor = macchiato) {
+  /* Main accent: sapphire */
+  @accent: @sapphire;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @sky;
+  @bi2-sub-2: @yellow;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = blue) and (@flavor = macchiato) {
+  /* Main accent: blue */
+  @accent: @blue;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @teal;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (teal) → its bi-accents */
+  @bi2-sub-1: @blue;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = lavender) and (@flavor = macchiato) {
+  /* Main accent: lavender */
+  @accent: @lavender;
+  @bi-accent-1: @pink;
+  @bi-accent-2: @sky;
+
+  /* Cascading: bi-accent-1 (pink) → its bi-accents */
+  @bi1-sub-1: @flamingo;
+  @bi1-sub-2: @lavender;
+
+  /* Cascading: bi-accent-2 (sky) → its bi-accents */
+  @bi2-sub-1: @mauve;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = rosewater) and (@flavor = mocha) {
+  /* Main accent: rosewater */
+  @accent: @rosewater;
+  @bi-accent-1: @flamingo;
+  @bi-accent-2: @pink;
+
+  /* Cascading: bi-accent-1 (flamingo) → its bi-accents */
+  @bi1-sub-1: @rosewater;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (pink) → its bi-accents */
+  @bi2-sub-1: @flamingo;
+  @bi2-sub-2: @lavender;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = flamingo) and (@flavor = mocha) {
+  /* Main accent: flamingo */
+  @accent: @flamingo;
+  @bi-accent-1: @rosewater;
+  @bi-accent-2: @pink;
+
+  /* Cascading: bi-accent-1 (rosewater) → its bi-accents */
+  @bi1-sub-1: @flamingo;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (pink) → its bi-accents */
+  @bi2-sub-1: @flamingo;
+  @bi2-sub-2: @lavender;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = pink) and (@flavor = mocha) {
+  /* Main accent: pink */
+  @accent: @pink;
+  @bi-accent-1: @flamingo;
+  @bi-accent-2: @lavender;
+
+  /* Cascading: bi-accent-1 (flamingo) → its bi-accents */
+  @bi1-sub-1: @rosewater;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (lavender) → its bi-accents */
+  @bi2-sub-1: @pink;
+  @bi2-sub-2: @teal;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = mauve) and (@flavor = mocha) {
+  /* Main accent: mauve */
+  @accent: @mauve;
+  @bi-accent-1: @maroon;
+  @bi-accent-2: @sky;
+
+  /* Cascading: bi-accent-1 (maroon) → its bi-accents */
+  @bi1-sub-1: @yellow;
+  @bi1-sub-2: @mauve;
+
+  /* Cascading: bi-accent-2 (sky) → its bi-accents */
+  @bi2-sub-1: @mauve;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = red) and (@flavor = mocha) {
+  /* Main accent: red */
+  @accent: @red;
+  @bi-accent-1: @yellow;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (yellow) → its bi-accents */
+  @bi1-sub-1: @green;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = maroon) and (@flavor = mocha) {
+  /* Main accent: maroon */
+  @accent: @maroon;
+  @bi-accent-1: @yellow;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (yellow) → its bi-accents */
+  @bi1-sub-1: @green;
+  @bi1-sub-2: @pink;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = peach) and (@flavor = mocha) {
+  /* Main accent: peach */
+  @accent: @peach;
+  @bi-accent-1: @green;
+  @bi-accent-2: @mauve;
+
+  /* Cascading: bi-accent-1 (green) → its bi-accents */
+  @bi1-sub-1: @teal;
+  @bi1-sub-2: @yellow;
+
+  /* Cascading: bi-accent-2 (mauve) → its bi-accents */
+  @bi2-sub-1: @maroon;
+  @bi2-sub-2: @sky;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = yellow) and (@flavor = mocha) {
+  /* Main accent: yellow */
+  @accent: @yellow;
+  @bi-accent-1: @green;
+  @bi-accent-2: @pink;
+
+  /* Cascading: bi-accent-1 (green) → its bi-accents */
+  @bi1-sub-1: @teal;
+  @bi1-sub-2: @yellow;
+
+  /* Cascading: bi-accent-2 (pink) → its bi-accents */
+  @bi2-sub-1: @flamingo;
+  @bi2-sub-2: @lavender;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = green) and (@flavor = mocha) {
+  /* Main accent: green */
+  @accent: @green;
+  @bi-accent-1: @teal;
+  @bi-accent-2: @yellow;
+
+  /* Cascading: bi-accent-1 (teal) → its bi-accents */
+  @bi1-sub-1: @blue;
+  @bi1-sub-2: @green;
+
+  /* Cascading: bi-accent-2 (yellow) → its bi-accents */
+  @bi2-sub-1: @green;
+  @bi2-sub-2: @pink;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = teal) and (@flavor = mocha) {
+  /* Main accent: teal */
+  @accent: @teal;
+  @bi-accent-1: @blue;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (blue) → its bi-accents */
+  @bi1-sub-1: @mauve;
+  @bi1-sub-2: @teal;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @teal;
+  @bi2-sub-2: @yellow;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = sky) and (@flavor = mocha) {
+  /* Main accent: sky */
+  @accent: @sky;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @teal;
+  @bi2-sub-2: @yellow;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = sapphire) and (@flavor = mocha) {
+  /* Main accent: sapphire */
+  @accent: @sapphire;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @green;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (green) → its bi-accents */
+  @bi2-sub-1: @teal;
+  @bi2-sub-2: @yellow;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = blue) and (@flavor = mocha) {
+  /* Main accent: blue */
+  @accent: @blue;
+  @bi-accent-1: @mauve;
+  @bi-accent-2: @teal;
+
+  /* Cascading: bi-accent-1 (mauve) → its bi-accents */
+  @bi1-sub-1: @maroon;
+  @bi1-sub-2: @sky;
+
+  /* Cascading: bi-accent-2 (teal) → its bi-accents */
+  @bi2-sub-1: @blue;
+  @bi2-sub-2: @green;
+}
+
+#accent-scheme(@mainAccent, @flavor) when (@mainAccent = lavender) and (@flavor = mocha) {
+  /* Main accent: lavender */
+  @accent: @lavender;
+  @bi-accent-1: @pink;
+  @bi-accent-2: @teal;
+
+  /* Cascading: bi-accent-1 (pink) → its bi-accents */
+  @bi1-sub-1: @flamingo;
+  @bi1-sub-2: @lavender;
+
+  /* Cascading: bi-accent-2 (teal) → its bi-accents */
+  @bi2-sub-1: @blue;
+  @bi2-sub-2: @green;
+}
+
+
+@-moz-document domain("openrouter.ai") {
+
+  /* Apply theme based on detected color mode */
+  :root[data-mode="light"],
+  :root[data-theme="light"],
+  html[data-theme="light"],
+  body[data-theme="light"],
+  :root {
+    #apply-catppuccin(@lightFlavor, @accentColor);
+  }
+}

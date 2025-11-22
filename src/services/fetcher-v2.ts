@@ -3,19 +3,29 @@
  * Fetches website content with deep analysis capabilities
  */
 
-import type { DeepAnalysisResult, DeepAnalysisConfig } from '../types/deep-analysis';
-import type { CrawlerResult } from '../types/theme';
-import { extractCSSVariables, getVariableStats } from '../utils/deep-analysis/css-variables';
-import { analyzeSVGs, getSVGStats } from '../utils/deep-analysis/svg-analyzer';
-import { detectDesignSystem } from '../utils/deep-analysis/design-system';
-import { discoverSelectors, filterColorSelectors, getSelectorStats } from '../utils/deep-analysis/selector-discovery';
-import { DEFAULT_DEEP_ANALYSIS_CONFIG } from '../types/deep-analysis';
+import type {
+  DeepAnalysisResult,
+  DeepAnalysisConfig,
+} from "../types/deep-analysis";
+import type { CrawlerResult } from "../types/theme";
+import {
+  extractCSSVariables,
+  getVariableStats,
+} from "../utils/deep-analysis/css-variables";
+import { analyzeSVGs, getSVGStats } from "../utils/deep-analysis/svg-analyzer";
+import { detectDesignSystem } from "../utils/deep-analysis/design-system";
+import {
+  discoverSelectors,
+  filterColorSelectors,
+  getSelectorStats,
+} from "../utils/deep-analysis/selector-discovery";
+import { DEFAULT_DEEP_ANALYSIS_CONFIG } from "../types/deep-analysis";
 
 // CORS proxy options - we need these because browsers block direct cross-origin requests
 const CORS_PROXIES = [
-  'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?',
-  'https://api.codetabs.com/v1/proxy?quest=',
+  "https://api.allorigins.win/raw?url=",
+  "https://corsproxy.io/?",
+  "https://api.codetabs.com/v1/proxy?quest=",
 ];
 
 let currentProxyIndex = 0;
@@ -25,15 +35,18 @@ let currentProxyIndex = 0;
  */
 export async function fetchWithDeepAnalysis(
   url: string,
-  config: Partial<DeepAnalysisConfig> = {}
+  config: Partial<DeepAnalysisConfig> = {},
+  htmlContent?: string
 ): Promise<DeepAnalysisResult> {
   const startTime = Date.now();
   const fullConfig = { ...DEFAULT_DEEP_ANALYSIS_CONFIG, ...config };
 
   console.log(`🔍 Starting deep analysis for: ${url}`);
 
-  // Step 1: Fetch basic content
-  const basicContent = await fetchBasicContent(url);
+  // Step 1: Fetch basic content (or use provided content)
+  const basicContent = htmlContent
+    ? await processBasicContent(htmlContent, url)
+    : await fetchBasicContent(url);
 
   // Step 2: Fetch all CSS (external + inline)
   const allCSS = await fetchAllCSS(url, basicContent.html);
@@ -50,7 +63,7 @@ export async function fetchWithDeepAnalysis(
   const designSystem = fullConfig.enableDesignSystemDetection
     ? detectDesignSystem(basicContent.html, allCSS, cssVariables)
     : {
-        framework: 'unknown' as const,
+        framework: "unknown" as const,
         confidence: 0,
         variablePrefix: [],
         colorTokens: new Map(),
@@ -76,8 +89,14 @@ export async function fetchWithDeepAnalysis(
   console.log(`✅ Deep analysis complete in ${analysisTime}ms`);
   console.log(`   CSS Variables: ${cssVariables.length}`);
   console.log(`   SVGs: ${svgs.length}`);
-  console.log(`   Design System: ${designSystem.framework} (${Math.round(designSystem.confidence * 100)}% confidence)`);
-  console.log(`   Selectors: ${selectorGroups.reduce((sum, g) => sum + g.totalCount, 0)}`);
+  console.log(
+    `   Design System: ${designSystem.framework} (${Math.round(
+      designSystem.confidence * 100
+    )}% confidence)`
+  );
+  console.log(
+    `   Selectors: ${selectorGroups.reduce((sum, g) => sum + g.totalCount, 0)}`
+  );
 
   return {
     url,
@@ -121,16 +140,26 @@ async function fetchBasicContent(url: string): Promise<{
   // Try multiple CORS proxies if one fails
   let lastError: Error | null = null;
 
-  for (let proxyAttempt = 0; proxyAttempt < CORS_PROXIES.length; proxyAttempt++) {
+  for (
+    let proxyAttempt = 0;
+    proxyAttempt < CORS_PROXIES.length;
+    proxyAttempt++
+  ) {
     try {
       currentProxyIndex = proxyAttempt;
-      const proxiedUrl = CORS_PROXIES[currentProxyIndex] + encodeURIComponent(url);
+      const proxiedUrl =
+        CORS_PROXIES[currentProxyIndex] + encodeURIComponent(url);
 
-      console.log(`🌐 Fetching HTML with proxy ${proxyAttempt + 1}/${CORS_PROXIES.length}...`);
+      console.log(
+        `🌐 Fetching HTML with proxy ${proxyAttempt + 1}/${
+          CORS_PROXIES.length
+        }...`
+      );
 
       const response = await fetch(proxiedUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
 
@@ -139,7 +168,9 @@ async function fetchBasicContent(url: string): Promise<{
       }
 
       const html = await response.text();
-      console.log(`✅ Successfully fetched HTML with proxy ${proxyAttempt + 1}`);
+      console.log(
+        `✅ Successfully fetched HTML with proxy ${proxyAttempt + 1}`
+      );
 
       return await processBasicContent(html, url);
     } catch (error) {
@@ -152,15 +183,18 @@ async function fetchBasicContent(url: string): Promise<{
   // All proxies failed
   throw new Error(
     `Failed to fetch website after trying ${CORS_PROXIES.length} CORS proxies. ` +
-    `Last error: ${lastError?.message || 'Unknown error'}. ` +
-    `The website may be blocking proxy requests or is temporarily unavailable.`
+      `Last error: ${lastError?.message || "Unknown error"}. ` +
+      `The website may be blocking proxy requests or is temporarily unavailable.`
   );
 }
 
 /**
  * Process fetched HTML content
  */
-async function processBasicContent(html: string, url: string): Promise<{
+async function processBasicContent(
+  html: string,
+  url: string
+): Promise<{
   html: string;
   title: string;
   content: string;
@@ -169,20 +203,28 @@ async function processBasicContent(html: string, url: string): Promise<{
 }> {
   // Extract title
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  const title = titleMatch ? titleMatch[1].trim() : new URL(url).hostname;
+  let title = titleMatch ? titleMatch[1].trim() : "";
+  if (!title) {
+    try {
+      title = new URL(url).hostname;
+    } catch {
+      title = url;
+    }
+  }
 
   // Extract text content (simplified)
   const content = html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
     .trim()
     .substring(0, 5000); // Limit to 5000 chars
 
   // Extract external stylesheets
   const externalStylesheets: string[] = [];
-  const linkRegex = /<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi;
+  const linkRegex =
+    /<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi;
   let match;
 
   while ((match = linkRegex.exec(html)) !== null) {
@@ -191,7 +233,13 @@ async function processBasicContent(html: string, url: string): Promise<{
       const absoluteUrl = new URL(href, url).href;
       externalStylesheets.push(absoluteUrl);
     } catch (e) {
-      console.warn(`Invalid stylesheet URL: ${href}`);
+      // Try as absolute URL if base is invalid
+      try {
+        const absoluteUrl = new URL(href).href;
+        externalStylesheets.push(absoluteUrl);
+      } catch {
+        console.warn(`Invalid stylesheet URL: ${href}`);
+      }
     }
   }
 
@@ -216,18 +264,19 @@ async function processBasicContent(html: string, url: string): Promise<{
  * Fetch all CSS (external stylesheets + inline styles) using CORS proxies
  */
 async function fetchAllCSS(baseUrl: string, html: string): Promise<string> {
-  let allCSS = '';
+  let allCSS = "";
 
   // Extract inline styles
   const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
   let match;
 
   while ((match = styleRegex.exec(html)) !== null) {
-    allCSS += match[1] + '\n\n';
+    allCSS += match[1] + "\n\n";
   }
 
   // Extract external stylesheet URLs
-  const linkRegex = /<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi;
+  const linkRegex =
+    /<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi;
   const stylesheetUrls: string[] = [];
 
   while ((match = linkRegex.exec(html)) !== null) {
@@ -236,23 +285,33 @@ async function fetchAllCSS(baseUrl: string, html: string): Promise<string> {
       const absoluteUrl = new URL(href, baseUrl).href;
       stylesheetUrls.push(absoluteUrl);
     } catch (e) {
-      console.warn(`Invalid stylesheet URL: ${href}`);
+      // Try as absolute URL if base is invalid
+      try {
+        const absoluteUrl = new URL(href).href;
+        stylesheetUrls.push(absoluteUrl);
+      } catch {
+        console.warn(`Invalid stylesheet URL: ${href}`);
+      }
     }
   }
 
   // Fetch external stylesheets (limit to 10 to avoid overload)
   const fetchLimit = Math.min(stylesheetUrls.length, 10);
-  console.log(`📄 Fetching ${fetchLimit} external stylesheets with CORS proxy...`);
+  console.log(
+    `📄 Fetching ${fetchLimit} external stylesheets with CORS proxy...`
+  );
 
   for (let i = 0; i < fetchLimit; i++) {
     const cssUrl = stylesheetUrls[i];
     try {
       // Use CORS proxy for external CSS files
-      const proxiedUrl = CORS_PROXIES[currentProxyIndex] + encodeURIComponent(cssUrl);
+      const proxiedUrl =
+        CORS_PROXIES[currentProxyIndex] + encodeURIComponent(cssUrl);
 
       const response = await fetch(proxiedUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
 
@@ -281,36 +340,36 @@ function detectColorScheme(
   html: string,
   css: string,
   variables: any[]
-): 'dark' | 'light' {
+): "dark" | "light" {
   // Check for dark class or attribute
   if (
     html.includes('class="dark"') ||
     html.includes('data-theme="dark"') ||
-    css.includes('.dark') ||
+    css.includes(".dark") ||
     css.includes('[data-theme="dark"]')
   ) {
-    return 'dark';
+    return "dark";
   }
 
   // Check background colors in variables
   const bgVars = variables.filter(
-    v => v.name.includes('bg') || v.name.includes('background')
+    (v) => v.name.includes("bg") || v.name.includes("background")
   );
 
   if (bgVars.length > 0) {
     // Check if backgrounds are dark
-    const darkBgs = bgVars.filter(v => {
+    const darkBgs = bgVars.filter((v) => {
       const color = v.computedValue || v.value;
       return isDarkColor(color);
     });
 
     if (darkBgs.length > bgVars.length / 2) {
-      return 'dark';
+      return "dark";
     }
   }
 
   // Default to light
-  return 'light';
+  return "light";
 }
 
 /**
@@ -318,7 +377,7 @@ function detectColorScheme(
  */
 function isDarkColor(color: string): boolean {
   // Simple heuristic: check if hex value is < 0x808080
-  if (color.startsWith('#')) {
+  if (color.startsWith("#")) {
     const hex = color.substring(1);
     if (hex.length === 3) {
       const r = parseInt(hex[0] + hex[0], 16);
@@ -335,8 +394,15 @@ function isDarkColor(color: string): boolean {
   }
 
   // Check for color names
-  const darkColors = ['black', 'navy', 'maroon', 'darkblue', 'darkgreen', 'darkred'];
-  return darkColors.some(dc => color.toLowerCase().includes(dc));
+  const darkColors = [
+    "black",
+    "navy",
+    "maroon",
+    "darkblue",
+    "darkgreen",
+    "darkred",
+  ];
+  return darkColors.some((dc) => color.toLowerCase().includes(dc));
 }
 
 /**
@@ -346,7 +412,7 @@ function extractDominantColors(variables: any[], css: string): string[] {
   const colorCounts = new Map<string, number>();
 
   // Count colors from variables
-  variables.forEach(v => {
+  variables.forEach((v) => {
     const color = v.computedValue || v.value;
     if (isColorValue(color)) {
       colorCounts.set(color, (colorCounts.get(color) || 0) + v.frequency);
@@ -365,22 +431,22 @@ function extractDominantColors(variables: any[], css: string): string[] {
  */
 function extractAccentColors(variables: any[], css: string): string[] {
   const accentKeywords = [
-    'primary',
-    'accent',
-    'link',
-    'button',
-    'active',
-    'hover',
-    'focus',
-    'highlight',
+    "primary",
+    "accent",
+    "link",
+    "button",
+    "active",
+    "hover",
+    "focus",
+    "highlight",
   ];
 
-  const accentVars = variables.filter(v =>
-    accentKeywords.some(keyword => v.name.toLowerCase().includes(keyword))
+  const accentVars = variables.filter((v) =>
+    accentKeywords.some((keyword) => v.name.toLowerCase().includes(keyword))
   );
 
   return accentVars
-    .map(v => v.computedValue || v.value)
+    .map((v) => v.computedValue || v.value)
     .filter(isColorValue)
     .slice(0, 5);
 }
@@ -393,9 +459,9 @@ function isColorValue(value: string): boolean {
   const cleaned = value.trim().toLowerCase();
 
   return (
-    cleaned.startsWith('#') ||
-    cleaned.startsWith('rgb') ||
-    cleaned.startsWith('hsl')
+    cleaned.startsWith("#") ||
+    cleaned.startsWith("rgb") ||
+    cleaned.startsWith("hsl")
   );
 }
 

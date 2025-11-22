@@ -3,7 +3,7 @@
  * Handles "Webpage, complete" format (HTML + assets folder)
  */
 
-import { extractColorsFromCSS } from './color-analysis';
+import { extractColorsFromCSS } from "./color-analysis";
 
 export interface CSSClass {
   className: string;
@@ -19,6 +19,7 @@ export interface CSSProperty {
 export interface DirectoryAnalysis {
   html: string;
   title: string;
+  url: string;
   cssClasses: CSSClass[];
   inlineStyles: string[];
   linkedStyles: string[];
@@ -32,33 +33,37 @@ export interface DirectoryAnalysis {
 /**
  * Parse a directory of files uploaded via webkitdirectory
  */
-export async function parseWebpageDirectory(files: FileList): Promise<DirectoryAnalysis> {
+export async function parseWebpageDirectory(
+  files: FileList
+): Promise<DirectoryAnalysis> {
   const fileArray = Array.from(files);
 
   // Find the main HTML file (usually ends with .htm or .html)
-  const htmlFiles = fileArray.filter(f =>
-    f.name.endsWith('.html') || f.name.endsWith('.htm')
+  const htmlFiles = fileArray.filter(
+    (f) => f.name.endsWith(".html") || f.name.endsWith(".htm")
   );
 
   if (htmlFiles.length === 0) {
-    throw new Error('No HTML file found in the directory');
+    throw new Error("No HTML file found in the directory");
   }
 
   // Use the first HTML file or the one with shortest path (likely the main one)
-  const mainHtml = htmlFiles.sort((a, b) =>
-    a.webkitRelativePath.split('/').length - b.webkitRelativePath.split('/').length
+  const mainHtml = htmlFiles.sort(
+    (a, b) =>
+      a.webkitRelativePath.split("/").length -
+      b.webkitRelativePath.split("/").length
   )[0];
 
   // Read the HTML content
   const htmlContent = await readFileAsText(mainHtml);
   const parser = new DOMParser();
-  const doc = parser.parseFromString(htmlContent, 'text/html');
+  const doc = parser.parseFromString(htmlContent, "text/html");
 
   // Extract title
-  const title = doc.querySelector('title')?.textContent || 'Untitled';
+  const title = doc.querySelector("title")?.textContent || "Untitled";
 
   // Find CSS files in the directory
-  const cssFiles = fileArray.filter(f => f.name.endsWith('.css'));
+  const cssFiles = fileArray.filter((f) => f.name.endsWith(".css"));
 
   // Read all CSS content
   const cssContents: string[] = [];
@@ -69,7 +74,7 @@ export async function parseWebpageDirectory(files: FileList): Promise<DirectoryA
 
   // Extract inline styles
   const inlineStyles: string[] = [];
-  doc.querySelectorAll('style').forEach(styleTag => {
+  doc.querySelectorAll("style").forEach((styleTag) => {
     if (styleTag.textContent) {
       inlineStyles.push(styleTag.textContent);
     }
@@ -79,7 +84,7 @@ export async function parseWebpageDirectory(files: FileList): Promise<DirectoryA
   const linkedStyles = cssContents;
 
   // Combine all CSS
-  const allCSS = [...inlineStyles, ...linkedStyles].join('\n');
+  const allCSS = [...inlineStyles, ...linkedStyles].join("\n");
 
   // Parse CSS classes
   const cssClasses = parseCSSClasses(allCSS);
@@ -90,9 +95,24 @@ export async function parseWebpageDirectory(files: FileList): Promise<DirectoryA
   // Analyze HTML structure
   const structure = analyzeHTMLStructure(doc);
 
+  // Extract URL from Snapshot-Content-Location if available
+  let url = "";
+  const snapshotMatch = htmlContent.match(
+    /Snapshot-Content-Location:\s*([^\r\n]+)/i
+  );
+  if (snapshotMatch) {
+    url = snapshotMatch[1].trim();
+  } else {
+    // Fallback to folder name as "domain"
+    const folderName = mainHtml.webkitRelativePath.split("/")[0];
+    const safeFolderName = folderName.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    url = `https://${safeFolderName}.local`;
+  }
+
   return {
     html: htmlContent,
     title,
+    url,
     cssClasses,
     inlineStyles,
     linkedStyles,
@@ -108,7 +128,7 @@ function parseCSSClasses(css: string): CSSClass[] {
   const classes: CSSClass[] = [];
 
   // Remove comments
-  const cleanCSS = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const cleanCSS = css.replace(/\/\*[\s\S]*?\*\//g, "");
 
   // Match CSS rules (simplified regex)
   const ruleRegex = /([^{]+)\{([^}]+)\}/g;
@@ -118,18 +138,18 @@ function parseCSSClasses(css: string): CSSClass[] {
     const selector = match[1].trim();
     const declarations = match[2].trim();
 
-    // Check if selector contains a class
-    if (selector.includes('.')) {
+    // Check if selector contains a class and is not an at-rule
+    if (selector.includes(".") && !selector.trim().startsWith("@")) {
       // Extract class names
       const classMatches = selector.match(/\.[\w-]+/g);
       if (classMatches) {
-        classMatches.forEach(className => {
+        classMatches.forEach((className) => {
           const cleanClassName = className.substring(1); // Remove the dot
 
           // Parse properties
           const properties: CSSProperty[] = [];
-          declarations.split(';').forEach(decl => {
-            const [prop, value] = decl.split(':').map(s => s.trim());
+          declarations.split(";").forEach((decl) => {
+            const [prop, value] = decl.split(":").map((s) => s.trim());
             if (prop && value) {
               properties.push({ property: prop, value });
             }
@@ -166,15 +186,16 @@ function extractColors(html: string, css: string): string[] {
   }
 
   // Extract colors from style attributes in HTML
-  const colorPropsRegex = /(?:color|background|border|fill|stroke):\s*([^;}"'\s]+)/gi;
+  const colorPropsRegex =
+    /(?:color|background|border|fill|stroke):\s*([^;}"'\s]+)/gi;
   while ((match = colorPropsRegex.exec(html)) !== null) {
     const colorValue = match[1].trim();
-    if (colorValue.startsWith('#') || colorValue.startsWith('rgb')) {
+    if (colorValue.startsWith("#") || colorValue.startsWith("rgb")) {
       colors.push(...extractColorsFromCSS(colorValue));
     }
   }
 
-  return [...new Set(colors.filter(color => color && color.startsWith('#')))];
+  return [...new Set(colors.filter((color) => color && color.startsWith("#")))];
 }
 
 /**
@@ -188,14 +209,14 @@ function analyzeHTMLStructure(doc: Document): {
   const classUsage: Record<string, number> = {};
 
   // Count tags
-  const allElements = doc.querySelectorAll('*');
-  allElements.forEach(el => {
+  const allElements = doc.querySelectorAll("*");
+  allElements.forEach((el) => {
     const tagName = el.tagName.toLowerCase();
     tags[tagName] = (tags[tagName] || 0) + 1;
 
     // Count class usage
-    if (el.className && typeof el.className === 'string') {
-      el.className.split(/\s+/).forEach(className => {
+    if (el.className && typeof el.className === "string") {
+      el.className.split(/\s+/).forEach((className) => {
         if (className) {
           classUsage[className] = (classUsage[className] || 0) + 1;
         }
@@ -240,21 +261,21 @@ export function groupCSSClassesByPurpose(classes: CSSClass[]): {
     other: [] as CSSClass[],
   };
 
-  classes.forEach(cls => {
+  classes.forEach((cls) => {
     const name = cls.className.toLowerCase();
-    const hasBackgroundProp = cls.properties.some(p =>
-      p.property.includes('background')
+    const hasBackgroundProp = cls.properties.some((p) =>
+      p.property.includes("background")
     );
-    const hasBorderProp = cls.properties.some(p =>
-      p.property.includes('border')
+    const hasBorderProp = cls.properties.some((p) =>
+      p.property.includes("border")
     );
-    const hasTextProp = cls.properties.some(p =>
-      p.property.includes('color') || p.property.includes('font')
+    const hasTextProp = cls.properties.some(
+      (p) => p.property.includes("color") || p.property.includes("font")
     );
 
-    if (name.includes('btn') || name.includes('button')) {
+    if (name.includes("btn") || name.includes("button")) {
       groups.buttons.push(cls);
-    } else if (name.includes('link') || cls.selector.includes('a')) {
+    } else if (name.includes("link") || cls.selector.includes("a")) {
       groups.links.push(cls);
     } else if (hasBackgroundProp && !hasBorderProp) {
       groups.backgrounds.push(cls);
@@ -263,11 +284,11 @@ export function groupCSSClassesByPurpose(classes: CSSClass[]): {
     } else if (hasBorderProp) {
       groups.borders.push(cls);
     } else if (
-      name.includes('container') ||
-      name.includes('grid') ||
-      name.includes('flex') ||
-      name.includes('row') ||
-      name.includes('col')
+      name.includes("container") ||
+      name.includes("grid") ||
+      name.includes("flex") ||
+      name.includes("row") ||
+      name.includes("col")
     ) {
       groups.layouts.push(cls);
     } else {

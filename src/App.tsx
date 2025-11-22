@@ -6,9 +6,6 @@ import { DeepAnalysisControls } from "./components/DeepAnalysisControls";
 import { ThemePreview } from "./components/ThemePreview";
 import { ThinkingProcess } from "./components/ThinkingProcess";
 import type { CrawlerResult } from "./types/theme";
-import { fetchWebsiteContent } from "./services/fetcher";
-import { analyzeWebsiteColors } from "./services/ai";
-import { createUserStylePackage } from "./services/generators";
 import { runDeepAnalysisPipeline } from "./services/deep-analysis";
 import { convertToThemePackage } from "./services/deep-analysis/bridge";
 import { MHTMLParser } from "./utils/mhtml-parser";
@@ -36,13 +33,11 @@ function App() {
   } = useAppStore();
 
   const {
-    enableDeepAnalysis,
     flavor,
     accent,
     useV3Generator,
     enableCascadingGradients,
     gradientCoverage,
-    setEnableDeepAnalysis,
     setFlavor,
     setAccent,
     setUseV3Generator,
@@ -167,33 +162,12 @@ function App() {
 
       // Step 1: Fetch website content directly
       setProgress("Fetching website content...");
-      const fetchResult = await fetchWebsiteContent(url);
-
-      if (fetchResult.error) {
-        updateThinkingStep("fetch", {
-          status: "error",
-          details: fetchResult.error,
-        });
-        throw new Error(`Failed to fetch website: ${fetchResult.error}`);
-      }
-
-      updateThinkingStep("fetch", {
-        status: "completed",
-        details: `Found ${fetchResult.colors.length} colors from ${fetchResult.title}`,
-      });
-
-      // Convert to crawler-compatible format
-      const crawlerResult: CrawlerResult = {
-        url: fetchResult.url,
-        title: fetchResult.title,
-        content: fetchResult.html,
-        html: fetchResult.html,
-        colors: fetchResult.colors,
-      };
-
-      setLastCrawlerResult(crawlerResult);
-      setLastSource("direct-fetch");
-      await processContent(crawlerResult, "direct-fetch");
+      // For URL input, we pass a minimal crawlerResult and let processContent (which calls runDeepAnalysisPipeline)
+      // handle the actual fetching and populating of the full crawlerResult.
+      await processContent(
+        { url, title: url, content: "", html: "", colors: [] },
+        "direct-fetch"
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setProgress("");
@@ -420,7 +394,7 @@ function App() {
 
       // Convert to CrawlerResult format with enhanced data
       const crawlerResult: CrawlerResult & { cssAnalysis?: any } = {
-        url: "local-directory",
+        url: analysis.url || "local-directory",
         title: analysis.title,
         content: analysis.html,
         html: analysis.html,
@@ -457,156 +431,106 @@ function App() {
     source: string
   ) => {
     try {
-      // Check if deep analysis is enabled
-      if (enableDeepAnalysis) {
-        // === DEEP ANALYSIS PIPELINE ===
+      // === DEEP ANALYSIS PIPELINE ===
 
-        // Step 2: Deep Analysis
-        updateThinkingStep("analyze", {
-          status: "in_progress",
-          description:
-            "Deep website analysis with CSS variables, SVGs, and design system detection",
-        });
-        setProgress("Running deep analysis...");
+      // Step 2: Deep Analysis
+      updateThinkingStep("analyze", {
+        status: "in_progress",
+        description:
+          "Deep website analysis with CSS variables, SVGs, and design system detection",
+      });
+      setProgress("Running deep analysis...");
 
-        const result = await runDeepAnalysisPipeline({
-          url: crawlerResult.url,
-          flavor,
-          mainAccent: accent,
-          mapper: {
-            provider: aiProvider,
-            apiKey: aiProvider !== "ollama" ? aiKey : undefined,
-            model: aiModel,
-            enableVariableMapping: true,
-            enableSVGMapping: true,
-            enableSelectorMapping: true,
-            useAIForVariables: true,
-            useAIForSVGs: true,
-            useAIForSelectors: true,
-          },
-          useV3Generator,
-          userstyleV3: useV3Generator
-            ? {
-                defaultFlavor: flavor,
-                defaultAccent: accent,
-                enableCascadingGradients,
-                gradientCoverage,
-              }
-            : undefined,
-        });
-
-        updateThinkingStep("analyze", {
-          status: "completed",
-          details: `Analyzed ${result.analysis.cssVariables.length} CSS variables, ${result.analysis.svgs.length} SVGs, and ${result.analysis.selectorGroups.length} selector groups`,
-        });
-
-        // Step 3: AI Mapping
-        updateThinkingStep("map", {
-          status: "in_progress",
-          description: "AI-powered precision mapping to Catppuccin colors",
-        });
-
-        // Small delay to show the step
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        updateThinkingStep("map", {
-          status: "completed",
-          details: `Mapped ${result.mappings.stats.mappedVariables} variables, ${result.mappings.stats.processedSVGs} SVGs, ${result.mappings.stats.mappedSelectors} selectors`,
-        });
-
-        // Step 4: Generate theme
-        updateThinkingStep("generate", {
-          status: "in_progress",
-          description: "Generating priority-layered LESS theme",
-        });
-        setProgress("Generating masterpiece theme...");
-
-        // Convert to ThemePackage format
-        const pkg = convertToThemePackage(result, source as any, aiModel);
-
-        // Calculate total coverage as average
-        const totalCoverage = Math.round(
-          (result.userstyle.coverage.variableCoverage +
-            result.userstyle.coverage.svgCoverage +
-            result.userstyle.coverage.selectorCoverage) /
-            3
-        );
-
-        updateThinkingStep("generate", {
-          status: "completed",
-          details: `Generated ${flavor} theme with ${totalCoverage}% average coverage`,
-        });
-
-        setThemePackage(pkg);
-        setLastAIConfig({
+      // We need to pass the HTML content if it exists (for uploads)
+      const result = await runDeepAnalysisPipeline({
+        url: crawlerResult.url,
+        content: crawlerResult.html,
+        flavor,
+        mainAccent: accent,
+        mapper: {
           provider: aiProvider,
+          apiKey: aiProvider !== "ollama" ? aiKey : undefined,
           model: aiModel,
-          apiKey: aiKey,
-        });
-        setHasCompleted(true);
-        setProgress("");
-      } else {
-        // === GENERIC ANALYSIS (OLD SYSTEM) ===
+          enableVariableMapping: true,
+          enableSVGMapping: true,
+          enableSelectorMapping: true,
+          useAIForVariables: true,
+          useAIForSVGs: true,
+          useAIForSelectors: true,
+        },
+        useV3Generator,
+        userstyleV3: useV3Generator
+          ? {
+              defaultFlavor: flavor,
+              defaultAccent: accent,
+              enableCascadingGradients,
+              gradientCoverage,
+            }
+          : undefined,
+      });
 
-        // Step 2: Analyze colors with AI
-        updateThinkingStep("analyze", { status: "in_progress" });
-        setProgress("Analyzing colors with AI...");
+      updateThinkingStep("analyze", {
+        status: "completed",
+        details: `Analyzed ${result.analysis.cssVariables.length} CSS variables, ${result.analysis.svgs.length} SVGs, and ${result.analysis.selectorGroups.length} selector groups`,
+      });
 
-        const { analysis, mappings } = await analyzeWebsiteColors(
-          crawlerResult,
-          {
-            provider: aiProvider,
-            apiKey: aiKey,
-            model: aiModel,
-          }
-        );
+      // Step 3: AI Mapping
+      updateThinkingStep("map", {
+        status: "in_progress",
+        description: "AI-powered precision mapping to Catppuccin colors",
+      });
 
-        updateThinkingStep("analyze", {
-          status: "completed",
-          details: `Identified ${mappings.length} color mappings using ${aiProvider}/${aiModel}`,
-        });
+      // Small delay to show the step
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
-        // Step 3: Map colors
-        updateThinkingStep("map", {
-          status: "in_progress",
-          description: "Creating semantic color mappings for UI elements",
-        });
+      updateThinkingStep("map", {
+        status: "completed",
+        details: `Mapped ${result.mappings.stats.mappedVariables} variables, ${result.mappings.stats.processedSVGs} SVGs, ${result.mappings.stats.mappedSelectors} selectors`,
+      });
 
-        // Small delay to show the step
-        await new Promise((resolve) => setTimeout(resolve, 300));
+      // Step 4: Generate theme
+      updateThinkingStep("generate", {
+        status: "in_progress",
+        description: "Generating priority-layered LESS theme",
+      });
+      setProgress("Generating masterpiece theme...");
 
-        updateThinkingStep("map", {
-          status: "completed",
-          details: `Mapped colors for buttons, text, backgrounds, and more`,
-        });
+      // Convert to ThemePackage format
+      const pkg = convertToThemePackage(result, source as any, aiModel);
 
-        // Step 4: Generate UserStyle theme
-        updateThinkingStep("generate", { status: "in_progress" });
-        setProgress("Generating UserStyle theme...");
+      // Calculate total coverage as average
+      const totalCoverage = Math.round(
+        (result.userstyle.coverage.variableCoverage +
+          result.userstyle.coverage.svgCoverage +
+          result.userstyle.coverage.selectorCoverage) /
+          3
+      );
 
-        const pkg = createUserStylePackage(
-          crawlerResult.url,
-          mappings,
-          analysis.accentColors,
-          source as any,
-          aiModel,
-          (crawlerResult as any).cssAnalysis
-        );
+      updateThinkingStep("generate", {
+        status: "completed",
+        details: `Generated ${flavor} theme with ${totalCoverage}% average coverage`,
+      });
 
-        updateThinkingStep("generate", {
-          status: "completed",
-          details: "Generated themes for Latte, Frappé, Macchiato, and Mocha",
-        });
+      // Update cache with the result from analysis (which might be richer than our initial crawlerResult)
+      // This is especially important for 'direct-fetch' where the initial crawlerResult was a placeholder.
+      const newCrawlerResult: CrawlerResult = {
+        url: result.analysis.url,
+        title: result.analysis.title,
+        content: result.analysis.content,
+        html: result.analysis.html,
+        colors: result.analysis.colors || [],
+      };
+      setLastCrawlerResult(newCrawlerResult);
+      setLastSource(source); // Ensure source is correctly set for regeneration
 
-        setThemePackage(pkg);
-        setLastAIConfig({
-          provider: aiProvider,
-          model: aiModel,
-          apiKey: aiKey,
-        });
-        setHasCompleted(true);
-        setProgress("");
-      }
+      setThemePackage(pkg);
+      setLastAIConfig({
+        provider: aiProvider,
+        model: aiModel,
+        apiKey: aiKey,
+      });
+      setHasCompleted(true);
+      setProgress("");
     } catch (err) {
       // Mark current step as error
       const currentStep = thinkingSteps.find((s) => s.status === "in_progress");
@@ -703,10 +627,10 @@ function App() {
                 Theme Options
               </h2>
               <DeepAnalysisControls
-                enabled={enableDeepAnalysis}
+                enabled={true}
                 flavor={flavor}
                 accent={accent}
-                onEnabledChange={setEnableDeepAnalysis}
+                onEnabledChange={() => {}}
                 onFlavorChange={setFlavor}
                 onAccentChange={setAccent}
                 disabled={isProcessing}
@@ -798,16 +722,12 @@ function App() {
                 </span>
                 <span className="text-ctp-overlay1">•</span>
                 <span className="text-ctp-overlay0 text-xs">
-                  {version.commitHash}
+                  {version.commitHash.substring(0, 7)}
                 </span>
-                {version.branchName !== "main" && (
-                  <>
-                    <span className="text-ctp-overlay1">•</span>
-                    <span className="text-ctp-yellow text-xs">
-                      {version.branchName}
-                    </span>
-                  </>
-                )}
+                <span className="text-ctp-overlay1">•</span>
+                <span className="text-ctp-overlay0 text-xs">
+                  {new Date(version.timestamp).toLocaleDateString()}
+                </span>
               </div>
             </div>
           )}

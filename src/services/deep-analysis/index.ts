@@ -1,30 +1,30 @@
-import type { AccentColor, CatppuccinFlavor } from '../../types/catppuccin';
+import type { AccentColor, CatppuccinFlavor } from "../../types/catppuccin";
 import type {
   DeepAnalysisResult,
   DeepAnalysisConfig,
   MappingResult,
   GeneratedTheme,
-} from '../../types/deep-analysis';
-import type { AIProvider } from '../../types/theme';
-import type { UserstyleV2Config } from '../generators/userstyle-v2';
-import type { UserstyleV3Config } from '../generators/userstyle-v3';
-import type { DeepMapperConfig } from '../ai/deep-mapper';
-import { fetchWithDeepAnalysis } from '../fetcher-v2';
-import { mapWithDeepAnalysis } from '../ai/deep-mapper';
-import { generateUserstyleV2 } from '../generators/userstyle-v2';
-import { generateUserstyleV3 } from '../generators/userstyle-v3';
+} from "../../types/deep-analysis";
+import type { AIProvider } from "../../types/theme";
+import type { UserstyleV2Config } from "../generators/userstyle-v2";
+import type { UserstyleV3Config } from "../generators/userstyle-v3";
+import type { DeepMapperConfig } from "../ai/deep-mapper";
+import { fetchWithDeepAnalysis } from "../fetcher-v2";
+import { mapWithDeepAnalysis } from "../ai/deep-mapper";
+import { generateUserstyleV2 } from "../generators/userstyle-v2";
+import { generateUserstyleV3 } from "../generators/userstyle-v3";
 
 export type DeepAnalysisFeatureToggle = Partial<
   Pick<
     DeepMapperConfig,
-    | 'enableVariableMapping'
-    | 'enableSVGMapping'
-    | 'enableSelectorMapping'
-    | 'useAIForVariables'
-    | 'useAIForSVGs'
-    | 'useAIForSelectors'
-    | 'maxSelectors'
-    | 'debug'
+    | "enableVariableMapping"
+    | "enableSVGMapping"
+    | "enableSelectorMapping"
+    | "useAIForVariables"
+    | "useAIForSVGs"
+    | "useAIForSelectors"
+    | "maxSelectors"
+    | "debug"
   >
 >;
 
@@ -35,23 +35,24 @@ export interface DeepAnalysisMapperOptions extends DeepAnalysisFeatureToggle {
 }
 
 export type UserstyleV2Overrides = Partial<
-  Pick<UserstyleV2Config, 'includeComments' | 'version'>
+  Pick<UserstyleV2Config, "includeComments" | "version">
 >;
 
 export type UserstyleV3Overrides = Partial<
   Pick<
     UserstyleV3Config,
-    | 'defaultFlavor'
-    | 'defaultAccent'
-    | 'includeComments'
-    | 'version'
-    | 'enableCascadingGradients'
-    | 'gradientCoverage'
+    | "defaultFlavor"
+    | "defaultAccent"
+    | "includeComments"
+    | "version"
+    | "enableCascadingGradients"
+    | "gradientCoverage"
   >
 >;
 
 export interface DeepAnalysisPipelineOptions {
   url: string;
+  content?: string; // Optional raw HTML content (for uploads)
   flavor: CatppuccinFlavor;
   mainAccent: AccentColor;
   fetchConfig?: Partial<DeepAnalysisConfig>;
@@ -72,11 +73,21 @@ export interface DeepAnalysisPipelineResult {
 }
 
 export async function runDeepAnalysisPipeline(
-  options: DeepAnalysisPipelineOptions,
+  options: DeepAnalysisPipelineOptions
 ): Promise<DeepAnalysisPipelineResult> {
-  const { url, flavor, mainAccent, fetchConfig, mapper, userstyle, useV3Generator, userstyleV3 } = options;
+  const {
+    url,
+    content,
+    flavor,
+    mainAccent,
+    fetchConfig,
+    mapper,
+    userstyle,
+    useV3Generator,
+    userstyleV3,
+  } = options;
 
-  const analysis = await fetchWithDeepAnalysis(url, fetchConfig);
+  const analysis = await fetchWithDeepAnalysis(url, fetchConfig, content);
 
   const { provider, apiKey, model, ...overrides } = mapper;
   const mapperConfig: DeepMapperConfig = {
@@ -105,9 +116,9 @@ export async function runDeepAnalysisPipeline(
       defaultFlavor: userstyleV3?.defaultFlavor ?? flavor,
       defaultAccent: userstyleV3?.defaultAccent ?? mainAccent,
       includeComments: userstyleV3?.includeComments ?? true,
-      version: userstyleV3?.version ?? 'v3-dynamic',
+      version: userstyleV3?.version ?? "v3-dynamic",
       enableCascadingGradients: userstyleV3?.enableCascadingGradients ?? true,
-      gradientCoverage: userstyleV3?.gradientCoverage ?? 'comprehensive',
+      gradientCoverage: userstyleV3?.gradientCoverage ?? "comprehensive",
     };
 
     generated = generateUserstyleV3(analysis, mappings, v3Config);
