@@ -163,7 +163,7 @@ Usage: Install in Stylus browser extension
 ## 🚀 Next Steps
 
 - Read the full [README.md](README.md) for architecture details
-- Check [AGENTS.md](AGENTS.md) for implementation guide
+- Check [docs/refactor-plan.md](docs/refactor-plan.md) for the latest implementation guide
 - Explore [Catppuccin documentation](https://github.com/catppuccin/catppuccin)
 - Customize generated themes to your needs
 - Share your themes with the community!
