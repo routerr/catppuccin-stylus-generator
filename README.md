@@ -289,7 +289,7 @@ npm run deploy
 - [ ] Theme sharing/export to GitHub
 - [ ] Browser extension integration
 
-See [AGENTS.md](AGENTS.md) for implementation guide and enhancement details.
+See [docs/refactor-plan.md](docs/refactor-plan.md) for implementation guide and enhancement details.
 
 ---
 
