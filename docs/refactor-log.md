@@ -9,8 +9,11 @@ Documenting milestones, benchmarks, and near-finish states for the Catppuccin th
 
 ## 2025-11-15 — Phase 1 Discovery Notes
 - Audited `src/services/generators/userstyle.ts` and `src/services/generators/css.ts`; found blanket color overrides (e.g., forcing `body` backgrounds and `.class` backgrounds to `@surface0 !important`) plus random hover angles, which explain identical-looking themes and unintended layout shifts.
-- Compared generated LESS (`out/stylus_example.generated.less`) with handcrafted themes under `Themes/less`. Humans map site-specific CSS variables and keep gradients intact, whereas the generator writes fixed hex values and overrides anchors/buttons universally, causing accent uniformity and flavor desync.
+- Compared early generated LESS output with handcrafted themes under `Themes/less`. Humans map site-specific CSS variables and keep gradients intact, whereas the generator writes fixed hex values and overrides anchors/buttons universally, causing accent uniformity and flavor desync.
 - Identified sources of low contrast (accent gradients over surfaces, hard-coded `#ffffff` fallbacks) and documented requirements for the upcoming “site palette profile” subsystem so future phases can assign Catppuccin tokens semantically and deterministically.
+
+## 2025-11-15 — Tooling Simplification
+- Removed the standalone `test/run_generation.ts` script and its `stylus_example` outputs so the project has a single supported generation workflow.
 
 ## 2025-11-15 — Phase 2 Inputs Collected
 - Downloaded live HTML shells for DuckDuckGo, Gemini, Claude, the GitHub repo, and Perplexity (`analysis_snapshots/…`). Extracted notes into `docs/site-snapshots.md`.
