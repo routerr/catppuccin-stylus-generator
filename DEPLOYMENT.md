@@ -23,12 +23,14 @@ Complete guide for deploying the Catppuccin Theme Generator to various platforms
    ```typescript
    export default defineConfig({
      plugins: [react()],
-     base: '/catppuccin-stylus-generator-claude-code/', // Replace with your repo name
+     base: '/catppuccin-stylus-generator/', // Replace with your repo name
      build: {
        outDir: 'dist',
      },
    })
    ```
+
+   > Replace `catppuccin-stylus-generator` with your repository name so links resolve correctly when published.
 
 2. **Enable GitHub Actions**
    - Go to your repository on GitHub
@@ -45,7 +47,7 @@ Complete guide for deploying the Catppuccin Theme Generator to various platforms
 4. **Wait for deployment**
    - Go to **Actions** tab to see deployment progress
    - Once complete, your site will be at:
-     `https://yourusername.github.io/catppuccin-stylus-generator-claude-code/`
+     `https://yourusername.github.io/catppuccin-stylus-generator/`
 
 ### Manual Deployment
 
