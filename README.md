@@ -22,8 +22,8 @@ AI-powered website theme generator that analyzes any webpage and creates Catppuc
 Transform any website into beautiful Catppuccin themes without changing the layout! This web application uses AI to analyze website colors and intelligently maps them to the Catppuccin color palette.
 
 Built with:
-- **Framework**: React 19 + Vite + TypeScript
-- **Styling**: Tailwind CSS, Catppuccin colors
+- **Framework**: React 18.2 + React DOM 18.2 + Vite 5 + TypeScript 5
+- **Styling**: Tailwind CSS 3, Catppuccin colors
 - **AI Integration**: OpenRouter, Chutes AI, Ollama
 - **Client-side Processing**: No backend required
 
@@ -271,9 +271,10 @@ npm run deploy
 - GPT-5.1/Codex
 
 ### Development Tools
-- React 19 + Vite 6
-- TypeScript
-- Tailwind CSS
+- React 18.2 + React DOM 18.2
+- Vite 5
+- TypeScript 5
+- Tailwind CSS 3
 - Claude Code (Development)
 - OpenAI Codex (Development)
 - Gemini Code Assistant (Development)
