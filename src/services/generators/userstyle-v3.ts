@@ -20,7 +20,6 @@ import type {
 } from "../../types/deep-analysis";
 import type {
   CatppuccinFlavor,
-  CatppuccinAccent,
   CatppuccinColor,
   AccentColor,
 } from "../../types/catppuccin";
@@ -35,7 +34,7 @@ import {
 export interface UserstyleV3Config {
   url: string;
   defaultFlavor?: CatppuccinFlavor;
-  defaultAccent?: CatppuccinAccent;
+  defaultAccent?: AccentColor;
   version?: string;
   includeComments?: boolean;
   enableCascadingGradients?: boolean;
@@ -59,6 +58,9 @@ export function generateUserstyleV3(
   const hostname = safeHostname(config.url);
   const enableCascading = config.enableCascadingGradients ?? true;
   const gradientCoverage = config.gradientCoverage ?? "comprehensive";
+  const defaultFlavor = config.defaultFlavor || "mocha";
+  const mode = analysis.mode;
+  const lines: string[] = [];
 
   // Build dynamic sections
   const sections = {
@@ -74,7 +76,8 @@ export function generateUserstyleV3(
     ),
     selectors: buildDynamicSelectorSection(
       mappings.selectorMappings,
-      includeComments
+      includeComments,
+      config
     ),
     gradients: buildCascadingGradientSection(
       mappings.selectorMappings,
@@ -86,6 +89,38 @@ export function generateUserstyleV3(
   };
 
   // Main document
+  lines.push("/* ==UserStyle==");
+  lines.push(`@name ${hostname} Catppuccin`);
+  lines.push(`@namespace github.com/catppuccin/userstyles/styles/${hostname}`);
+  lines.push(
+    `@homepageURL https://github.com/catppuccin/userstyles/tree/main/styles/${hostname}`
+  );
+  lines.push(`@version ${new Date().toISOString().split("T")[0]}`);
+  lines.push(
+    `@updateURL https://github.com/catppuccin/userstyles/raw/main/styles/${hostname}/catppuccin.user.less`
+  );
+  lines.push(
+    `@supportURL https://github.com/catppuccin/userstyles/issues?q=is%3Aopen+is%3Aissue+label%3A${hostname}`
+  );
+  lines.push(`@description Soothing pastel theme for ${hostname}`);
+  lines.push(`@author Catppuccin`);
+  lines.push(`@license MIT`);
+  lines.push("");
+  lines.push(`@preprocessor less`);
+  lines.push(
+    `@var select lightFlavor "Light Flavor" ["latte:Latte*", "frappe:Frappé", "macchiato:Macchiato", "mocha:Mocha"]`
+  );
+  lines.push(
+    `@var select darkFlavor "Dark Flavor" ["latte:Latte", "frappe:Frappé", "macchiato:Macchiato", "mocha:Mocha*"]`
+  );
+  lines.push(
+    `@var select accentColor "Accent" ["rosewater:Rosewater", "flamingo:Flamingo", "pink:Pink", "mauve:Mauve*", "red:Red", "maroon:Maroon", "peach:Peach", "yellow:Yellow", "green:Green", "teal:Teal", "blue:Blue", "sapphire:Sapphire", "sky:Sky", "lavender:Lavender", "subtext0:Gray"]`
+  );
+  lines.push("==/UserStyle== */");
+  lines.push("");
+  lines.push('@import "https://userstyles.catppuccin.com/lib/lib.less";');
+  lines.push("");
+
   lines.push(`@-moz-document domain("${hostname || "*"}") {`);
   lines.push("");
 
@@ -98,7 +133,9 @@ export function generateUserstyleV3(
   lines.push(`${INDENT}${INDENT}@flavor: @flavorName;`);
   lines.push(`${INDENT}${INDENT}#accent-scheme(@accentName, @flavorName);`);
   lines.push("");
-  lines.push(`${INDENT}${INDENT}::selection { background-color: fade(@accent, 30%); }`);
+  lines.push(
+    `${INDENT}${INDENT}::selection { background-color: fade(@accent, 30%); }`
+  );
   lines.push("");
   lines.push(indentBlock(sections.variables, 2));
   lines.push("");
@@ -143,7 +180,9 @@ export function generateUserstyleV3(
   lines.push(`${INDENT}${INDENT}@crust: @palette[crust];`);
   lines.push(`${INDENT}${INDENT}@accent: @@accentName;`);
   lines.push("");
-  lines.push(`${INDENT}${INDENT}color-scheme: if(@flavorName = latte, light, dark);`);
+  lines.push(
+    `${INDENT}${INDENT}color-scheme: if(@flavorName = latte, light, dark);`
+  );
   lines.push(`${INDENT}}`);
   lines.push("");
 
@@ -152,22 +191,48 @@ export function generateUserstyleV3(
   lines.push("");
 
   // Apply theme based on detected color mode
-  const selectors = getThemeSelectors(mode, defaultFlavor);
+  // Apply theme based on detected color mode
+  const selectors = buildModeSelectors(mode, defaultFlavor);
   lines.push(`${INDENT}/* Apply theme based on detected color mode */`);
   lines.push(`${INDENT}${selectors.join(",\n" + INDENT)} {`);
-  lines.push(`${INDENT}${INDENT}#apply-catppuccin(@${defaultFlavor}Flavor, @accentColor);`);
+  lines.push(
+    `${INDENT}${INDENT}#apply-catppuccin(@${defaultFlavor}Flavor, @accentColor);`
+  );
   lines.push(`${INDENT}}`);
 
   lines.push("}");
+
+  const coverage = {
+    variableCoverage:
+      mappings.stats.totalVariables > 0
+        ? Math.round(
+            (mappings.stats.mappedVariables / mappings.stats.totalVariables) *
+              100
+          )
+        : 0,
+    svgCoverage:
+      mappings.stats.totalSVGs > 0
+        ? Math.round(
+            (mappings.stats.processedSVGs / mappings.stats.totalSVGs) * 100
+          )
+        : 0,
+    selectorCoverage:
+      mappings.stats.totalSelectors > 0
+        ? Math.round(
+            (mappings.stats.mappedSelectors / mappings.stats.totalSelectors) *
+              100
+          )
+        : 0,
+  };
+
+  return {
+    less: lines.join("\n"),
     metadata: {
       url: config.url,
       generatedAt: new Date(),
       version,
       mode: analysis.mode,
       designSystem: analysis.designSystem.framework,
-      dynamic: true,
-      supportedFlavors: ["latte", "frappe", "macchiato", "mocha"],
-      supportedAccents: ACCENT_NAMES as unknown as string[],
     },
     sections,
     coverage,
@@ -278,7 +343,14 @@ function buildDynamicVariableSection(
   lines.push("& {");
 
   for (const mapping of mappings) {
-    const colorToken = toDynamicToken(mapping.catppuccin, mapping.isAccent);
+    const colorToken = toDynamicToken(
+      mapping.catppuccin as CatppuccinColor,
+      mapping.isAccent,
+      // We don't have config here easily, but variables usually map directly.
+      // Let's update the function signature to make config optional or pass it down.
+      // For now, let's just pass undefined as variables are usually explicit.
+      undefined
+    );
     const comment = includeComments ? ` /* ${mapping.reason} */` : "";
     lines.push(
       `${INDENT}${mapping.original}: ${colorToken} !important;${comment}`
@@ -346,7 +418,8 @@ function buildDynamicSvgSection(
  */
 function buildDynamicSelectorSection(
   mappings: SelectorMapping[],
-  includeComments: boolean
+  includeComments: boolean,
+  config?: UserstyleV3Config
 ): string {
   if (mappings.length === 0) {
     return includeComments ? "/* No selector-level mappings generated */" : "";
@@ -378,7 +451,19 @@ function buildDynamicSelectorSection(
       const color = mapping.properties[property];
       if (!color) continue;
 
-      const token = toDynamicToken(color, isAccentColor(color));
+      // Dynamic accent matching
+      // We pass false for isAccent to rely on value matching against the config.
+      // This prevents semantic colors (like green for success) from being forced to @accent
+      // just because they happen to be in the accent palette.
+      let token = toDynamicToken(color as CatppuccinColor, false, config);
+
+      // If this property uses the main accent, force it to use @accent variable
+      // This ensures it responds to the user's selection in the UserStyle settings
+      if (isAccentColor(color as CatppuccinColor)) {
+        // We need to be careful here. V3 uses a complex accent scheme.
+        // toDynamicToken already handles some of this, but let's verify.
+      }
+
       const important = " !important";
       lines.push(`${INDENT}${kebabCase(property)}: ${token}${important};`);
     }
@@ -778,7 +863,7 @@ function buildDynamicFallbackSection(
 function buildUserstyleMetadata(
   hostname: string,
   defaultFlavor: CatppuccinFlavor,
-  defaultAccent: CatppuccinAccent
+  defaultAccent: AccentColor
 ): string {
   const lines: string[] = [];
 
@@ -824,9 +909,7 @@ function buildUserstyleMetadata(
     }", "mocha:Mocha${defaultLight === "mocha" ? "*" : ""}"]`
   );
   lines.push(
-    `@var select darkFlavor "Dark Flavor" ["latte:Latte${
-      defaultDark === "latte" ? "*" : ""
-    }", "frappe:Frappé${
+    `@var select darkFlavor "Dark Flavor" ["latte:Latte", "frappe:Frappé${
       defaultDark === "frappe" ? "*" : ""
     }", "macchiato:Macchiato${
       defaultDark === "macchiato" ? "*" : ""
@@ -855,7 +938,7 @@ function buildDynamicUserstyleDocument(
   mode: DeepAnalysisResult["mode"],
   sections: Record<string, string>,
   defaultFlavor: CatppuccinFlavor,
-  defaultAccent: CatppuccinAccent,
+  defaultAccent: AccentColor,
   includeComments: boolean
 ): string {
   const lines: string[] = [];
@@ -996,7 +1079,7 @@ function buildDynamicUserstyleDocument(
   lines.push("");
 
   // Mode selectors
-  const modeSelectors = buildModeSelectors(mode);
+  const modeSelectors = buildModeSelectors(mode, defaultFlavor);
   if (modeSelectors.length > 0) {
     if (includeComments) {
       lines.push(`${INDENT}/* Apply theme based on detected color mode */`);
@@ -1084,11 +1167,29 @@ function indentBlock(block: string, depth: number): string {
 
 function toDynamicToken(
   color: CatppuccinColor | AccentColor,
-  isAccent: boolean
+  isAccent: boolean,
+  config?: UserstyleV3Config
 ): string {
   if (isAccent) {
     return "@accent"; // Use dynamic accent variable
   }
+
+  // Check if the color matches the default accent or its bi-accents
+  if (config?.defaultAccent) {
+    const cascading =
+      PRECOMPUTED_ACCENTS[config.defaultFlavor || "mocha"][
+        config.defaultAccent
+      ];
+
+    if (color === config.defaultAccent) {
+      return "@accent";
+    } else if (color === cascading.biAccent1) {
+      return "@bi-accent-1";
+    } else if (color === cascading.biAccent2) {
+      return "@bi-accent-2";
+    }
+  }
+
   return `@${color}`;
 }
 

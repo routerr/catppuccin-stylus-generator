@@ -85,15 +85,38 @@ function buildUserstyleDocument(
   includeComments: boolean
 ): string {
   const lines: string[] = [];
-  if (includeComments) {
-    lines.push("/*");
-    lines.push(" * Catppuccin Masterpiece Theme");
-    lines.push(` * Generated for ${hostname || "unknown host"}`);
-    lines.push(" * Automatically produced by the deep analysis pipeline.");
-    lines.push(" * Layout preservation guaranteed – colors only.");
-    lines.push(" */");
-    lines.push("");
-  }
+  // Standard UserStyle Header
+  lines.push("/* ==UserStyle==");
+  lines.push(`@name ${hostname} Catppuccin`);
+  lines.push(`@namespace github.com/catppuccin/userstyles/styles/${hostname}`);
+  lines.push(
+    `@homepageURL https://github.com/catppuccin/userstyles/tree/main/styles/${hostname}`
+  );
+  lines.push(`@version ${new Date().toISOString().split("T")[0]}`);
+  lines.push(
+    `@updateURL https://github.com/catppuccin/userstyles/raw/main/styles/${hostname}/catppuccin.user.less`
+  );
+  lines.push(
+    `@supportURL https://github.com/catppuccin/userstyles/issues?q=is%3Aopen+is%3Aissue+label%3A${hostname}`
+  );
+  lines.push(`@description Soothing pastel theme for ${hostname}`);
+  lines.push(`@author Catppuccin`);
+  lines.push(`@license MIT`);
+  lines.push("");
+  lines.push(`@preprocessor less`);
+  lines.push(
+    `@var select lightFlavor "Light Flavor" ["latte:Latte*", "frappe:Frappé", "macchiato:Macchiato", "mocha:Mocha"]`
+  );
+  lines.push(
+    `@var select darkFlavor "Dark Flavor" ["latte:Latte", "frappe:Frappé", "macchiato:Macchiato", "mocha:Mocha*"]`
+  );
+  lines.push(
+    `@var select accentColor "Accent" ["rosewater:Rosewater", "flamingo:Flamingo", "pink:Pink", "mauve:Mauve*", "red:Red", "maroon:Maroon", "peach:Peach", "yellow:Yellow", "green:Green", "teal:Teal", "blue:Blue", "sapphire:Sapphire", "sky:Sky", "lavender:Lavender", "subtext0:Gray"]`
+  );
+  lines.push("==/UserStyle== */");
+  lines.push("");
+  lines.push('@import "https://userstyles.catppuccin.com/lib/lib.less";');
+  lines.push("");
 
   lines.push(`@-moz-document domain("${hostname || "*"}") {`);
   lines.push(`${INDENT}#catppuccin(@flavor) {`);

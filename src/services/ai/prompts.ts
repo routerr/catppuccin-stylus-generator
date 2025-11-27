@@ -2,44 +2,68 @@
  * Shared AI prompt templates for color analysis
  */
 
-import type { ExtendedCrawlerResult } from './types';
-import { generateAccentSystemGuide } from '../../utils/accent-schemes';
+import type { ExtendedCrawlerResult } from "./types";
+import { generateAccentSystemGuide } from "../../utils/accent-schemes";
 
 /**
  * Create a prompt for detecting dark/light mode
  */
-export function createModeDetectionPrompt(crawlerResult: ExtendedCrawlerResult): string {
+export function createModeDetectionPrompt(
+  crawlerResult: ExtendedCrawlerResult
+): string {
   return `You are a web design expert. Analyze the following website content and CSS and answer with ONLY "dark" or "light" (no explanation, no markdown, just the word). Is this site primarily dark mode or light mode?
 
 Website: ${crawlerResult.url} | ${crawlerResult.title}
 Content: ${crawlerResult.content.slice(0, 2000)}
-CSS: ${crawlerResult.cssAnalysis ? JSON.stringify(crawlerResult.cssAnalysis).slice(0, 2000) : ''}`;
+CSS: ${
+    crawlerResult.cssAnalysis
+      ? JSON.stringify(crawlerResult.cssAnalysis).slice(0, 2000)
+      : ""
+  }`;
 }
 
 /**
  * Create a comprehensive color analysis prompt
  */
-export function createColorAnalysisPrompt(crawlerResult: ExtendedCrawlerResult): string {
-  const colorsInfo = crawlerResult.colors && crawlerResult.colors.length > 0
-    ? `\nDetected colors:\n${crawlerResult.colors.slice(0, 30).join(', ')}`
-    : '';
+export function createColorAnalysisPrompt(
+  crawlerResult: ExtendedCrawlerResult
+): string {
+  const colorsInfo =
+    crawlerResult.colors && crawlerResult.colors.length > 0
+      ? `\nDetected colors:\n${crawlerResult.colors.slice(0, 30).join(", ")}`
+      : "";
 
   // Enhanced CSS class information if available
-  let cssClassInfo = '';
+  let cssClassInfo = "";
   if (crawlerResult.cssAnalysis && crawlerResult.cssAnalysis.grouped) {
     const grouped = crawlerResult.cssAnalysis.grouped;
     cssClassInfo = `\n\nCSS CLASS ANALYSIS (use this for precise class-specific mappings):
-Button classes (${grouped.buttons.length}): ${grouped.buttons.slice(0, 10).map((c: any) => c.className).join(', ')}
-Link classes (${grouped.links.length}): ${grouped.links.slice(0, 10).map((c: any) => c.className).join(', ')}
-Background classes (${grouped.backgrounds.length}): ${grouped.backgrounds.slice(0, 10).map((c: any) => c.className).join(', ')}
-Text classes (${grouped.text.length}): ${grouped.text.slice(0, 10).map((c: any) => c.className).join(', ')}
-Border classes (${grouped.borders.length}): ${grouped.borders.slice(0, 10).map((c: any) => c.className).join(', ')}
+Button classes (${grouped.buttons.length}): ${grouped.buttons
+      .slice(0, 10)
+      .map((c: any) => c.className)
+      .join(", ")}
+Link classes (${grouped.links.length}): ${grouped.links
+      .slice(0, 10)
+      .map((c: any) => c.className)
+      .join(", ")}
+Background classes (${grouped.backgrounds.length}): ${grouped.backgrounds
+      .slice(0, 10)
+      .map((c: any) => c.className)
+      .join(", ")}
+Text classes (${grouped.text.length}): ${grouped.text
+      .slice(0, 10)
+      .map((c: any) => c.className)
+      .join(", ")}
+Border classes (${grouped.borders.length}): ${grouped.borders
+      .slice(0, 10)
+      .map((c: any) => c.className)
+      .join(", ")}
 
 IMPORTANT: Generate mappings that include these specific class names for more targeted styling.`;
   }
 
   // Determine flavor based on detected mode
-  const flavor = (crawlerResult.detectedMode === 'dark') ? 'mocha' : 'latte';
+  const flavor = crawlerResult.detectedMode === "dark" ? "mocha" : "latte";
   const accentGuide = generateAccentSystemGuide(flavor);
 
   return `You are a color analysis system. Your output MUST be ONLY valid JSON. No thinking, no explanations, no markdown - JUST JSON.
@@ -50,7 +74,7 @@ ${cssClassInfo}
 
 Content: ${crawlerResult.content.slice(0, 2000)}
 
-MODE DETECTED: ${crawlerResult.detectedMode || 'light'}
+MODE DETECTED: ${crawlerResult.detectedMode || "light"}
 
 CRITICAL: Analyze the website's color usage carefully and create DIVERSE, ELEGANT mappings!
 
@@ -63,6 +87,12 @@ TASK - Identify colors for DIFFERENT UI PURPOSES by examining the actual website
 6. Borders & dividers (subtle separators, emphasis borders)
 7. Status indicators (success, warning, error, info, neutral)
 8. UI chrome (navbar, sidebar, footer, badges, tags)
+9. Specific components:
+   - Sidebar/Navigation drawers
+   - Code blocks/Preformatted text
+   - Data tables/Grids
+   - Tabs/Pills
+   - Alerts/Notifications/Toasts
 
 MAP TO CATPPUCCIN - Create VISUAL HIERARCHY with variety:
 
@@ -71,6 +101,9 @@ BACKGROUNDS (use appropriate base colors):
 - Secondary backgrounds: mantle, crust
 - Cards/surfaces: surface0, surface1, surface2
 - Overlays/modals: overlay0
+- Sidebar/Nav: mantle or crust (distinct from main bg)
+- Code blocks: crust or mantle
+- Tables: surface0 (header), base (body)
 
 BORDERS & LINES:
 - Subtle dividers: overlay0
@@ -218,9 +251,10 @@ Return ONLY valid JSON with this exact structure (no code blocks, no markdown, n
     {
       "from": "#original",
       "to": "catppuccin-color-name",
-      "context": "where-used (e.g. buttons, links, headings)",
+      "context": "where-used (e.g. buttons, links, headings, sidebar, code, table)",
       "cssProperties": ["color", "background-color", etc.],
-      "selectors": [".class", "element", etc.]
+      "selectors": [".class", "element", etc.],
+      "isAccent": true/false (true if this maps to a primary/secondary accent color)
     },
     ...
   ]

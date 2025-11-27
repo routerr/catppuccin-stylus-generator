@@ -458,6 +458,11 @@ function App() {
           useAIForSVGs: true,
           useAIForSelectors: true,
         },
+        useV4Generator: true,
+        userstyleV4: {
+          defaultFlavor: flavor,
+          defaultAccent: accent,
+        },
         useV3Generator,
         userstyleV3: useV3Generator
           ? {
@@ -518,7 +523,7 @@ function App() {
         title: result.analysis.title,
         content: result.analysis.content,
         html: result.analysis.html,
-        colors: result.analysis.colors || [],
+        colors: result.analysis.dominantColors || [],
       };
       setLastCrawlerResult(newCrawlerResult);
       setLastSource(source); // Ensure source is correctly set for regeneration

@@ -25,8 +25,21 @@
     - Fixed `@lookup` undefined error in `userstyle-v3.ts`.
   - **LESS Syntax Errors**: Added strict sanitization for hostnames and folder names to prevent syntax errors (e.g., "Missing closing ')'").
 
+## [Completed] Build Fixes
+
+- **Date**: 2025-11-22
+- **Summary**: Fixed build failures due to missing dependencies and syntax errors.
+- **Details**:
+  - **Missing Dependency**: Installed `zustand` which was listed in `package.json` but missing from `node_modules`.
+  - **Syntax/Type Errors**: Fixed multiple issues in `src/services/generators/userstyle-v3.ts`:
+    - Added missing `lines` array definition.
+    - Fixed missing return statement and coverage calculation.
+    - Corrected function call `getThemeSelectors` -> `buildModeSelectors`.
+    - Fixed type errors (`CatppuccinAccent` -> `AccentColor`, missing casts).
+    - Removed duplicate imports.
+
 ## [Current Status]
 
 - The application builds successfully (`npm run build`).
 - Deep Analysis pipeline is active.
-- Recent bugs related to file/directory uploads and LESS generation have been patched.
+- Recent bugs related to file/directory uploads, LESS generation, and build process have been patched.

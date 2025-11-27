@@ -8,11 +8,13 @@ import type {
 import type { AIProvider } from "../../types/theme";
 import type { UserstyleV2Config } from "../generators/userstyle-v2";
 import type { UserstyleV3Config } from "../generators/userstyle-v3";
+import type { UserstyleV4Config } from "../generators/userstyle-v4";
 import type { DeepMapperConfig } from "../ai/deep-mapper";
 import { fetchWithDeepAnalysis } from "../fetcher-v2";
 import { mapWithDeepAnalysis } from "../ai/deep-mapper";
 import { generateUserstyleV2 } from "../generators/userstyle-v2";
 import { generateUserstyleV3 } from "../generators/userstyle-v3";
+import { generateUserstyleV4 } from "../generators/userstyle-v4";
 
 export type DeepAnalysisFeatureToggle = Partial<
   Pick<
@@ -50,6 +52,10 @@ export type UserstyleV3Overrides = Partial<
   >
 >;
 
+export type UserstyleV4Overrides = Partial<
+  Pick<UserstyleV4Config, "defaultFlavor" | "defaultAccent">
+>;
+
 export interface DeepAnalysisPipelineOptions {
   url: string;
   content?: string; // Optional raw HTML content (for uploads)
@@ -64,6 +70,12 @@ export interface DeepAnalysisPipelineOptions {
    */
   useV3Generator?: boolean;
   userstyleV3?: UserstyleV3Overrides;
+  /**
+   * Use V4 generator for "Master Piece" quality themes
+   * @default false
+   */
+  useV4Generator?: boolean;
+  userstyleV4?: UserstyleV4Overrides;
 }
 
 export interface DeepAnalysisPipelineResult {
@@ -85,6 +97,8 @@ export async function runDeepAnalysisPipeline(
     userstyle,
     useV3Generator,
     userstyleV3,
+    useV4Generator,
+    userstyleV4,
   } = options;
 
   const analysis = await fetchWithDeepAnalysis(url, fetchConfig, content);
@@ -109,7 +123,15 @@ export async function runDeepAnalysisPipeline(
 
   let generated: GeneratedTheme;
 
-  if (useV3Generator) {
+  if (useV4Generator) {
+    // Use V4 generator (Master Piece)
+    const v4Config: UserstyleV4Config = {
+      url,
+      defaultFlavor: userstyleV4?.defaultFlavor ?? flavor,
+      defaultAccent: userstyleV4?.defaultAccent ?? mainAccent,
+    };
+    generated = generateUserstyleV4(analysis, mappings, v4Config);
+  } else if (useV3Generator) {
     // Use V3 generator with dynamic multi-flavor support
     const v3Config: UserstyleV3Config = {
       url,
