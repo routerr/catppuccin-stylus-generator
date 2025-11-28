@@ -1,0 +1,66 @@
+{
+  "url": "https://www.perplexity.ai",
+  "hash": "95558abe7ee9cbeb793dd76f434a842e",
+  "tokens": {
+    "--tw-ring-color": {
+      "name": "--tw-ring-color",
+      "value": "@surface2 !important",
+      "frequency": 0.3333333333333333,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--tw-ring-offset-color": {
+      "name": "--tw-ring-offset-color",
+      "value": "@mantle !important",
+      "frequency": 0.3333333333333333,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--scrollbar-thumb": {
+      "name": "--scrollbar-thumb",
+      "value": "@surface1 !important",
+      "frequency": 0.3333333333333333,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    }
+  },
+  "roles": {},
+  "accents": {
+    "primary": "mauve",
+    "biAccents": {
+      "first": "maroon",
+      "second": "sky"
+    },
+    "weights": {
+      "primary": 0.65,
+      "secondary": 0.25,
+      "tertiary": 0.1
+    },
+    "seed": "8bc91db5fee6ab6304644a13ac1d6dd4"
+  },
+  "diagnostics": {
+    "cssVariableCount": 3,
+    "inferredRoles": [],
+    "unmappedTokens": [
+      "--tw-ring-color",
+      "--tw-ring-offset-color",
+      "--scrollbar-thumb"
+    ],
+    "warnings": []
+  }
+}

@@ -17,6 +17,7 @@ export interface ExtendedCrawlerResult extends CrawlerResult {
       text: Array<{ className: string }>;
       borders: Array<{ className: string }>;
     };
+    aiRoleGuesses?: Array<{ className: string; role: string; confidence?: number }>;
   };
   detectedMode?: 'dark' | 'light';
 }
@@ -27,6 +28,7 @@ export interface ExtendedCrawlerResult extends CrawlerResult {
 export interface AIAnalysisResponse {
   analysis: WebsiteColorAnalysis;
   mappings: ColorMapping[];
+  classRoles?: Array<{ className: string; role: string; confidence?: number }>;
 }
 
 /**
@@ -36,6 +38,7 @@ export interface ColorAnalysisResult {
   analysis: WebsiteColorAnalysis;
   mappings: ColorMapping[];
   mode: 'dark' | 'light';
+  classRoles?: Array<{ className: string; role: string; confidence?: number }>;
 }
 
 /**

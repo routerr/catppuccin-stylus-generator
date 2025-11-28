@@ -1,0 +1,1906 @@
+{
+  "url": "https://duckduckgo.com",
+  "hash": "a751f400cb085ac53bb8f8eef85fe0c8e7c79abed1500c3cf516f686f22a11df",
+  "tokens": {
+    "--sds-color-text-02": {
+      "name": "--sds-color-text-02",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-disabled": {
+      "name": "--sds-color-text-disabled",
+      "value": "@overlay0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-page-separator": {
+      "name": "--theme-col-txt-page-separator",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-page-separator": {
+      "name": "--theme-col-page-separator",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-url": {
+      "name": "--theme-col-txt-url",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-title-visited": {
+      "name": "--theme-col-txt-title-visited",
+      "value": "@mauve !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-snippet": {
+      "name": "--theme-col-txt-snippet",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-card-title": {
+      "name": "--theme-col-txt-card-title",
+      "value": "@text",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "surface"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-url-domain": {
+      "name": "--theme-col-txt-url-domain",
+      "value": "@subtext1 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-title": {
+      "name": "--theme-col-txt-title",
+      "value": "@blue !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-bg-card": {
+      "name": "--theme-col-bg-card",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "surface"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-about-link": {
+      "name": "--theme-col-about-link",
+      "value": "@blue",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "link"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-border-ui": {
+      "name": "--theme-col-border-ui",
+      "value": "@surface1 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-bg-expandcollapse": {
+      "name": "--theme-col-bg-expandcollapse",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-palette-gray-60": {
+      "name": "--sds-color-palette-gray-60",
+      "value": "@accent !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-accent-01": {
+      "name": "--sds-color-text-accent-01",
+      "value": "@accent !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-msg": {
+      "name": "--theme-col-txt-msg",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-url-path": {
+      "name": "--theme-col-txt-url-path",
+      "value": "@subtext0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-border-expandcollapse": {
+      "name": "--theme-col-border-expandcollapse",
+      "value": "@surface1",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--col-blue-50": {
+      "name": "--col-blue-50",
+      "value": "@sapphire !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--col-blue-60": {
+      "name": "--col-blue-60",
+      "value": "@blue !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-bg-page": {
+      "name": "--theme-col-bg-page",
+      "value": "@base !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-01": {
+      "name": "--sds-color-text-01",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-on-color": {
+      "name": "--sds-color-text-on-color",
+      "value": "@base !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-spp-high-contrast-text-secondary": {
+      "name": "--theme-spp-high-contrast-text-secondary",
+      "value": "@accent !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text",
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-spp-high-contrast-card-indicator-color": {
+      "name": "--theme-spp-high-contrast-card-indicator-color",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "surface"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-spp-high-contrast-title-span-text": {
+      "name": "--theme-spp-high-contrast-title-span-text",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-spp-high-contrast-bg": {
+      "name": "--theme-spp-high-contrast-bg",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-palette-yellow-50": {
+      "name": "--sds-color-palette-yellow-50",
+      "value": "@yellow !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-04": {
+      "name": "--sds-color-text-04",
+      "value": "@subtext1 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-card-body": {
+      "name": "--theme-col-txt-card-body",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "surface"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-qna-details": {
+      "name": "--theme-col-txt-qna-details",
+      "value": "@subtext0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-card": {
+      "name": "--theme-col-txt-card",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "surface"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-03": {
+      "name": "--sds-color-text-03",
+      "value": "@subtext0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--col-slate-light": {
+      "name": "--col-slate-light",
+      "value": "@subtext0",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--col-silver-dark": {
+      "name": "--col-silver-dark",
+      "value": "@overlay1",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-button-secondary": {
+      "name": "--theme-col-txt-button-secondary",
+      "value": "@accent !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-bg-legacy-home": {
+      "name": "--theme-bg-legacy-home",
+      "value": "@base !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-bg-cta-cards": {
+      "name": "--theme-bg-cta-cards",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "surface",
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-button-primary-bg": {
+      "name": "--theme-button-primary-bg",
+      "value": "@blue !important",
+      "frequency": 0.014492753623188406,
+      "occurrences": 2,
+      "contexts": [
+        "background",
+        "button"
+      ],
+      "sources": [
+        "var-declaration",
+        "var-declaration"
+      ]
+    },
+    "--theme-button-primary-bg--hover": {
+      "name": "--theme-button-primary-bg--hover",
+      "value": "@blue !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-button-primary-bg--active": {
+      "name": "--theme-button-primary-bg--active",
+      "value": "@blue !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-button-primary-text": {
+      "name": "--theme-button-primary-text",
+      "value": "@crust !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text",
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-badge-fg--green": {
+      "name": "--theme-badge-fg--green",
+      "value": "@crust !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-browser-comparison-table-check-bg": {
+      "name": "--theme-browser-comparison-table-check-bg",
+      "value": "@green !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-browser-comparison-table-cross-bg": {
+      "name": "--theme-browser-comparison-table-cross-bg",
+      "value": "@red !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-searchbox-bg": {
+      "name": "--theme-searchbox-bg",
+      "value": "@surface0 !important",
+      "frequency": 0.014492753623188406,
+      "occurrences": 2,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration",
+        "var-declaration"
+      ]
+    },
+    "--theme-searchbox-bg--hover": {
+      "name": "--theme-searchbox-bg--hover",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-searchbox-bg--active": {
+      "name": "--theme-searchbox-bg--active",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-searchbox-bg--focused": {
+      "name": "--theme-searchbox-bg--focused",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-border-color-legacy-home-searchbox": {
+      "name": "--theme-border-color-legacy-home-searchbox",
+      "value": "@surface2 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-button-link-text": {
+      "name": "--theme-button-link-text",
+      "value": "@blue !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text",
+        "button",
+        "link"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-browser-comparison-table-badge-text": {
+      "name": "--theme-browser-comparison-table-badge-text",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-badge-bg--green": {
+      "name": "--theme-badge-bg--green",
+      "value": "@green !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-badge-bg--yellow": {
+      "name": "--theme-badge-bg--yellow",
+      "value": "@yellow !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-atb-button-bg": {
+      "name": "--theme-atb-button-bg",
+      "value": "@blue",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-atb-button-bg--hover": {
+      "name": "--theme-atb-button-bg--hover",
+      "value": "@blue",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-atb-button-bg--active": {
+      "name": "--theme-atb-button-bg--active",
+      "value": "@blue",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--col-silver-light": {
+      "name": "--col-silver-light",
+      "value": "@surface1 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-card-inner-border": {
+      "name": "--theme-col-card-inner-border",
+      "value": "@surface2 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "surface",
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-link-02": {
+      "name": "--sds-color-text-link-02",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text",
+        "link"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-link-02--hover": {
+      "name": "--sds-color-text-link-02--hover",
+      "value": "@subtext1 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text",
+        "link"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-text-legacy-home": {
+      "name": "--theme-text-legacy-home",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-browser-comparison-table-row-bg": {
+      "name": "--theme-browser-comparison-table-row-bg",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-browser-comparison-table-row-alt-bg": {
+      "name": "--theme-browser-comparison-table-row-alt-bg",
+      "value": "@surface1 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-bg-home-bottom": {
+      "name": "--theme-bg-home-bottom",
+      "value": "@base !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-atb-card-back-bg": {
+      "name": "--theme-atb-card-back-bg",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "surface"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-atb-card-front-bg": {
+      "name": "--theme-atb-card-front-bg",
+      "value": "@surface1 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "surface"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-text-bg": {
+      "name": "--theme-text-bg",
+      "value": "@text !important",
+      "frequency": 0.014492753623188406,
+      "occurrences": 2,
+      "contexts": [
+        "background",
+        "text"
+      ],
+      "sources": [
+        "var-declaration",
+        "var-declaration"
+      ]
+    },
+    "--feature-card-background-color": {
+      "name": "--feature-card-background-color",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "surface"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-accordion-background--expanded": {
+      "name": "--theme-accordion-background--expanded",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-accordion-background": {
+      "name": "--theme-accordion-background",
+      "value": "@surface1 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-footer-link-text": {
+      "name": "--theme-footer-link-text",
+      "value": "@blue !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text",
+        "link"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-sidemenu-bg": {
+      "name": "--theme-sidemenu-bg",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-button-tertiary": {
+      "name": "--theme-col-txt-button-tertiary",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-bg-legacy-home-searchbox": {
+      "name": "--theme-bg-legacy-home-searchbox",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-bg-info-snippet": {
+      "name": "--theme-bg-info-snippet",
+      "value": "@surface2 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "semantic"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-button-tertiary-txt": {
+      "name": "--theme-button-tertiary-txt",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-browser-comparison-table-icon-bg": {
+      "name": "--theme-browser-comparison-table-icon-bg",
+      "value": "@mantle !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-bg-ui": {
+      "name": "--theme-col-bg-ui",
+      "value": "@mantle !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-bg-header": {
+      "name": "--theme-col-bg-header",
+      "value": "@mantle !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-bg-header-modal": {
+      "name": "--theme-col-bg-header-modal",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-bg-button-primary": {
+      "name": "--theme-col-bg-button-primary",
+      "value": "@blue !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background",
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-background-dark": {
+      "name": "--sds-color-background-dark",
+      "value": "@crust !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-link-02-hover": {
+      "name": "--sds-color-text-link-02-hover",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text",
+        "link"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-dc-color-background-dark": {
+      "name": "--theme-dc-color-background-dark",
+      "value": "@base !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-dc-color-gpt-main": {
+      "name": "--theme-dc-color-gpt-main",
+      "value": "@mauve !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-dc-color-gpt-bg": {
+      "name": "--theme-dc-color-gpt-bg",
+      "value": "@mauve !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-dc-color-claude-main": {
+      "name": "--theme-dc-color-claude-main",
+      "value": "@green !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-dc-color-claude-bg": {
+      "name": "--theme-dc-color-claude-bg",
+      "value": "@green !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-background-destructive": {
+      "name": "--sds-color-background-destructive",
+      "value": "@red !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-on-dark-01": {
+      "name": "--sds-color-text-on-dark-01",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-dc-color-fire-button": {
+      "name": "--theme-dc-color-fire-button",
+      "value": "fade(@red, 40%) !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-background-destructive-state-01": {
+      "name": "--sds-color-background-destructive-state-01",
+      "value": "@red !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-background-destructive-state-02": {
+      "name": "--sds-color-background-destructive-state-02",
+      "value": "@red !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-destructive": {
+      "name": "--sds-color-text-destructive",
+      "value": "@red !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-success": {
+      "name": "--sds-color-text-success",
+      "value": "@green !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text",
+        "semantic"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-text-link-01": {
+      "name": "--sds-color-text-link-01",
+      "value": "@blue !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text",
+        "link"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-background-container-01": {
+      "name": "--sds-color-background-container-01",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-border-accent-01": {
+      "name": "--sds-color-border-accent-01",
+      "value": "@accent !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-dc-color-container-message": {
+      "name": "--theme-dc-color-container-message",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-palette-gray-85": {
+      "name": "--sds-color-palette-gray-85",
+      "value": "@surface1 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-palette-white": {
+      "name": "--sds-color-palette-white",
+      "value": "@crust !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-background-accent-01": {
+      "name": "--sds-color-background-accent-01",
+      "value": "@accent !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-txt-card-body-light": {
+      "name": "--theme-col-txt-card-body-light",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "surface"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-bg-page-alt-2": {
+      "name": "--theme-col-bg-page-alt-2",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-col-bg-ui-active": {
+      "name": "--theme-col-bg-ui-active",
+      "value": "@surface1 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-dc-color-llama-main": {
+      "name": "--theme-dc-color-llama-main",
+      "value": "@pink !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-dc-color-mixtral-main": {
+      "name": "--theme-dc-color-mixtral-main",
+      "value": "@peach !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-dc-color-anchor-sleep": {
+      "name": "--theme-dc-color-anchor-sleep",
+      "value": "@subtext0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "link"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-assist-bg-chat-system": {
+      "name": "--theme-assist-bg-chat-system",
+      "value": "@mantle !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-assist-gradient-stop": {
+      "name": "--theme-assist-gradient-stop",
+      "value": "@mantle !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-palette-gray-40": {
+      "name": "--sds-color-palette-gray-40",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-background-01": {
+      "name": "--sds-color-background-01",
+      "value": "@base !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-background-02": {
+      "name": "--sds-color-background-02",
+      "value": "@mantle !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-palette-red-40": {
+      "name": "--sds-color-palette-red-40",
+      "value": "@red !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-border-01": {
+      "name": "--sds-color-border-01",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--col-blue-30": {
+      "name": "--col-blue-30",
+      "value": "@blue !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-palette-green-60": {
+      "name": "--sds-color-palette-green-60",
+      "value": "@green !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--sds-color-background-utility": {
+      "name": "--sds-color-background-utility",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--type--tiles": {
+      "name": "--type--tiles",
+      "value": "not(.is-fallback).is-full-page.is-expanded,\n    .zci--type--tiles:not(.is-fallback).is-full-page.is-expanded\n      .metabar:not(.is-stuck)",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--link__icn": {
+      "name": "--link__icn",
+      "value": ":before",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "link"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--more": {
+      "name": "--more",
+      "value": ":after",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--lyrics": {
+      "name": "--lyrics",
+      "value": "not(.is-expanded)\n      .module--lyrics__footer.can-expand::after",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--primary": {
+      "name": "--primary",
+      "value": "not(.is-disabled)",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--red": {
+      "name": "--red",
+      "value": "hover,\n    .module__weather-warning--red:focus,\n    .module__weather-warning--red:visited",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--before": {
+      "name": "--before",
+      "value": ":before,\n    .sep",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--skeleton": {
+      "name": "--skeleton",
+      "value": "hover,\n    .module__footer-carousel__label:hover",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--right-fade": {
+      "name": "--right-fade",
+      "value": ":before",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--color-yellow60": {
+      "name": "--color-yellow60",
+      "value": "@yellow !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "other"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-searchbox-caret-bg": {
+      "name": "--theme-searchbox-caret-bg",
+      "value": "@accent !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-bg-home": {
+      "name": "--theme-bg-home",
+      "value": "@base !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-button-secondary-text": {
+      "name": "--theme-button-secondary-text",
+      "value": "@text !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "text",
+        "button"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-bg-home-searchbox": {
+      "name": "--theme-bg-home-searchbox",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "background"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    },
+    "--theme-border-color-home-searchbox": {
+      "name": "--theme-border-color-home-searchbox",
+      "value": "@surface0 !important",
+      "frequency": 0.007246376811594203,
+      "occurrences": 1,
+      "contexts": [
+        "border"
+      ],
+      "sources": [
+        "var-declaration"
+      ]
+    }
+  },
+  "roles": {
+    "text.secondary": {
+      "token": "--sds-color-text-02",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches secondary text token",
+        "text"
+      ]
+    },
+    "text.disabled": {
+      "token": "--sds-color-text-disabled",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches disabled text token",
+        "text"
+      ]
+    },
+    "surface.0": {
+      "token": "--theme-col-bg-card",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches surface level 0",
+        "background",
+        "surface"
+      ]
+    },
+    "border.subtle": {
+      "token": "--theme-col-border-ui",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches subtle border token",
+        "border"
+      ]
+    },
+    "background.primary": {
+      "token": "--theme-col-bg-page",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches background primary variable",
+        "background"
+      ]
+    },
+    "text.primary": {
+      "token": "--sds-color-text-01",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches primary text token",
+        "text"
+      ]
+    },
+    "text.muted": {
+      "token": "--sds-color-text-03",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches muted text token",
+        "text"
+      ]
+    },
+    "secondary.base": {
+      "token": "--theme-col-txt-button-secondary",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches secondary button background",
+        "button"
+      ]
+    },
+    "background.secondary": {
+      "token": "--theme-bg-legacy-home",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches background secondary variable",
+        "background"
+      ]
+    },
+    "primary.base": {
+      "token": "--theme-button-primary-bg",
+      "confidence": 0.6057971014492753,
+      "hints": [
+        "Matches primary button background",
+        "background",
+        "button"
+      ]
+    },
+    "success.text": {
+      "token": "--theme-badge-fg--green",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches success text",
+        "other"
+      ]
+    },
+    "info.base": {
+      "token": "--theme-browser-comparison-table-check-bg",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches info color",
+        "background"
+      ]
+    },
+    "danger.base": {
+      "token": "--theme-browser-comparison-table-cross-bg",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches danger color",
+        "background"
+      ]
+    },
+    "accent.focus": {
+      "token": "--theme-searchbox-bg--focused",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches focus token",
+        "background"
+      ]
+    },
+    "success.base": {
+      "token": "--theme-badge-bg--green",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches success color",
+        "background"
+      ]
+    },
+    "warning.base": {
+      "token": "--theme-badge-bg--yellow",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches warning color",
+        "background"
+      ]
+    },
+    "border.default": {
+      "token": "--theme-col-card-inner-border",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches default border token",
+        "surface",
+        "border"
+      ]
+    },
+    "accent.interactive": {
+      "token": "--sds-color-text-link-02",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches interactive accent token",
+        "text",
+        "link"
+      ]
+    },
+    "surface.1": {
+      "token": "--theme-col-bg-ui",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches surface level 1",
+        "background"
+      ]
+    },
+    "danger.text": {
+      "token": "--sds-color-text-destructive",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches danger text",
+        "text"
+      ]
+    },
+    "border.strong": {
+      "token": "--sds-color-border-accent-01",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches strong border token",
+        "border"
+      ]
+    },
+    "accent.selection": {
+      "token": "--theme-assist-gradient-stop",
+      "confidence": 0.6028985507246376,
+      "hints": [
+        "Matches text selection token",
+        "other"
+      ]
+    }
+  },
+  "accents": {
+    "primary": "mauve",
+    "biAccents": {
+      "first": "maroon",
+      "second": "sky"
+    },
+    "weights": {
+      "primary": 0.65,
+      "secondary": 0.25,
+      "tertiary": 0.1
+    },
+    "seed": "2782d03e7533273919fe9ab118e24bf041b9dd35c94238c80ed005e7c99d84f2"
+  },
+  "diagnostics": {
+    "cssVariableCount": 135,
+    "inferredRoles": [
+      "text.secondary",
+      "text.disabled",
+      "surface.0",
+      "border.subtle",
+      "background.primary",
+      "text.primary",
+      "text.muted",
+      "secondary.base",
+      "background.secondary",
+      "primary.base",
+      "success.text",
+      "info.base",
+      "danger.base",
+      "accent.focus",
+      "success.base",
+      "warning.base",
+      "border.default",
+      "accent.interactive",
+      "surface.1",
+      "danger.text",
+      "border.strong",
+      "accent.selection"
+    ],
+    "unmappedTokens": [
+      "--theme-col-txt-page-separator",
+      "--theme-col-page-separator",
+      "--theme-col-txt-url",
+      "--theme-col-txt-title-visited",
+      "--theme-col-txt-snippet",
+      "--theme-col-txt-card-title",
+      "--theme-col-txt-url-domain",
+      "--theme-col-txt-title",
+      "--theme-col-about-link",
+      "--theme-col-bg-expandcollapse",
+      "--sds-color-palette-gray-60",
+      "--sds-color-text-accent-01",
+      "--theme-col-txt-msg",
+      "--theme-col-txt-url-path",
+      "--theme-col-border-expandcollapse",
+      "--col-blue-50",
+      "--col-blue-60",
+      "--sds-color-text-on-color",
+      "--theme-spp-high-contrast-text-secondary",
+      "--theme-spp-high-contrast-card-indicator-color",
+      "--theme-spp-high-contrast-title-span-text",
+      "--theme-spp-high-contrast-bg",
+      "--sds-color-palette-yellow-50",
+      "--sds-color-text-04",
+      "--theme-col-txt-card-body"
+    ],
+    "warnings": []
+  }
+}

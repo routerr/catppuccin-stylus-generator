@@ -7,15 +7,16 @@ import { analyzeColorsWithOllama, OLLAMA_MODELS } from './ollama';
 
 export async function analyzeWebsiteColors(
   crawlerResult: CrawlerResult,
-  config: AIConfig
-): Promise<{ analysis: WebsiteColorAnalysis; mappings: ColorMapping[] }> {
+  config: AIConfig,
+  options?: { aiClassMapping?: boolean }
+): Promise<{ analysis: WebsiteColorAnalysis; mappings: ColorMapping[]; classRoles?: any[] }> {
   switch (config.provider) {
     case 'openrouter':
-      return analyzeColorsWithOpenRouter(crawlerResult, config.apiKey, config.model);
+      return analyzeColorsWithOpenRouter(crawlerResult, config.apiKey, config.model, options);
     case 'chutes':
-      return analyzeColorsWithChutes(crawlerResult, config.apiKey, config.model);
+      return analyzeColorsWithChutes(crawlerResult, config.apiKey, config.model, options);
     case 'ollama':
-      return analyzeColorsWithOllama(crawlerResult, config.model);
+      return analyzeColorsWithOllama(crawlerResult, config.model, options);
     default:
       throw new Error(`Unknown AI provider: ${config.provider}`);
   }

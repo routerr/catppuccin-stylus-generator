@@ -2,6 +2,7 @@ import type { CatppuccinFlavor, CatppuccinColor, ColorMapping, AccentColor } fro
 import type { MappingOutput, RoleMap, DerivedScales } from '../../types/theme';
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
 import { computeAccentSetFor } from '../../utils/accent-schemes';
+import { createAccentPlan } from '../../utils/accent-plan';
 
 // Contrast calculation functions
 function hexToRgb(hex: string): number[] {
@@ -54,10 +55,11 @@ export function generateStylusTheme(
   cssAnalysis?: any
 ): string {
   const palette = CATPPUCCIN_PALETTES[flavor];
+  const accentPlan = createAccentPlan((cssAnalysis as any)?.paletteProfile, flavor, defaultAccent);
   const pre = computeAccentSetFor(palette, defaultAccent);
   const bi1Set = computeAccentSetFor(palette, pre.biAccent1);
   const bi2Set = computeAccentSetFor(palette, pre.biAccent2);
-  const useAltForSecondary = Math.random() < 0.5 ? 'bi1' : 'bi2';
+  const useAltForSecondary = accentPlan.buttonVariant === 'alt1' ? 'bi1' : 'bi2';
   const date = new Date().toISOString().split('T')[0];
   // Flavor-based intensity tuning (decimals for Stylus fade())
   const intensity = (() => {
@@ -123,16 +125,8 @@ export function generateStylusTheme(
   stylus += `$bi-accent2 = ${pre.biAccent2}\n`;
   stylus += `$bi-accent = $bi-accent1\n`;
 
-  // Decide hover accents for links at generation time (build-time random)
-  // Build-time random angle and percentage stops for gradient text on link hover
-  const hoverAngle = Math.floor(Math.random() * 180); // 0-179deg
-  // Approx 40/20/20 style distribution
-  const hoverMain = 38 + Math.floor(Math.random() * 8); // 38-45%
-  const hoverRemain = 100 - hoverMain; // 55-62%
-  let hoverB1 = Math.max(18, Math.floor(Math.random() * Math.max(18, hoverRemain - 18)));
-  let hoverB2 = hoverRemain - hoverB1;
-  if (hoverB1 > 45) { hoverB2 += (hoverB1 - 45); hoverB1 = 45; }
-  if (hoverB2 > 45) { hoverB1 += (hoverB2 - 45); hoverB2 = 45; }
+  // Deterministic hover angle derived from palette profile seed
+  const hoverAngle = accentPlan.hoverAngles.links;
 
   // If MappingOutput, emit two-level system
   if ((colorMappings as MappingOutput)?.roleMap) {

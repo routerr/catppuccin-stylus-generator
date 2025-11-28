@@ -6,6 +6,29 @@ import type { WebsiteColorAnalysis, ColorMapping } from '../../types/catppuccin'
 import type { AIAnalysisResponse, JSONExtractionOptions } from './types';
 import { createJSONExtractionPrompt } from './prompts';
 
+export async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  retries = 2,
+  backoffMs = 600
+): Promise<Response> {
+  let attempt = 0;
+  let lastError: any;
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, init);
+      if (res.status === 429 || res.status === 503) throw new Error(`HTTP ${res.status}`);
+      return res;
+    } catch (e) {
+      lastError = e;
+      if (attempt === retries) break;
+      await new Promise((r) => setTimeout(r, backoffMs * (attempt + 1)));
+    }
+    attempt += 1;
+  }
+  throw lastError || new Error('Request failed');
+}
+
 /**
  * Parse and validate color analysis response
  */
@@ -312,6 +335,7 @@ export async function detectWebsiteMode(
   modePrompt: string,
   includeRefererHeaders: boolean = true
 ): Promise<'dark' | 'light'> {
+  const RETRIES = 2;
   try {
     // Base headers that all providers support
     const headers: Record<string, string> = {
@@ -325,22 +349,41 @@ export async function detectWebsiteMode(
       headers['X-Title'] = 'Catppuccin Theme Generator';
     }
 
-    const response = await fetch(apiEndpoint, {
-      method: 'POST',
-      mode: 'cors',
-      headers,
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'user',
-            content: modePrompt,
-          },
-        ],
-        temperature: 0.0,
-        max_tokens: 10,
-      }),
-    });
+    let attempt = 0;
+    let response: Response | null = null;
+    let lastError: any = null;
+
+    while (attempt <= RETRIES) {
+      try {
+        response = await fetch(apiEndpoint, {
+          method: 'POST',
+          mode: 'cors',
+          headers,
+          body: JSON.stringify({
+            model,
+            messages: [
+              {
+                role: 'user',
+                content: modePrompt,
+              },
+            ],
+            temperature: 0.0,
+            max_tokens: 10,
+          }),
+        });
+        if (response.status === 429 || response.status === 503) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        break;
+      } catch (err) {
+        lastError = err;
+        if (attempt === RETRIES) {
+          throw err;
+        }
+        await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+      }
+      attempt += 1;
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

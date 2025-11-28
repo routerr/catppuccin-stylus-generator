@@ -1,0 +1,16 @@
+FROM node:20-slim
+
+# Install Playwright deps and Chromium
+RUN apt-get update && apt-get install -y wget gnupg && rm -rf /var/lib/apt/lists/*
+RUN npx playwright install-deps chromium
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+
+# Install Chromium for Playwright runtime
+RUN npx playwright install chromium
+
+EXPOSE 8787
+CMD ["node", "scripts/playwright-server.mjs"]

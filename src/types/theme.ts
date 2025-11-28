@@ -1,7 +1,7 @@
 import type { CatppuccinFlavor } from './catppuccin';
 
 // Content fetch service types (direct HTTP/HTTPS fetching)
-export type FetcherService = 'direct-fetch' | 'mhtml-upload' | 'directory-upload';
+export type FetcherService = 'direct-fetch' | 'playwright-crawler';
 
 // API-based fetcher service types
 export type FetcherAPIService = 
