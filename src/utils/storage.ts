@@ -1,5 +1,7 @@
 // LocalStorage utilities for API keys and settings
 
+import type { FetcherAPIKeys, FetcherAPIService } from '../types/theme';
+
 interface StoredKeys {
   browserbase?: string;
   exa?: string;
@@ -11,6 +13,11 @@ interface StoredKeys {
   ollama?: string;
   // Custom base URL for Ollama (e.g., https://your-tunnel.example.com)
   ollamaBase?: string;
+  // API-based fetcher keys
+  scrapingbee?: string;
+  browserless?: string;
+  // Preferred fetcher service
+  preferredFetcher?: FetcherAPIService;
 }
 
 const STORAGE_KEY = 'catppuccin-theme-gen-keys';
@@ -80,4 +87,52 @@ export function downloadText(content: string, filename: string, mimeType: string
   document.body.removeChild(link);
 
   URL.revokeObjectURL(url);
+}
+
+// ============================================================================
+// FETCHER API KEY HELPERS
+// ============================================================================
+
+/**
+ * Get fetcher API keys from storage
+ */
+export function getFetcherAPIKeys(): FetcherAPIKeys {
+  const keys = loadAPIKeys();
+  return {
+    firecrawl: keys.firecrawl,
+    scrapingbee: keys.scrapingbee,
+    browserless: keys.browserless,
+  };
+}
+
+/**
+ * Save fetcher API keys to storage
+ */
+export function saveFetcherAPIKeys(fetcherKeys: FetcherAPIKeys): void {
+  const keys = loadAPIKeys();
+  saveAPIKeys({
+    ...keys,
+    firecrawl: fetcherKeys.firecrawl,
+    scrapingbee: fetcherKeys.scrapingbee,
+    browserless: fetcherKeys.browserless,
+  });
+}
+
+/**
+ * Get preferred fetcher service from storage
+ */
+export function getPreferredFetcher(): FetcherAPIService {
+  const keys = loadAPIKeys();
+  return keys.preferredFetcher || 'auto';
+}
+
+/**
+ * Save preferred fetcher service to storage
+ */
+export function setPreferredFetcher(service: FetcherAPIService): void {
+  const keys = loadAPIKeys();
+  saveAPIKeys({
+    ...keys,
+    preferredFetcher: service,
+  });
 }

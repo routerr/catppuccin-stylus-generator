@@ -3,6 +3,22 @@ import type { CatppuccinFlavor } from './catppuccin';
 // Content fetch service types (direct HTTP/HTTPS fetching)
 export type FetcherService = 'direct-fetch' | 'mhtml-upload' | 'directory-upload';
 
+// API-based fetcher service types
+export type FetcherAPIService = 
+  | 'firecrawl'
+  | 'jina'
+  | 'scrapingbee'
+  | 'browserless'
+  | 'cors-proxy'
+  | 'auto';
+
+// API keys configuration for fetcher services
+export interface FetcherAPIKeys {
+  firecrawl?: string;
+  scrapingbee?: string;
+  browserless?: string;
+}
+
 export interface CrawlerResult {
   url: string;
   title: string;

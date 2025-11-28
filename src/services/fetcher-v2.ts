@@ -1,15 +1,20 @@
 /**
  * Enhanced Content Fetcher v2
  * Fetches website content with deep analysis capabilities
+ * 
+ * Now supports API-based fetching services (Firecrawl, Jina, ScrapingBee)
+ * in addition to CORS proxy fallback.
  */
 
 import type { DeepAnalysisResult, DeepAnalysisConfig } from '../types/deep-analysis';
-import type { CrawlerResult } from '../types/theme';
+import type { CrawlerResult, FetcherAPIKeys, FetcherAPIService } from '../types/theme';
 import { extractCSSVariables, getVariableStats } from '../utils/deep-analysis/css-variables';
 import { analyzeSVGs, getSVGStats } from '../utils/deep-analysis/svg-analyzer';
 import { detectDesignSystem } from '../utils/deep-analysis/design-system';
 import { discoverSelectors, filterColorSelectors, getSelectorStats } from '../utils/deep-analysis/selector-discovery';
 import { DEFAULT_DEEP_ANALYSIS_CONFIG } from '../types/deep-analysis';
+import { fetchWithAPI, type FetcherAPIConfig, type APIFetchResult } from './fetcher-api';
+import { getFetcherAPIKeys, getPreferredFetcher } from '../utils/storage';
 
 // CORS proxy options - we need these because browsers block direct cross-origin requests
 const CORS_PROXIES = [
@@ -21,22 +26,80 @@ const CORS_PROXIES = [
 let currentProxyIndex = 0;
 
 /**
+ * Configuration for the enhanced fetcher
+ */
+export interface EnhancedFetchConfig extends Partial<DeepAnalysisConfig> {
+  /** Use API-based fetcher (Firecrawl, Jina, etc.) instead of CORS proxy */
+  useAPIFetcher?: boolean;
+  /** Preferred fetcher service */
+  fetcherService?: FetcherAPIService;
+  /** API keys for fetcher services */
+  fetcherAPIKeys?: FetcherAPIKeys;
+}
+
+/**
  * Fetch website with complete deep analysis
+ * Now supports API-based fetchers with automatic fallback
  */
 export async function fetchWithDeepAnalysis(
   url: string,
-  config: Partial<DeepAnalysisConfig> = {}
+  config: EnhancedFetchConfig = {}
 ): Promise<DeepAnalysisResult> {
   const startTime = Date.now();
   const fullConfig = { ...DEFAULT_DEEP_ANALYSIS_CONFIG, ...config };
 
   console.log(`🔍 Starting deep analysis for: ${url}`);
 
-  // Step 1: Fetch basic content
-  const basicContent = await fetchBasicContent(url);
+  // Determine if we should use API-based fetcher
+  const useAPIFetcher = config.useAPIFetcher ?? true; // Default to API fetcher
+  
+  let basicContent: {
+    html: string;
+    title: string;
+    content: string;
+    externalStylesheets: string[];
+    inlineStyles: string[];
+  };
+  let allCSS: string;
 
-  // Step 2: Fetch all CSS (external + inline)
-  const allCSS = await fetchAllCSS(url, basicContent.html);
+  if (useAPIFetcher) {
+    // Use API-based fetcher
+    const apiKeys = config.fetcherAPIKeys ?? getFetcherAPIKeys();
+    const preferredService = config.fetcherService ?? getPreferredFetcher();
+
+    console.log(`📡 Using API-based fetcher (service: ${preferredService})`);
+
+    try {
+      const apiResult = await fetchWithAPI(url, {
+        service: preferredService,
+        apiKeys,
+        enableFallback: true,
+      });
+
+      console.log(`✅ Fetched with ${apiResult.serviceUsed}`);
+
+      // Convert API result to basic content format
+      basicContent = {
+        html: apiResult.html,
+        title: apiResult.title,
+        content: extractTextContent(apiResult.html || apiResult.markdown || ''),
+        externalStylesheets: extractStylesheetURLs(apiResult.html, url),
+        inlineStyles: extractInlineStyles(apiResult.html),
+      };
+
+      // Use CSS from API result if available, otherwise fetch separately
+      allCSS = apiResult.css || await fetchAllCSS(url, basicContent.html);
+    } catch (error) {
+      console.warn('⚠️ API fetcher failed, falling back to CORS proxy:', error);
+      // Fall back to CORS proxy
+      basicContent = await fetchBasicContent(url);
+      allCSS = await fetchAllCSS(url, basicContent.html);
+    }
+  } else {
+    // Use traditional CORS proxy
+    basicContent = await fetchBasicContent(url);
+    allCSS = await fetchAllCSS(url, basicContent.html);
+  }
 
   // Step 3: Run deep analysis
   const cssVariables = fullConfig.enableCSSVariables
@@ -155,6 +218,58 @@ async function fetchBasicContent(url: string): Promise<{
     `Last error: ${lastError?.message || 'Unknown error'}. ` +
     `The website may be blocking proxy requests or is temporarily unavailable.`
   );
+}
+
+// ============================================================================
+// HELPER FUNCTIONS FOR API FETCHER INTEGRATION
+// ============================================================================
+
+/**
+ * Extract text content from HTML or markdown
+ */
+function extractTextContent(content: string): string {
+  return content
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, 5000);
+}
+
+/**
+ * Extract stylesheet URLs from HTML
+ */
+function extractStylesheetURLs(html: string, baseUrl: string): string[] {
+  const urls: string[] = [];
+  const linkRegex = /<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi;
+  let match;
+
+  while ((match = linkRegex.exec(html)) !== null) {
+    try {
+      const absoluteUrl = new URL(match[1], baseUrl).href;
+      urls.push(absoluteUrl);
+    } catch (e) {
+      // Invalid URL, skip
+    }
+  }
+
+  return urls;
+}
+
+/**
+ * Extract inline styles from HTML
+ */
+function extractInlineStyles(html: string): string[] {
+  const styles: string[] = [];
+  const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+  let match;
+
+  while ((match = styleRegex.exec(html)) !== null) {
+    styles.push(match[1]);
+  }
+
+  return styles;
 }
 
 /**
