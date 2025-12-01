@@ -6,6 +6,41 @@ import type { WebsiteColorAnalysis, ColorMapping } from '../../types/catppuccin'
 import type { AIAnalysisResponse, JSONExtractionOptions } from './types';
 import { createJSONExtractionPrompt } from './prompts';
 
+// Timeout constants (exported for use in other AI modules)
+export const MODE_DETECTION_TIMEOUT_MS = 60000; // 60s for mode detection (reasoning models can be slow)
+export const COLOR_ANALYSIS_TIMEOUT_MS = 90000; // 90s for color analysis
+export const JSON_EXTRACTION_TIMEOUT_MS = 60000; // 60s for JSON extraction
+
+/**
+ * Create an AbortSignal with timeout, with fallback for older browsers
+ */
+export function createTimeoutSignal(timeoutMs: number): AbortSignal | undefined {
+  // Use AbortSignal.timeout if available (modern browsers)
+  if (typeof AbortSignal !== 'undefined' && typeof (AbortSignal as any).timeout === 'function') {
+    return (AbortSignal as any).timeout(timeoutMs);
+  }
+  // Fallback: create AbortController and setTimeout
+  if (typeof AbortController !== 'undefined') {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), timeoutMs);
+    return controller.signal;
+  }
+  return undefined;
+}
+
+/**
+ * Check if an error is a timeout/abort error
+ */
+export function isTimeoutError(error: any): boolean {
+  return (
+    error?.name === 'AbortError' ||
+    error?.name === 'TimeoutError' ||
+    error?.message?.includes('abort') ||
+    error?.message?.includes('timeout') ||
+    error?.message?.includes('signal')
+  );
+}
+
 export async function fetchWithRetry(
   url: string,
   init: RequestInit,
@@ -19,8 +54,12 @@ export async function fetchWithRetry(
       const res = await fetch(url, init);
       if (res.status === 429 || res.status === 503) throw new Error(`HTTP ${res.status}`);
       return res;
-    } catch (e) {
+    } catch (e: any) {
       lastError = e;
+      // Don't retry on timeout/abort - it's likely the model is too slow
+      if (isTimeoutError(e)) {
+        throw new Error(`Request timed out. The AI model may be overloaded or slow. Try again or use a different model.`);
+      }
       if (attempt === retries) break;
       await new Promise((r) => setTimeout(r, backoffMs * (attempt + 1)));
     }
@@ -273,6 +312,7 @@ ${options.rawResponse.slice(0, 3000)}
 OUTPUT FORMAT: Just the JSON object starting with { and ending with }`;
 
   try {
+    console.log('Sending JSON extraction request with timeout...');
     const response = await fetch(options.apiEndpoint, {
       method: 'POST',
       mode: 'cors',
@@ -297,6 +337,7 @@ OUTPUT FORMAT: Just the JSON object starting with { and ending with }`;
         temperature: 0.0, // Zero temperature for deterministic extraction
         max_tokens: 2000,
       }),
+      signal: createTimeoutSignal(JSON_EXTRACTION_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -355,6 +396,7 @@ export async function detectWebsiteMode(
 
     while (attempt <= RETRIES) {
       try {
+        console.log(`Mode detection attempt ${attempt + 1}/${RETRIES + 1}...`);
         response = await fetch(apiEndpoint, {
           method: 'POST',
           mode: 'cors',
@@ -370,13 +412,19 @@ export async function detectWebsiteMode(
             temperature: 0.0,
             max_tokens: 10,
           }),
+          signal: createTimeoutSignal(MODE_DETECTION_TIMEOUT_MS),
         });
         if (response.status === 429 || response.status === 503) {
           throw new Error(`HTTP ${response.status}`);
         }
         break;
-      } catch (err) {
+      } catch (err: any) {
         lastError = err;
+        // Don't retry on timeout - surface the error immediately
+        if (isTimeoutError(err)) {
+          console.error('Mode detection timed out:', err);
+          throw new Error(`Mode detection timed out. The AI model may be overloaded or slow. Try a different model.`);
+        }
         if (attempt === RETRIES) {
           throw err;
         }
@@ -395,7 +443,11 @@ export async function detectWebsiteMode(
     const modeText = data.choices?.[0]?.message?.content?.trim().toLowerCase();
 
     return modeText === 'dark' ? 'dark' : 'light';
-  } catch (error) {
+  } catch (error: any) {
+    // Rethrow timeout errors so they surface to the user
+    if (isTimeoutError(error) || error?.message?.includes('timed out')) {
+      throw error;
+    }
     console.error('Failed to detect mode, defaulting to light:', error);
     return 'light';
   }

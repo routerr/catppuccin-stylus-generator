@@ -3,7 +3,7 @@ import type { WebsiteColorAnalysis, ColorMapping } from '../../types/catppuccin'
 import type { CrawlerResult } from '../../types/theme';
 import { getOllamaBaseFromStorage, loadAPIKeys } from '../../utils/storage';
 import { createColorAnalysisPrompt, createClassMappingPrompt, createModeDetectionPrompt } from './prompts';
-import { parseColorAnalysisResponse, extractJSONManually } from './base';
+import { parseColorAnalysisResponse, extractJSONManually, createTimeoutSignal, COLOR_ANALYSIS_TIMEOUT_MS, MODE_DETECTION_TIMEOUT_MS, isTimeoutError } from './base';
 import type { ColorAnalysisResult, ExtendedCrawlerResult } from './types';
 
 // Ollama models (local). These are common tags; your local install may vary.
@@ -88,7 +88,7 @@ function getOllamaBases(): string[] {
   return bases;
 }
 
-async function postOllama(path: string, body: any) {
+async function postOllama(path: string, body: any, timeoutMs: number = COLOR_ANALYSIS_TIMEOUT_MS) {
   let lastErr: any = null;
   const bases = getOllamaBases();
   const { ollama: cloudKey } = loadAPIKeys();
@@ -105,14 +105,19 @@ async function postOllama(path: string, body: any) {
           method: 'POST',
           headers,
           body: JSON.stringify(body),
+          signal: createTimeoutSignal(timeoutMs),
         });
         if (res.status === 429 || res.status === 503) {
           throw new Error(`HTTP ${res.status}`);
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
-      } catch (e) {
+      } catch (e: any) {
         lastErr = e;
+        // Don't retry on timeout - the model is likely too slow
+        if (isTimeoutError(e)) {
+          throw new Error(`Request timed out. The Ollama model may be overloaded or slow. Try a different model.`);
+        }
         if (attempt === 2) {
           break; // move to next base
         }
@@ -136,6 +141,7 @@ export async function analyzeColorsWithOllama(
 
   let detectedMode: 'dark' | 'light' = 'light';
   try {
+    console.log('Mode detection attempt with Ollama...');
     const modeData = await postOllama('/api/chat', {
       model,
       messages: [
@@ -144,7 +150,7 @@ export async function analyzeColorsWithOllama(
       ],
       stream: false,
       options: { temperature: 0.0 },
-    });
+    }, MODE_DETECTION_TIMEOUT_MS);
     const modeText: string = modeData?.message?.content?.trim()?.toLowerCase() || modeData?.response?.trim()?.toLowerCase();
     if (modeText === 'dark' || modeText === 'light') {
       detectedMode = modeText;

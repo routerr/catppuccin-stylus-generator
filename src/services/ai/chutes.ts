@@ -2,45 +2,45 @@ import type { AIModel } from '../../types/theme';
 import type { CrawlerResult } from '../../types/theme';
 import type { ColorAnalysisResult, ExtendedCrawlerResult } from './types';
 import { createModeDetectionPrompt, createColorAnalysisPrompt, createClassMappingPrompt } from './prompts';
-import { parseColorAnalysisResponse, extractJSONWithAI, detectWebsiteMode, fetchWithRetry } from './base';
+import { parseColorAnalysisResponse, extractJSONWithAI, detectWebsiteMode, fetchWithRetry, createTimeoutSignal, COLOR_ANALYSIS_TIMEOUT_MS } from './base';
 
 // Chutes AI API endpoint
 const CHUTES_API_ENDPOINT = 'https://llm.chutes.ai/v1/chat/completions';
 
 // Chutes AI models - Official endpoint: https://llm.chutes.ai
+// NOTE: Check https://llm.chutes.ai/v1/models for current models and pricing
 export const CHUTES_MODELS: AIModel[] = [
-  // Free models
+  // Popular models (updated 2025-12-01)
   {
-    id: 'unsloth/gemma-3-4b-it',
-    name: 'Gemma 3 4B Instruct (Free)',
+    id: 'deepseek-ai/DeepSeek-V3.2-Exp',
+    name: 'DeepSeek V3.2 Exp ($0.25/$0.35)',
     provider: 'chutes',
-    isFree: true,
+    isFree: false,
   },
   {
-    id: 'zai-org/GLM-4.5-Air',
-    name: 'GLM 4.5 Air (Free)',
+    id: 'deepseek-ai/DeepSeek-R1-0528',
+    name: 'DeepSeek R1 0528 ($0.30/$1.20)',
     provider: 'chutes',
-    isFree: true,
+    isFree: false,
   },
   {
-    id: 'meituan-longcat/LongCat-Flash-Chat-FP8',
-    name: 'LongCat Flash Chat (Free)',
+    id: 'Qwen/Qwen3-235B-A22B',
+    name: 'Qwen3 235B A22B ($0.18/$0.54)',
     provider: 'chutes',
-    isFree: true,
+    isFree: false,
   },
   {
-    id: 'openai/gpt-oss-20b',
-    name: 'GPT OSS 20B (Free)',
+    id: 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
+    name: 'Qwen3 Coder 480B ($0.30/$1.20)',
     provider: 'chutes',
-    isFree: true,
+    isFree: false,
   },
   {
-    id: 'Alibaba-NLP/Tongyi-DeepResearch-30B-A3B',
-    name: 'Tongyi DeepResearch 30B (Free)',
+    id: 'moonshotai/Kimi-K2-Instruct-0905',
+    name: 'Kimi K2 Instruct ($0.39/$1.90)',
     provider: 'chutes',
-    isFree: true,
+    isFree: false,
   },
-  // Paid models
   {
     id: 'MiniMaxAI/MiniMax-M2',
     name: 'MiniMax M2 ($0.15/$0.45)',
@@ -48,38 +48,38 @@ export const CHUTES_MODELS: AIModel[] = [
     isFree: false,
   },
   {
-    id: 'zai-org/GLM-4.6',
-    name: 'GLM 4.6 ($0.40/$1.75)',
-    provider: 'chutes',
-    isFree: false,
-  },
-  {
-    id: 'deepseek-ai/DeepSeek-R1-0528-Qwen3-8B',
-    name: 'DeepSeek R1 Qwen3 8B ($0.02/$0.35)',
+    id: 'zai-org/GLM-4.5-Air-0111',
+    name: 'GLM 4.5 Air ($0.10/$0.70)',
     provider: 'chutes',
     isFree: false,
   },
   {
     id: 'microsoft/MAI-DS-R1-FP8',
-    name: 'Microsoft MAI-DS-R1-FP8 ($0.30/$1.20)',
+    name: 'Microsoft MAI-DS-R1 ($0.30/$1.20)',
     provider: 'chutes',
     isFree: false,
   },
   {
     id: 'NousResearch/Hermes-4-405B-FP8',
-    name: 'Hermes 4 405B FP8 ($0.30/$1.20)',
+    name: 'Hermes 4 405B ($0.30/$1.20)',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'moonshotai/Kimi-K2-Instruct-0905',
-    name: 'Kimi K2 Instruct (moonshotai) ($0.39/$1.90)',
+    id: 'mistralai/Mistral-Small-3.1-24B-Instruct-2503',
+    name: 'Mistral Small 3.1 24B ($0.06/$0.18)',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'chutesai/Mistral-Small-3.2-24B-Instruct-2506',
-    name: 'Mistral Small 3.2 24B Instruct 2506 ($0.06/$0.18)',
+    id: 'meta-llama/Llama-3.3-70B-Instruct',
+    name: 'Llama 3.3 70B ($0.10/$0.30)',
+    provider: 'chutes',
+    isFree: false,
+  },
+  {
+    id: 'google/gemma-3-27b-it',
+    name: 'Gemma 3 27B ($0.05/$0.15)',
     provider: 'chutes',
     isFree: false,
   },
@@ -137,7 +137,7 @@ export async function analyzeColorsWithChutes(
         temperature: 0.3,
         max_tokens: 2000,
       }),
-      signal: (AbortSignal as any)?.timeout ? (AbortSignal as any).timeout(30000) : undefined,
+      signal: createTimeoutSignal(COLOR_ANALYSIS_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -180,9 +180,10 @@ async function requestClassMappingChutes(apiKey: string, model: string, crawlerR
   const prompt = createClassMappingPrompt(crawlerResult);
   const response = await fetchWithRetry(CHUTES_API_ENDPOINT, {
     method: 'POST',
+    mode: 'cors',
     headers: {
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'X-API-Key': apiKey,
     },
     body: JSON.stringify({
       model,
@@ -193,7 +194,7 @@ async function requestClassMappingChutes(apiKey: string, model: string, crawlerR
       temperature: 0.1,
       max_tokens: 1200,
     }),
-    signal: (AbortSignal as any)?.timeout ? (AbortSignal as any).timeout(30000) : undefined,
+    signal: createTimeoutSignal(COLOR_ANALYSIS_TIMEOUT_MS),
   });
   if (!response.ok) {
     console.warn('AI-assisted mapping failed (Chutes)', response.statusText);

@@ -2,7 +2,7 @@ import type { AIModel } from '../../types/theme';
 import type { CrawlerResult } from '../../types/theme';
 import type { ColorAnalysisResult, ExtendedCrawlerResult } from './types';
 import { createModeDetectionPrompt, createColorAnalysisPrompt, createClassMappingPrompt } from './prompts';
-import { parseColorAnalysisResponse, extractJSONWithAI, detectWebsiteMode, fetchWithRetry } from './base';
+import { parseColorAnalysisResponse, extractJSONWithAI, detectWebsiteMode, fetchWithRetry, createTimeoutSignal, COLOR_ANALYSIS_TIMEOUT_MS } from './base';
 
 // OpenRouter API endpoint
 const OPENROUTER_API_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
@@ -11,28 +11,46 @@ const OPENROUTER_API_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 // NOTE: Free models change frequently. Check https://openrouter.ai/models for current free models.
 // Models with ":free" suffix are free to use (rate-limited)
 export const OPENROUTER_MODELS: AIModel[] = [
-  // Free models (updated 2025-01-06)
+  // Free models (updated 2025-12-01)
   {
-    id: 'minimax/minimax-m2:free',
-    name: 'MiniMax M2 (Free)',
+    id: 'x-ai/grok-4.1-fast:free',
+    name: 'xAI Grok 4.1 Fast (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'deepseek/deepseek-chat-v3.1:free',
-    name: 'DeepSeek Chat v3.1 (Free)',
+    id: 'qwen/qwen3-235b-a22b:free',
+    name: 'Qwen3 235B A22B (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'deepseek/deepseek-r1:free',
-    name: 'DeepSeek R1 (Free)',
+    id: 'qwen/qwen3-coder:free',
+    name: 'Qwen3 Coder 480B (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'deepseek/deepseek-r1-distill-llama-70b:free',
-    name: 'DeepSeek R1 Distill Llama 70B (Free)',
+    id: 'moonshotai/kimi-k2:free',
+    name: 'Kimi K2 0711 (Free)',
+    provider: 'openrouter',
+    isFree: true,
+  },
+  {
+    id: 'openai/gpt-oss-20b:free',
+    name: 'OpenAI GPT-OSS 20B (Free)',
+    provider: 'openrouter',
+    isFree: true,
+  },
+  {
+    id: 'alibaba/tongyi-deepresearch-30b-a3b:free',
+    name: 'Tongyi DeepResearch 30B (Free)',
+    provider: 'openrouter',
+    isFree: true,
+  },
+  {
+    id: 'meituan/longcat-flash-chat:free',
+    name: 'LongCat Flash Chat (Free)',
     provider: 'openrouter',
     isFree: true,
   },
@@ -49,26 +67,38 @@ export const OPENROUTER_MODELS: AIModel[] = [
     isFree: true,
   },
   {
-    id: 'microsoft/mai-ds-r1:free',
-    name: 'Microsoft MAI DS R1 (Free)',
+    id: 'tngtech/deepseek-r1t-chimera:free',
+    name: 'DeepSeek R1T Chimera (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'openrouter/polaris-alpha:free',
-    name: 'Polaris Alpha (Free)',
+    id: 'google/gemma-3-27b-it:free',
+    name: 'Gemma 3 27B (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'mistralai/mistral-small-3.2-24b-instruct:free',
-    name: 'Mistral Small 3.2 24B Instruct (Free)',
+    id: 'google/gemini-2.0-flash-exp:free',
+    name: 'Gemini 2.0 Flash Exp (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'nvidia/nemotron-nano-12b-v2-vl:free',
-    name: 'Nvidia Nemotron Nano 12B v2 VL (Free)',
+    id: 'meta-llama/llama-3.3-70b-instruct:free',
+    name: 'Llama 3.3 70B Instruct (Free)',
+    provider: 'openrouter',
+    isFree: true,
+  },
+  {
+    id: 'nousresearch/hermes-3-llama-3.1-405b:free',
+    name: 'Hermes 3 405B Instruct (Free)',
+    provider: 'openrouter',
+    isFree: true,
+  },
+  {
+    id: 'mistralai/mistral-small-3.1-24b-instruct:free',
+    name: 'Mistral Small 3.1 24B (Free)',
     provider: 'openrouter',
     isFree: true,
   },
@@ -151,7 +181,7 @@ export async function analyzeColorsWithOpenRouter(
         temperature: 0.3,
         max_tokens: 2000,
       }),
-      signal: (AbortSignal as any)?.timeout ? (AbortSignal as any).timeout(30000) : undefined,
+      signal: createTimeoutSignal(COLOR_ANALYSIS_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -210,7 +240,7 @@ async function requestClassMapping(apiKey: string, model: string, crawlerResult:
       temperature: 0.1,
       max_tokens: 1200,
     }),
-    signal: (AbortSignal as any)?.timeout ? (AbortSignal as any).timeout(30000) : undefined,
+    signal: createTimeoutSignal(COLOR_ANALYSIS_TIMEOUT_MS),
   });
 
   if (!response.ok) {
