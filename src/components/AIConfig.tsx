@@ -16,7 +16,7 @@ interface AIConfigProps {
 
 const AI_PROVIDERS: { value: AIProvider; label: string; description?: string }[] = [
   { value: 'openrouter', label: 'OpenRouter', description: '13 free models available' },
-  // { value: 'chutes', label: 'Chutes AI', description: '5 free models available' }, // Temporarily disabled
+  { value: 'chutes', label: 'Chutes AI', description: '7 models available' },
   { value: 'ollama', label: 'Ollama (Local)', description: 'No API key, runs on localhost' },
 ];
 

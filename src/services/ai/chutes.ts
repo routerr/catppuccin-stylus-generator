@@ -10,101 +10,46 @@ const CHUTES_API_ENDPOINT = 'https://llm.chutes.ai/v1/chat/completions';
 // Chutes AI models - Official endpoint: https://llm.chutes.ai
 // NOTE: Check https://chutes.ai/app for current models and pricing
 export const CHUTES_MODELS: AIModel[] = [
-  // Free models (updated 2025-12-05)
+  // Popular models (updated 2025-12-05)
   {
-    id: 'unsloth/gemma-3-4b-it',
-    name: 'Gemma 3 4B IT (Free)',
-    provider: 'chutes',
-    isFree: true,
-  },
-  {
-    id: 'meituan/LongCat-Flash-Chat',
-    name: 'LongCat Flash Chat (Free)',
-    provider: 'chutes',
-    isFree: true,
-  },
-  {
-    id: 'zai-org/GLM-4.5-Air',
-    name: 'GLM 4.5 Air (Free)',
-    provider: 'chutes',
-    isFree: true,
-  },
-  {
-    id: 'openai/gpt-oss-20b',
-    name: 'GPT-OSS 20B (Free)',
-    provider: 'chutes',
-    isFree: true,
-  },
-  {
-    id: 'alibaba-nlp/Tongyi-DeepResearch-30B-A3B',
-    name: 'Tongyi DeepResearch 30B (Free)',
-    provider: 'chutes',
-    isFree: true,
-  },
-  // Popular paid models (updated 2025-12-05)
-  {
-    id: 'deepseek-ai/DeepSeek-R1-0528-FP8',
-    name: 'DeepSeek R1 0528 ($0.40/$1.75)',
+    id: 'deepseek-ai/DeepSeek-V3.2',
+    name: 'DeepSeek V3.2',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'tngtech/DeepSeek-TNG-R1T2-Chimera-FP8',
-    name: 'DeepSeek TNG R1T2 Chimera ($0.30/$1.20)',
+    id: 'deepseek-ai/DeepSeek-V3-0324',
+    name: 'DeepSeek V3 0324',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'deepseek-ai/DeepSeek-V3-0324-FP8',
-    name: 'DeepSeek V3 0324 ($0.24/$0.84)',
+    id: 'zai-org/GLM-4.6',
+    name: 'GLM 4.6',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'deepseek-ai/DeepSeek-V3.1-FP8',
-    name: 'DeepSeek V3.1 ($0.20/$0.80)',
+    id: 'tngtech/TNG-R1T-Chimera',
+    name: 'TNG R1T Chimera',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'deepseek-ai/DeepSeek-V3.2-FP8',
-    name: 'DeepSeek V3.2 ($0.27/$0.41)',
+    id: 'moonshotai/Kimi-K2-Instruct-0905',
+    name: 'Kimi K2 Instruct 0905',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8',
-    name: 'Qwen3 Coder 480B ($0.22/$0.95)',
+    id: 'Qwen/Qwen3-235B-A22B',
+    name: 'Qwen3 235B A22B',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'Qwen/Qwen3-235B-A22B-Instruct-2507',
-    name: 'Qwen3 235B A22B ($0.08/$0.55)',
-    provider: 'chutes',
-    isFree: false,
-  },
-  {
-    id: 'Qwen/Qwen2.5-Coder-32B-Instruct-FP8',
-    name: 'Qwen2.5 Coder 32B ($0.03/$0.11)',
-    provider: 'chutes',
-    isFree: false,
-  },
-  {
-    id: 'NousResearch/Hermes-4-70B-BF16',
-    name: 'Hermes 4 70B ($0.11/$0.38)',
-    provider: 'chutes',
-    isFree: false,
-  },
-  {
-    id: 'moonshotai/Kimi-K2-Instruct-0905-FP8',
-    name: 'Kimi K2 Instruct ($0.39/$1.90)',
-    provider: 'chutes',
-    isFree: false,
-  },
-  {
-    id: 'zai-org/GLM-4.6-BF16',
-    name: 'GLM 4.6 ($0.40/$1.75)',
+    id: 'MiniMaxAI/MiniMax-M2',
+    name: 'MiniMax M2',
     provider: 'chutes',
     isFree: false,
   },
