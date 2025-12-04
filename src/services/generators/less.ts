@@ -198,6 +198,23 @@ a, .link {
   }
 }
 
+/* Elements with gradient backgrounds need solid text color on hover */
+/* CRITICAL: This ensures text remains visible against gradient backgrounds */
+[class*="bg-gradient"]:hover,
+[class*="from-"]:hover,
+[class*="via-"]:hover,
+[class*="to-"]:hover,
+button[class*="bg-gradient"]:hover,
+a[class*="bg-gradient"]:hover,
+[role="button"][class*="bg-gradient"]:hover {
+  /* Force solid text color - never use background-clip: text on gradient backgrounds */
+  color: @text !important;
+  -webkit-text-fill-color: @text !important;
+  /* Prevent any gradient text styling */
+  -webkit-background-clip: padding-box !important;
+  background-clip: padding-box !important;
+}
+
 .text-link {
   /* Default state: Apply Catppuccin text color */
   color: @accent;

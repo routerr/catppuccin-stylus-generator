@@ -391,6 +391,23 @@ ${(() => {
       text-fill-color: revert !important;
     }
 
+    /* Elements with gradient backgrounds need solid text color on hover */
+    /* CRITICAL: This ensures text remains visible against gradient backgrounds */
+    [class*="bg-gradient"]:hover,
+    [class*="from-"]:hover,
+    [class*="via-"]:hover,
+    [class*="to-"]:hover,
+    button[class*="bg-gradient"]:hover,
+    a[class*="bg-gradient"]:hover,
+    [role="button"][class*="bg-gradient"]:hover {
+      /* Force solid text color - never use background-clip: text on gradient backgrounds */
+      color: @text !important;
+      -webkit-text-fill-color: @text !important;
+      /* Prevent any gradient text styling */
+      -webkit-background-clip: padding-box !important;
+      background-clip: padding-box !important;
+    }
+
     /* Background colors - use theme base colors */
     body:not([class*="bg-clip-text"]):not([class*="bg-gradient"]) {
       background-color: @base;
@@ -475,17 +492,19 @@ ${generateFontCSS(cssAnalysis?.fontSettings)}
 
     /* Buttons - apply gradients based on background visibility */
     /* CRITICAL: 70-80% use main-accent, 20-30% use bi-accents for variety */
-    button,
-    input[type="button"],
-    input[type="submit"] {
+    /* IMPORTANT: Exclude elements with existing gradient backgrounds to prevent invisible text */
+    button:not([class*="bg-gradient"]):not([class*="from-"]):not([class*="via-"]):not([class*="to-"]),
+    input[type="button"]:not([class*="bg-gradient"]),
+    input[type="submit"]:not([class*="bg-gradient"]) {
       /* Default state: Use main-accent (70-80% rule) */
       color: @accent;
 
       &:hover {
         /* Apply gradient to background: main-accent with its bi-accent companion */
         background-image: linear-gradient(@hover-angle-buttons, @accent 0%, @bi-accent1 8%, @accent 100%);
-        /* Text remains accent for readability */
-        color: @accent;
+        /* Text must be solid color for readability against gradient background */
+        color: @text !important;
+        -webkit-text-fill-color: @text !important;
       }
 
       &:active {
@@ -496,39 +515,44 @@ ${generateFontCSS(cssAnalysis?.fontSettings)}
     }
 
     /* Secondary buttons - use bi-accent1 for variety (20-30% rule) */
-    button.secondary,
-    button[class*="secondary"],
-    button[class*="outline"],
-    .btn-secondary,
-    .button-secondary {
+    button.secondary:not([class*="bg-gradient"]):not([class*="from-"]),
+    button[class*="secondary"]:not([class*="bg-gradient"]):not([class*="from-"]),
+    button[class*="outline"]:not([class*="bg-gradient"]):not([class*="from-"]),
+    .btn-secondary:not([class*="bg-gradient"]):not([class*="from-"]),
+    .button-secondary:not([class*="bg-gradient"]):not([class*="from-"]) {
       color: @bi-accent1;
 
       &:hover {
         background-image: linear-gradient(@hover-angle-buttons, @bi-accent1 0%, @alt1-bi1 8%, @bi-accent1 100%);
-        color: @bi-accent1;
+        /* Text must be solid color for readability against gradient background */
+        color: @text !important;
+        -webkit-text-fill-color: @text !important;
       }
     }
 
     /* Tertiary buttons - use bi-accent2 for variety (20-30% rule) */
-    button.tertiary,
-    button[class*="tertiary"],
-    button[class*="ghost"],
-    .btn-tertiary,
-    .button-tertiary {
+    button.tertiary:not([class*="bg-gradient"]):not([class*="from-"]),
+    button[class*="tertiary"]:not([class*="bg-gradient"]):not([class*="from-"]),
+    button[class*="ghost"]:not([class*="bg-gradient"]):not([class*="from-"]),
+    .btn-tertiary:not([class*="bg-gradient"]):not([class*="from-"]),
+    .button-tertiary:not([class*="bg-gradient"]):not([class*="from-"]) {
       color: @bi-accent2;
 
       &:hover {
         background-image: linear-gradient(@hover-angle-buttons, @bi-accent2 0%, @alt2-bi1 8%, @bi-accent2 100%);
-        color: @bi-accent2;
+        /* Text must be solid color for readability against gradient background */
+        color: @text !important;
+        -webkit-text-fill-color: @text !important;
       }
     }
 
     /* Buttons with invisible backgrounds (text-only) - apply gradient to text */
-    button.text-button,
-    button[class*="text"],
-    button[class*="link"],
-    .text-button,
-    .link-button {
+    /* CRITICAL: Exclude elements with gradient backgrounds - text would be invisible */
+    button.text-button:not([class*="bg-gradient"]):not([class*="from-"]),
+    button[class*="text"]:not([class*="bg-gradient"]):not([class*="from-"]):not([class*="text-transparent"]),
+    button[class*="link"]:not([class*="bg-gradient"]):not([class*="from-"]),
+    .text-button:not([class*="bg-gradient"]):not([class*="from-"]),
+    .link-button:not([class*="bg-gradient"]):not([class*="from-"]) {
       /* Only change color, preserve original background */
       color: @accent;
 
