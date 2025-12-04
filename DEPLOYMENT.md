@@ -1,153 +1,50 @@
-# Deployment Guide
+# Run & Deploy (Quickstart)
 
-Complete guide for deploying the Catppuccin Theme Generator to various platforms.
+> Static frontend: keys for AI/fetcher/crawler live in the browser (localStorage). No server-side secrets required.
 
-## Table of Contents
-
-- [GitHub Pages](#github-pages)
-- [Vercel](#vercel)
-- [Netlify](#netlify)
-- [Self-Hosted](#self-hosted)
-
----
-
-## GitHub Pages
-
-### Prerequisites
-- GitHub account
-- Repository pushed to GitHub
-
-### Automatic Deployment (Recommended)
-
-1. **Update the base path in `vite.config.ts`**
-   ```typescript
-   export default defineConfig({
-     plugins: [react()],
-     base: '/catppuccin-stylus-generator-claude-code/', // Replace with your repo name
-     build: {
-       outDir: 'dist',
-     },
-   })
-   ```
-
-2. **Enable GitHub Actions**
-   - Go to your repository on GitHub
-   - Navigate to **Settings** > **Pages**
-   - Under **Source**, select **GitHub Actions**
-
-3. **Push your changes**
-   ```bash
-   git add .
-   git commit -m "Configure for GitHub Pages"
-   git push origin main
-   ```
-
-4. **Wait for deployment**
-   - Go to **Actions** tab to see deployment progress
-   - Once complete, your site will be at:
-     `https://yourusername.github.io/catppuccin-stylus-generator-claude-code/`
-
-### Manual Deployment
-
-If you prefer manual deployment:
+## 1) Install & Run Locally
 
 ```bash
-# Install gh-pages package
-npm install -D gh-pages
-
-# Build and deploy
-npm run deploy
+git clone https://github.com/yourusername/catppuccin-stylus-generator.git
+cd catppuccin-stylus-generator
+npm install
+npm run dev
+# open http://localhost:5173
 ```
 
----
+## 2) Configure Fetching & AI (in the UI)
+- Fetcher: leave on **Auto** (Firecrawl → Jina → ScrapingBee → Browserless → CORS) or pick one; add keys for paid services; Jina works without a key.
+- AI: choose OpenRouter/Chutes/Ollama; enter API key (Ollama URL for cloud); default model is `tngtech/deepseek-r1t2-chimera:free` on OpenRouter.
+- Optional: toggle AI-assisted selector mapping, accent coverage (badges/cards/tables, alerts), and font overrides.
 
-## Vercel
+## 3) Generate & Install
+1. Paste a public URL, click **Generate Theme**, view palette diagnostics.
+2. Use “Re-run with same crawl” to compare models without refetching.
+3. Download/copy the generated `.user.less` (multi-flavor UserStyle) and install in Stylus/Cascadea.
 
-### One-Click Deploy
+## 4) Deploy (pick one)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/routerr/catppuccin-stylus-generator)
+### GitHub Pages (recommended)
+1. Set `base` in `vite.config.ts` to your repo name (e.g., `/catppuccin-stylus-generator/`).
+2. Push to GitHub; enable Pages via Actions; site will be at `https://<user>.github.io/<repo>/`.
 
-### Manual Deployment
-
-1. **Install Vercel CLI**
-   ```bash
-   npm install -g vercel
-   ```
-
-2. **Deploy**
-   ```bash
-   vercel
-   ```
-
-3. **Follow prompts**
-   - Link to existing project or create new
-   - Set framework: Vite
-   - Build command: `npm run build`
-   - Output directory: `dist`
-
-4. **Production deployment**
-   ```bash
-   vercel --prod
-   ```
-
-### Vercel Configuration
-
-Create `vercel.json`:
+### Vercel
+```bash
+npm install -g vercel
+vercel           # follow prompts
+vercel --prod    # for production
+```
+`vercel.json` (optional):
 ```json
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
-  ]
-}
+{ "rewrites": [ { "source": "/(.*)", "destination": "/" } ] }
 ```
 
----
-
-## Netlify
-
-### Drag & Drop Deployment
-
-1. Build your project locally:
-   ```bash
-   npm run build
-   ```
-
-2. Go to https://app.netlify.com/drop
-
-3. Drag the `dist` folder to deploy
-
-### CLI Deployment
-
-1. **Install Netlify CLI**
-   ```bash
-   npm install -g netlify-cli
-   ```
-
-2. **Login**
-   ```bash
-   netlify login
-   ```
-
-3. **Deploy**
-   ```bash
-   netlify deploy --prod
-   ```
-
-### Git-Based Deployment
-
-1. **Connect repository**
-   - Go to https://app.netlify.com
-   - Click "New site from Git"
-   - Choose your repository
-
-2. **Configure build settings**
-   - Build command: `npm run build`
-   - Publish directory: `dist`
-   - Click "Deploy site"
-
-### Netlify Configuration
-
-Create `netlify.toml`:
+### Netlify
+```bash
+npm run build
+netlify deploy --prod   # after netlify login
+```
+`netlify.toml`:
 ```toml
 [build]
   command = "npm run build"
@@ -159,350 +56,50 @@ Create `netlify.toml`:
   status = 200
 ```
 
----
-
-## Self-Hosted
-
-### Prerequisites
-- Node.js 18+ installed on server
-- Domain name (optional)
-- Reverse proxy (nginx/Apache)
-
-### Build for Production
-
+### Self-hosted (nginx example)
 ```bash
-# Build the project
 npm run build
-
-# The dist folder contains all static files
+scp -r dist/* user@server:/var/www/catppuccin-generator/
+```
+nginx:
+```nginx
+server {
+  listen 80;
+  server_name your-domain.com;
+  root /var/www/catppuccin-generator;
+  index index.html;
+  location / { try_files $uri $uri/ /index.html; }
+  gzip on;
+  gzip_types text/css application/javascript application/json;
+}
 ```
 
-### Using nginx
+### Docker (nginx)
+```dockerfile
+FROM node:18-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
 
-1. **Copy dist folder to server**
-   ```bash
-   scp -r dist/* user@server:/var/www/catppuccin-generator/
-   ```
-
-2. **Configure nginx**
-   ```nginx
-   server {
-       listen 80;
-       server_name your-domain.com;
-       root /var/www/catppuccin-generator;
-       index index.html;
-
-       location / {
-           try_files $uri $uri/ /index.html;
-       }
-
-       # Gzip compression
-       gzip on;
-       gzip_types text/css application/javascript application/json;
-   }
-   ```
-
-3. **Restart nginx**
-   ```bash
-   sudo systemctl restart nginx
-   ```
-
-### Using Apache
-
-1. **Copy dist folder to server**
-   ```bash
-   scp -r dist/* user@server:/var/www/catppuccin-generator/
-   ```
-
-2. **Create .htaccess** in the dist folder:
-   ```apache
-   <IfModule mod_rewrite.c>
-     RewriteEngine On
-     RewriteBase /
-     RewriteRule ^index\.html$ - [L]
-     RewriteCond %{REQUEST_FILENAME} !-f
-     RewriteCond %{REQUEST_FILENAME} !-d
-     RewriteRule . /index.html [L]
-   </IfModule>
-   ```
-
-3. **Configure Apache virtual host**
-   ```apache
-   <VirtualHost *:80>
-       ServerName your-domain.com
-       DocumentRoot /var/www/catppuccin-generator
-
-       <Directory /var/www/catppuccin-generator>
-           Options Indexes FollowSymLinks
-           AllowOverride All
-           Require all granted
-       </Directory>
-   </VirtualHost>
-   ```
-
-4. **Restart Apache**
-   ```bash
-   sudo systemctl restart apache2
-   ```
-
-### Using Docker
-
-1. **Create Dockerfile**
-   ```dockerfile
-   FROM node:18-alpine as build
-
-   WORKDIR /app
-   COPY package*.json ./
-   RUN npm ci
-   COPY . .
-   RUN npm run build
-
-   FROM nginx:alpine
-   COPY --from=build /app/dist /usr/share/nginx/html
-   COPY nginx.conf /etc/nginx/nginx.conf
-   EXPOSE 80
-   CMD ["nginx", "-g", "daemon off;"]
-   ```
-
-2. **Create nginx.conf**
-   ```nginx
-   events {
-       worker_connections 1024;
-   }
-
-   http {
-       include /etc/nginx/mime.types;
-       default_type application/octet-stream;
-
-       server {
-           listen 80;
-           server_name localhost;
-           root /usr/share/nginx/html;
-           index index.html;
-
-           location / {
-               try_files $uri $uri/ /index.html;
-           }
-       }
-   }
-   ```
-
-3. **Build and run**
-   ```bash
-   docker build -t catppuccin-generator .
-   docker run -d -p 80:80 catppuccin-generator
-   ```
-
----
-
-## Environment-Specific Configuration
-
-### Update Base Path
-
-For subdirectory deployments, update `vite.config.ts`:
-
-```typescript
-export default defineConfig({
-  base: process.env.BASE_URL || '/subdirectory/',
-  // ...
-})
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
 ```
-
-### Production Optimizations
-
-Already included in the build:
-
-- ✅ Minification
-- ✅ Code splitting
-- ✅ Tree shaking
-- ✅ Asset optimization
-- ✅ Gzip compression support
-
----
-
-## Troubleshooting
-
-### Blank page after deployment
-- Check browser console for errors
-- Verify `base` path in `vite.config.ts` matches your deployment path
-- Ensure all assets load from correct paths
-
-### 404 errors on page refresh
-- Configure your server to route all requests to index.html
-- See server-specific configurations above
-
-### Build fails
-- Check Node.js version (18+ required)
-- Clear node_modules and reinstall: `rm -rf node_modules && npm install`
-- Check for TypeScript errors: `npm run build`
-
-### CORS errors
-- CORS errors are expected when calling external APIs
-- Some crawler services may not support client-side requests
-- This is a limitation of client-side deployment
-
----
-
-## Monitoring
-
-### Analytics
-
-Add analytics to `index.html`:
-
-```html
-<!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'GA_MEASUREMENT_ID');
-</script>
-```
-
-### Error Tracking
-
-Add Sentry for error tracking:
-
 ```bash
-npm install @sentry/react
+docker build -t catppuccin-generator .
+docker run -d -p 80:80 catppuccin-generator
 ```
 
-```typescript
-// In main.tsx
-import * as Sentry from "@sentry/react";
+## 5) Troubleshooting
+- Blank page: ensure `base` matches your deployment path and all assets load.
+- 404 on refresh: configure SPA fallback (`try_files ... /index.html` or Netlify redirects).
+- Build fails: use Node 18+, reinstall deps, run `npm run build`.
+- Fetch errors: try Auto fetcher or Jina; add keys for Firecrawl/ScrapingBee/Browserless; CORS limits may apply.
+- AI errors: verify key/model; switch models; free tiers may rate-limit.
 
-Sentry.init({
-  dsn: "YOUR_SENTRY_DSN",
-  environment: import.meta.env.MODE,
-});
-```
-
----
-
-## Continuous Deployment
-
-### GitHub Actions (Already configured)
-
-The included workflow automatically deploys on push to main branch.
-
-### GitLab CI/CD
-
-Create `.gitlab-ci.yml`:
-
-```yaml
-pages:
-  stage: deploy
-  script:
-    - npm ci
-    - npm run build
-    - mv dist public
-  artifacts:
-    paths:
-      - public
-  only:
-    - main
-```
-
----
-
-## SSL/HTTPS
-
-### GitHub Pages
-- Automatic HTTPS with GitHub's certificate
-- Enable in Settings > Pages > Enforce HTTPS
-
-### Vercel/Netlify
-- Automatic HTTPS with free SSL certificates
-
-### Self-Hosted with Let's Encrypt
-
-```bash
-# Install certbot
-sudo apt install certbot python3-certbot-nginx
-
-# Get certificate
-sudo certbot --nginx -d your-domain.com
-
-# Auto-renewal is configured automatically
-```
-
----
-
-## Performance Optimization
-
-### CDN Setup
-
-Use a CDN for better global performance:
-
-1. **Cloudflare** (Free)
-   - Sign up at cloudflare.com
-   - Add your site
-   - Update nameservers
-
-2. **Configure caching**
-   - Static assets: Cache for 1 year
-   - HTML: Cache for 1 hour
-
-### Preload Critical Assets
-
-Add to `index.html`:
-
-```html
-<link rel="preconnect" href="https://api.openrouter.ai">
-<link rel="preconnect" href="https://api.firecrawl.dev">
-```
-
----
-
-## Need Help?
-
-- Check [README.md](README.md) for more information
-- Open an issue on GitHub
-- Join the Catppuccin Discord community
-
-### Cross-repo CI commit/PR (GitHub Actions)
-
-Short recipe to push or open a PR in another GitHub repo from CI:
-
-- Create a Personal Access Token (repo scope) for the target repo owner and save it as a secret in the source repo (e.g. `TARGET_REPO_PAT`).
-- Use the workflow file [` .github/workflows/push-to-other-repo.yml `](.github/workflows/push-to-other-repo.yml:1) to:
-  - build/generate files in the source workspace,
-  - checkout the target repo with the PAT (use `fetch-depth: 0`),
-  - copy files into the checked-out target repo path,
-  - either commit & push to a branch in the target repo or open a PR.
-
-Key points:
-- Prefer opening a PR (safer) using `peter-evans/create-pull-request@v4` with a branch like `ci-sync/${{ github.sha }}`.
-- If pushing directly, set git user/email and only push when there are changes; never force-push protected branches.
-- Store the PAT as a secret in the source repo and reference it as `${{ secrets.TARGET_REPO_PAT }}`.
-- Runner resolves action versions at runtime — editor/IDE linter errors about resolving actions are usually harmless.
-
-Minimal commit step (excerpt):
-
-```yaml
-- name: Checkout target
-  uses: actions/checkout@v4
-  with:
-    repository: target-owner/target-repo
-    path: target
-    token: ${{ secrets.TARGET_REPO_PAT }}
-    fetch-depth: 0
-
-- name: Commit & push to target
-  run: |
-    cd target
-    git config user.name "github-actions[bot]"
-    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-    if [ -n "$(git status --porcelain)" ]; then
-      git add .
-      git commit -m "ci: update generated files from $GITHUB_REPOSITORY@$GITHUB_SHA"
-      git push origin HEAD:main
-    fi
-  env:
-    GIT_ASKPASS: /bin/echo
-    GIT_TERMINAL_PROMPT: 0
-    GITHUB_TOKEN: ${{ secrets.TARGET_REPO_PAT }}
-```
-
-See [` .github/workflows/push-to-other-repo.yml `](.github/workflows/push-to-other-repo.yml:1) for a full example.
+## Links
+- README (architecture/advanced notes)
+- Issues: https://github.com/routerr/catppuccin-stylus-generator/issues
