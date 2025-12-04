@@ -1,18 +1,44 @@
-/* Catppuccin Grass Green Gradient */
-.grass-green-gradient {
-  background: linear-gradient(135deg, #74c69d 0%, #2d6a4f 100%);
+/* Catppuccin Theme System */
+/* Default theme variables are set by ThemeProvider, these are fallbacks for Mocha-Mauve */
+:root {
+  /* Mocha Base Colors (fallback) */
+  --ctp-base: #1e1e2e;
+  --ctp-mantle: #181825;
+  --ctp-crust: #11111b;
+  --ctp-surface0: #313244;
+  --ctp-surface1: #45475a;
+  --ctp-surface2: #585b70;
+  --ctp-overlay0: #6c7086;
+  --ctp-overlay1: #7f849c;
+  --ctp-overlay2: #9399b2;
+  --ctp-subtext0: #a6adc8;
+  --ctp-subtext1: #bac2de;
+  --ctp-text: #cdd6f4;
+  
+  /* Mocha Accent Colors (fallback) */
+  --ctp-rosewater: #f5e0dc;
+  --ctp-flamingo: #f2cdcd;
+  --ctp-pink: #f5c2e7;
+  --ctp-mauve: #cba6f7;
+  --ctp-red: #f38ba8;
+  --ctp-maroon: #eba0ac;
+  --ctp-peach: #fab387;
+  --ctp-yellow: #f9e2af;
+  --ctp-green: #a6e3a1;
+  --ctp-teal: #94e2d5;
+  --ctp-sky: #89dceb;
+  --ctp-sapphire: #74c7ec;
+  --ctp-blue: #89b4fa;
+  --ctp-lavender: #b4befe;
+  
+  /* Default accent: Mauve */
+  --ctp-accent: #cba6f7;
+  
+  /* RGB variants for transparency effects */
+  --ctp-base-rgb: 30, 30, 46;
+  --ctp-accent-rgb: 203, 166, 247;
 }
 
-.grass-green-text {
-  background: linear-gradient(135deg, #74c69d 0%, #2d6a4f 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.grass-green-border {
-  border-color: #2d6a4f;
-}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -36,9 +62,24 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--ctp-base);
+  color: var(--ctp-text);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+}
+
+/* Accent gradient utility */
+.accent-gradient {
+  background: linear-gradient(135deg, var(--ctp-accent) 0%, var(--ctp-mauve) 100%);
+}
+
+.accent-gradient-text {
+  background: linear-gradient(135deg, var(--ctp-accent) 0%, var(--ctp-mauve) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { InputSelector } from './components/InputSelector';
-import { APIKeyConfig } from './components/APIKeyConfig';
+import { AIConfig } from './components/AIConfig';
 import { FetcherConfig } from './components/FetcherConfig';
-import { ServiceSelector } from './components/ServiceSelector';
 import { ThemePreview } from './components/ThemePreview';
 import { ThinkingProcess, type ThinkingStep } from './components/ThinkingProcess';
 import { FontSelector } from './components/FontSelector';
+import { ThemeSelector } from './components/ThemeSelector';
 import type { AIProvider, ThemePackage, CrawlerResult, FetcherAPIKeys, FetcherAPIService, FetcherService } from './types/theme';
 import type { PaletteDiagnostics } from './services/palette-profile';
 import { loadSettings, saveSettings } from './utils/storage';
@@ -293,6 +293,11 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-ctp-base via-ctp-mantle to-ctp-crust text-ctp-text">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Theme Selector - Top Right */}
+        <div className="flex justify-end mb-4">
+          <ThemeSelector />
+        </div>
+
         <header className="text-center mb-12">
           {/* Catppuccin Icon */}
           <div className="flex justify-center mb-6">
@@ -340,53 +345,12 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Left Column - Configuration */}
           <div className="space-y-6">
-            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
-              <h2 className="text-2xl font-bold mb-6 text-ctp-accent">AI Configuration</h2>
-
-              <ServiceSelector
-                aiProvider={aiProvider}
-                onAIProviderChange={setAIProvider}
-                aiModel={aiModel}
-                onAIModelChange={setAIModel}
-                ollamaModels={discoveredOllamaModels}
-              />
-            </div>
-
-            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
-              <APIKeyConfig
-                aiProvider={aiProvider}
-                onKeyChange={(key) => setAIKey(key)}
-                onPickModel={(m) => setAIModel(m)}
-                onModelsDiscovered={(models) => setDiscoveredOllamaModels(models)}
-              />
-            </div>
-
-            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
-              <FetcherConfig
-                onConfigChange={(config) => {
-                  setFetcherService(config.service);
-                  setFetcherAPIKeys(config.apiKeys);
-                }}
-              />
-            </div>
-
-            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2 relative z-20">
-              <FontSelector
-                normalFont={normalFont}
-                monoFont={monoFont}
-                onNormalFontChange={(font) => {
-                  setNormalFont(font);
-                  saveSettings({ normalFont: font, monoFont });
-                }}
-                onMonoFontChange={(font) => {
-                  setMonoFont(font);
-                  saveSettings({ normalFont, monoFont: font });
-                }}
-              />
-            </div>
-
-            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2 relative z-10">
-              <h2 className="text-2xl font-bold mb-6 text-ctp-accent">Generate Theme</h2>
+            {/* URL Input - Primary Action */}
+            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-accent/30 relative z-10">
+              <h2 className="text-2xl font-bold mb-2 text-ctp-accent">Generate Theme</h2>
+              <p className="text-sm text-ctp-subtext0 mb-4">
+                👇 Configure AI &amp; fetcher settings below first, then enter a URL to generate your theme
+              </p>
 
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -470,6 +434,42 @@ function App() {
                   <div className="mt-1 text-ctp-subtext1">The app will continue with direct HTTP fetch as a fallback.</div>
                 </div>
               )}
+            </div>
+
+            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
+              <AIConfig
+                aiProvider={aiProvider}
+                onAIProviderChange={setAIProvider}
+                aiModel={aiModel}
+                onAIModelChange={setAIModel}
+                onKeyChange={(key) => setAIKey(key)}
+                ollamaModels={discoveredOllamaModels}
+                onModelsDiscovered={(models) => setDiscoveredOllamaModels(models)}
+              />
+            </div>
+
+            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
+              <FetcherConfig
+                onConfigChange={(config) => {
+                  setFetcherService(config.service);
+                  setFetcherAPIKeys(config.apiKeys);
+                }}
+              />
+            </div>
+
+            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2 relative z-20">
+              <FontSelector
+                normalFont={normalFont}
+                monoFont={monoFont}
+                onNormalFontChange={(font) => {
+                  setNormalFont(font);
+                  saveSettings({ normalFont: font });
+                }}
+                onMonoFontChange={(font) => {
+                  setMonoFont(font);
+                  saveSettings({ monoFont: font });
+                }}
+              />
             </div>
           </div>
 

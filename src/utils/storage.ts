@@ -18,9 +18,6 @@ interface StoredKeys {
   browserless?: string;
   // Preferred fetcher service
   preferredFetcher?: FetcherAPIService;
-  // Playwright cloud endpoint
-  playwrightEndpoint?: string;
-  playwrightKey?: string;
 }
 
 const STORAGE_KEY = 'catppuccin-theme-gen-keys';
@@ -67,9 +64,12 @@ export function loadSettings(): StoredSettings {
   }
 }
 
-export function saveSettings(settings: StoredSettings): void {
+export function saveSettings(settings: Partial<StoredSettings>): void {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    // Merge with existing settings to avoid overwriting other fields
+    const existing = loadSettings();
+    const merged = { ...existing, ...settings };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
   } catch {
     // ignore
   }

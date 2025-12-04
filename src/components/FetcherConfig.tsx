@@ -68,7 +68,7 @@ const SERVICES: ServiceInfo[] = [
   {
     service: 'browserless',
     name: 'Browserless',
-    description: 'Full Puppeteer/Playwright browser control',
+    description: 'Cloud browser automation service',
     freeInfo: '6 free hours/month',
     url: 'https://browserless.io/',
     requiresKey: true,
@@ -157,7 +157,7 @@ export function FetcherConfig({ onConfigChange }: FetcherConfigProps) {
         <div className="flex items-start gap-3">
           <Zap className="h-5 w-5 text-ctp-blue flex-shrink-0 mt-0.5" />
           <div className="text-ctp-subtext1">
-            <strong className="text-ctp-text">API-based fetchers</strong> extract website content including HTML, CSS, and colors without requiring a self-hosted Playwright server.
+            <strong className="text-ctp-text">API-based fetchers</strong> extract website content including HTML, CSS, and colors.
             <br />
             <span className="text-ctp-subtext0">
               Jina Reader is free and always available. For best results with JavaScript-heavy sites, configure Firecrawl or ScrapingBee.

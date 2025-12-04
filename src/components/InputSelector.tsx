@@ -16,14 +16,11 @@ export function InputSelector({ onURLSubmit, disabled, canRegenerate }: InputSel
           <div>
             <h3 className="text-lg font-semibold">URL-Based Crawler</h3>
             <p className="text-sm text-ctp-subtext0">
-              Paste any public URL and we&apos;ll crawl it automatically using the Playwright service (if configured) or our fallback HTTP fetcher.
+              Paste any public URL and we&apos;ll crawl it automatically using our HTTP fetcher or configured API services.
             </p>
           </div>
         </div>
         <URLInput onSubmit={onURLSubmit} disabled={disabled} canRegenerate={canRegenerate} />
-        <div className="text-xs text-ctp-subtext0 bg-ctp-surface1/60 border border-ctp-surface2 rounded-lg p-3">
-          Need full-fidelity pages? Configure the Playwright crawler endpoint in the API Key section to capture computed styles, lazy-loaded components, and authenticated sessions.
-        </div>
       </div>
     </div>
   );

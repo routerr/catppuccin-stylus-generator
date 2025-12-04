@@ -7,49 +7,46 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Catppuccin Mocha Palette
+        // Catppuccin Dynamic Palette (via CSS variables)
         ctp: {
           // Base
-          base: '#1e1e2e',
-          mantle: '#181825',
-          crust: '#11111b',
+          base: 'var(--ctp-base)',
+          mantle: 'var(--ctp-mantle)',
+          crust: 'var(--ctp-crust)',
 
           // Surface
-          surface0: '#313244',
-          surface1: '#45475a',
-          surface2: '#585b70',
+          surface0: 'var(--ctp-surface0)',
+          surface1: 'var(--ctp-surface1)',
+          surface2: 'var(--ctp-surface2)',
 
           // Overlay
-          overlay0: '#6c7086',
-          overlay1: '#7f849c',
-          overlay2: '#9399b2',
+          overlay0: 'var(--ctp-overlay0)',
+          overlay1: 'var(--ctp-overlay1)',
+          overlay2: 'var(--ctp-overlay2)',
 
           // Text
-          subtext0: '#a6adc8',
-          subtext1: '#bac2de',
-          text: '#cdd6f4',
+          subtext0: 'var(--ctp-subtext0)',
+          subtext1: 'var(--ctp-subtext1)',
+          text: 'var(--ctp-text)',
 
-          // Accents
-          rosewater: '#f5e0dc',
-          flamingo: '#f2cdcd',
-          pink: '#f5c2e7',
-          mauve: '#cba6f7',
-          red: '#f38ba8',
-          maroon: '#eba0ac',
-          peach: '#fab387',
-          yellow: '#f9e2af',
-          green: '#a6e3a1',
-          teal: '#94e2d5',
-          sky: '#89dceb',
-          sapphire: '#74c7ec',
-          blue: '#89b4fa',
-          lavender: '#b4befe',
+          // Accents (all available)
+          rosewater: 'var(--ctp-rosewater)',
+          flamingo: 'var(--ctp-flamingo)',
+          pink: 'var(--ctp-pink)',
+          mauve: 'var(--ctp-mauve)',
+          red: 'var(--ctp-red)',
+          maroon: 'var(--ctp-maroon)',
+          peach: 'var(--ctp-peach)',
+          yellow: 'var(--ctp-yellow)',
+          green: 'var(--ctp-green)',
+          teal: 'var(--ctp-teal)',
+          sky: 'var(--ctp-sky)',
+          sapphire: 'var(--ctp-sapphire)',
+          blue: 'var(--ctp-blue)',
+          lavender: 'var(--ctp-lavender)',
 
-          // Accent scheme
-          accent: '#cba6f7',       // mauve (main accent)
-          'bi-accent': '#f5c2e7',  // pink (similar to mauve, for gradients)
-          'co-accent1': '#74c7ec', // sapphire (triadic, main accent)
-          'co-accent2': '#a6e3a1', // green (triadic, main accent)
+          // Dynamic accent (changes based on user selection)
+          accent: 'var(--ctp-accent)',
         },
       },
     },
