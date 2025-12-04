@@ -78,7 +78,11 @@ function buildUserstyleDocument(
     lines.push('');
   }
 
-  lines.push(`@-moz-document domain("${hostname || '*'}") {`);
+  // Only apply to specific domain - never use wildcard '*'
+  if (!hostname) {
+    throw new Error('hostname is required for @-moz-document domain()');
+  }
+  lines.push(`@-moz-document domain("${hostname}") {`);
   lines.push(`${INDENT}#catppuccin(@flavor) {`);
 
   const sectionOrder: Array<[keyof typeof sections, string]> = [
@@ -414,10 +418,17 @@ function computeCoverage(stats: MappingResult['stats']) {
 }
 
 function safeHostname(url: string): string {
+  if (!url || url.trim() === '') {
+    throw new Error('URL is required to generate theme');
+  }
   try {
-    return new URL(url).hostname;
+    const parsed = new URL(url);
+    if (!parsed.hostname || parsed.hostname.trim() === '') {
+      throw new Error(`Invalid URL: ${url} - no hostname found`);
+    }
+    return parsed.hostname;
   } catch (error) {
-    return url;
+    throw new Error(`Failed to parse URL: ${url} - ${error}`);
   }
 }
 
