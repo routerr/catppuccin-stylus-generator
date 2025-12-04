@@ -174,9 +174,9 @@ export function generateUserStyle(
 ==/UserStyle== */
 
 @import "https://userstyles.catppuccin.com/lib/lib.less";
-${generateFontImports(cssAnalysis?.fontSettings)}
 
 @-moz-document domain("${meta.domain}") {
+${generateFontImports(cssAnalysis?.fontSettings)}
   /* Apply dark flavor for dark mode */
   :root[data-mode="dark"],
   :root[data-theme="dark"],
@@ -1259,7 +1259,8 @@ function generateFontImports(fontSettings?: { normalFont?: string; monoFont?: st
     imports.push('/* Note: Iansui and jf open 粉圓 fonts must be installed locally or loaded via CDN */');
   }
   
-  return imports.length > 0 ? '\n' + imports.join('\n') : '';
+  // Add indentation since these are inside @-moz-document block
+  return imports.length > 0 ? '\n  ' + imports.join('\n  ') + '\n' : '';
 }
 
 
