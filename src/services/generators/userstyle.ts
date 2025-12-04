@@ -61,6 +61,10 @@ export interface CSSAnalysisData {
     badgeCardTable?: boolean;
     alerts?: boolean;
   };
+  fontSettings?: {
+    normalFont?: string;
+    monoFont?: string;
+  };
 }
 
 /**
@@ -170,6 +174,7 @@ export function generateUserStyle(
 ==/UserStyle== */
 
 @import "https://userstyles.catppuccin.com/lib/lib.less";
+${generateFontImports(cssAnalysis?.fontSettings)}
 
 @-moz-document domain("${meta.domain}") {
   /* Apply dark flavor for dark mode */
@@ -192,11 +197,6 @@ export function generateUserStyle(
   #catppuccin(@flavor) {
     #lib.palette();
     #lib.defaults();
-
-    /* Helper function to convert colors to HSL format */
-    #hslify(@color) {
-      @raw: e(%("%s %s% %s%", hue(@color), saturation(@color), lightness(@color)));
-    }
 
 ${cssVarMappings}
 
@@ -396,6 +396,8 @@ ${(() => {
       background-color: @base;
       color: @text;
     }
+
+${generateFontCSS(cssAnalysis?.fontSettings)}
 
     /* SVG elements - preserve transparency and use currentColor for fills */
     /* SVGs should inherit color from parent text, not have forced backgrounds */
@@ -1024,7 +1026,240 @@ ${generateClassSpecificRules(cssAnalysis, mappings, accentPlan)}
   }
 }
 
+#hslify(@color) {
+  @raw: e(%("%s %s% %s%", hue(@color), saturation(@color), lightness(@color)));
+}
+
 `;
+}
+
+/**
+ * Parse font string to array of font families
+ * Handles both JSON arrays and single font family strings
+ */
+function parseFontFamilies(fontStr?: string): string[] {
+  if (!fontStr) return [];
+  // Try to parse as JSON array first
+  try {
+    const parsed = JSON.parse(fontStr);
+    if (Array.isArray(parsed)) return parsed.filter(Boolean);
+  } catch {
+    // Not JSON, treat as single font family
+  }
+  return fontStr ? [fontStr] : [];
+}
+
+/**
+ * Build CSS font-family string from array of font families
+ * Deduplicates and properly formats the fallback chain
+ */
+function buildCSSFontFamily(families: string[]): string {
+  if (families.length === 0) return '';
+  
+  const fontParts: string[] = [];
+  const seenFonts = new Set<string>();
+  
+  families.forEach((family) => {
+    // Split by comma and add each part (handles "Font Name", fallback already in family)
+    family.split(',').forEach((part) => {
+      const trimmed = part.trim();
+      if (trimmed && !seenFonts.has(trimmed.toLowerCase())) {
+        seenFonts.add(trimmed.toLowerCase());
+        fontParts.push(trimmed);
+      }
+    });
+  });
+  
+  return fontParts.join(', ');
+}
+
+/**
+ * Generate CSS rules for custom font families
+ * Includes Google Fonts import and font-family declarations
+ */
+function generateFontCSS(fontSettings?: { normalFont?: string; monoFont?: string }): string {
+  if (!fontSettings) return '    /* No custom fonts configured */';
+  
+  const normalFamilies = parseFontFamilies(fontSettings.normalFont);
+  const monoFamilies = parseFontFamilies(fontSettings.monoFont);
+  
+  // If no fonts selected, return empty
+  if (normalFamilies.length === 0 && monoFamilies.length === 0) {
+    return '    /* No custom fonts configured */';
+  }
+  
+  const lines: string[] = [];
+  lines.push('    /* ═══════════════════════════════════════════════════════════════════');
+  lines.push('       CUSTOM FONT SETTINGS');
+  lines.push('       ═══════════════════════════════════════════════════════════════════ */');
+  
+  // Add normal text font rules
+  if (normalFamilies.length > 0) {
+    const normalCSSFamily = buildCSSFontFamily(normalFamilies);
+    lines.push('');
+    lines.push('    /* Normal text font family */');
+    lines.push('    body,');
+    lines.push('    p,');
+    lines.push('    span,');
+    lines.push('    div,');
+    lines.push('    li,');
+    lines.push('    td,');
+    lines.push('    th,');
+    lines.push('    label,');
+    lines.push('    input:not([type="text"]):not([type="password"]):not([type="email"]):not([type="search"]):not([type="url"]):not([type="tel"]):not([type="number"]),');
+    lines.push('    button,');
+    lines.push('    select,');
+    lines.push('    h1, h2, h3, h4, h5, h6 {');
+    lines.push(`      font-family: ${normalCSSFamily} !important;`);
+    lines.push('    }');
+  }
+  
+  // Add monospace font rules
+  if (monoFamilies.length > 0) {
+    const monoCSSFamily = buildCSSFontFamily(monoFamilies);
+    lines.push('');
+    lines.push('    /* Monospace / code font family */');
+    lines.push('    code,');
+    lines.push('    pre,');
+    lines.push('    kbd,');
+    lines.push('    samp,');
+    lines.push('    tt,');
+    lines.push('    .monospace,');
+    lines.push('    [class*="code"],');
+    lines.push('    [class*="mono"],');
+    lines.push('    [class*="terminal"],');
+    lines.push('    [class*="console"],');
+    lines.push('    input[type="text"],');
+    lines.push('    input[type="password"],');
+    lines.push('    input[type="email"],');
+    lines.push('    input[type="search"],');
+    lines.push('    input[type="url"],');
+    lines.push('    input[type="tel"],');
+    lines.push('    input[type="number"],');
+    lines.push('    textarea,');
+    lines.push('    pre[class*="language-"],');
+    lines.push('    code[class*="language-"],');
+    lines.push('    .hljs,');
+    lines.push('    .token,');
+    lines.push('    .CodeMirror,');
+    lines.push('    .cm-editor,');
+    lines.push('    .monaco-editor,');
+    lines.push('    .ace_editor {');
+    lines.push(`      font-family: ${monoCSSFamily} !important;`);
+    lines.push('    }');
+  }
+  
+  return lines.join('\n');
+}
+
+/**
+ * Generate @import statements for Google Fonts
+ * Handles multi-font arrays and deduplicates imports
+ */
+function generateFontImports(fontSettings?: { normalFont?: string; monoFont?: string }): string {
+  if (!fontSettings) return '';
+  
+  const normalFamilies = parseFontFamilies(fontSettings.normalFont);
+  const monoFamilies = parseFontFamilies(fontSettings.monoFont);
+  const allFamilies = [...normalFamilies, ...monoFamilies];
+  
+  if (allFamilies.length === 0) return '';
+  
+  // Map of known font families to their Google Fonts URLs
+  // This covers the most common fonts - full mapping is in constants/fonts.ts
+  const googleFontsMap: Record<string, string> = {
+    // Sans-serif
+    '"Inter", sans-serif': 'https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    '"Roboto", sans-serif': 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap',
+    '"Open Sans", sans-serif': 'https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap',
+    '"Lato", sans-serif': 'https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap',
+    '"Montserrat", sans-serif': 'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Poppins", sans-serif': 'https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Nunito", sans-serif': 'https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Andika", sans-serif': 'https://fonts.googleapis.com/css2?family=Andika:ital,wght@0,400;0,700;1,400;1,700&display=swap',
+    '"Noto Sans SC", sans-serif': 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    '"Noto Sans TC", sans-serif': 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    '"Noto Sans JP", sans-serif': 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    '"Noto Sans KR", sans-serif': 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    '"LXGW WenKai", sans-serif': 'https://fonts.googleapis.com/css2?family=LXGW+WenKai&display=swap',
+    '"LXGW WenKai TC", sans-serif': 'https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&display=swap',
+    '"Atkinson Hyperlegible", sans-serif': 'https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap',
+    '"Raleway", sans-serif': 'https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Work Sans", sans-serif': 'https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Source Sans 3", sans-serif': 'https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Ubuntu", sans-serif': 'https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap',
+    '"Rubik", sans-serif': 'https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Quicksand", sans-serif': 'https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap',
+    '"Mulish", sans-serif': 'https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"DM Sans", sans-serif': 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"IBM Plex Sans", sans-serif': 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap',
+    // Serif
+    '"Merriweather", serif': 'https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap',
+    '"Playfair Display", serif': 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Lora", serif': 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap',
+    '"Source Serif 4", serif': 'https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Noto Serif", serif': 'https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Noto Serif SC", serif': 'https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400;500;600;700;800;900&display=swap',
+    '"Noto Serif TC", serif': 'https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200;300;400;500;600;700;800;900&display=swap',
+    '"Noto Serif JP", serif': 'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;300;400;500;600;700;800;900&display=swap',
+    '"IBM Plex Serif", serif': 'https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap',
+    // Monospace
+    '"Fira Code", monospace': 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap',
+    '"JetBrains Mono", monospace': 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap',
+    '"Source Code Pro", monospace': 'https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap',
+    '"Roboto Mono", monospace': 'https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap',
+    '"Ubuntu Mono", monospace': 'https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap',
+    '"IBM Plex Mono", monospace': 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap',
+    '"Space Mono", monospace': 'https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap',
+    '"Inconsolata", monospace': 'https://fonts.googleapis.com/css2?family=Inconsolata:wght@200;300;400;500;600;700;800;900&display=swap',
+    '"DM Mono", monospace': 'https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap',
+    '"Noto Sans Mono", monospace': 'https://fonts.googleapis.com/css2?family=Noto+Sans+Mono:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    '"Geist Mono", monospace': 'https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    '"Anonymous Pro", monospace': 'https://fonts.googleapis.com/css2?family=Anonymous+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap',
+    '"Cousine", monospace': 'https://fonts.googleapis.com/css2?family=Cousine:ital,wght@0,400;0,700;1,400;1,700&display=swap',
+    '"Red Hat Mono", monospace': 'https://fonts.googleapis.com/css2?family=Red+Hat+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap',
+    '"Martian Mono", monospace': 'https://fonts.googleapis.com/css2?family=Martian+Mono:wght@100;200;300;400;500;600;700;800&display=swap',
+  };
+  
+  const imports: string[] = [];
+  const addedUrls = new Set<string>();
+  let hasNerdFonts = false;
+  let hasSpecialFonts = false;
+  
+  // Collect Google Fonts imports for all selected fonts
+  allFamilies.forEach((family) => {
+    const url = googleFontsMap[family];
+    if (url && !addedUrls.has(url)) {
+      imports.push(`@import url("${url}");`);
+      addedUrls.add(url);
+    }
+    
+    // Check for Nerd Fonts
+    if (family.includes('Nerd Font')) {
+      hasNerdFonts = true;
+    }
+    
+    // Check for special fonts (Iansui, jf open 粉圓)
+    if (
+      family.includes('Iansui') || 
+      family.includes('芫荽') || 
+      family.includes('jf-openhuninn') || 
+      family.includes('粉圓')
+    ) {
+      hasSpecialFonts = true;
+    }
+  });
+  
+  // Add helpful comments for non-Google fonts
+  if (hasNerdFonts) {
+    imports.push('/* Note: Nerd Fonts must be installed locally. Download from https://www.nerdfonts.com/ */');
+  }
+  
+  if (hasSpecialFonts) {
+    imports.push('/* Note: Iansui and jf open 粉圓 fonts must be installed locally or loaded via CDN */');
+  }
+  
+  return imports.length > 0 ? '\n' + imports.join('\n') : '';
 }
 
 

@@ -54,6 +54,8 @@ export function clearAPIKeys(): void {
 
 export interface StoredSettings {
   aiAssistedMapping?: boolean;
+  normalFont?: string;
+  monoFont?: string;
 }
 
 export function loadSettings(): StoredSettings {

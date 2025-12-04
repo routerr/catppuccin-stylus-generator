@@ -5,6 +5,7 @@ import { FetcherConfig } from './components/FetcherConfig';
 import { ServiceSelector } from './components/ServiceSelector';
 import { ThemePreview } from './components/ThemePreview';
 import { ThinkingProcess, type ThinkingStep } from './components/ThinkingProcess';
+import { FontSelector } from './components/FontSelector';
 import type { AIProvider, ThemePackage, CrawlerResult, FetcherAPIKeys, FetcherAPIService, FetcherService } from './types/theme';
 import type { PaletteDiagnostics } from './services/palette-profile';
 import { loadSettings, saveSettings } from './utils/storage';
@@ -48,6 +49,16 @@ function App() {
   const [lastPaletteProfile, setLastPaletteProfile] = useState<any | null>(null);
   const [lastCrawlAt, setLastCrawlAt] = useState<string | null>(null);
   const [parseErrorToast, setParseErrorToast] = useState<string | null>(null);
+
+  // Font settings state
+  const [normalFont, setNormalFont] = useState<string>(() => {
+    const settings = loadSettings();
+    return settings.normalFont ?? '';
+  });
+  const [monoFont, setMonoFont] = useState<string>(() => {
+    const settings = loadSettings();
+    return settings.monoFont ?? '';
+  });
   
 
   const aiChangedSinceLast = !!(
@@ -197,6 +208,10 @@ function App() {
         accentToggles: {
           badgeCardTable: accentBadgeCardTable,
           alerts: accentAlerts,
+        },
+        fontSettings: {
+          normalFont,
+          monoFont,
         },
       };
 
@@ -355,7 +370,22 @@ function App() {
               />
             </div>
 
-            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
+            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2 relative z-20">
+              <FontSelector
+                normalFont={normalFont}
+                monoFont={monoFont}
+                onNormalFontChange={(font) => {
+                  setNormalFont(font);
+                  saveSettings({ normalFont: font, monoFont });
+                }}
+                onMonoFontChange={(font) => {
+                  setMonoFont(font);
+                  saveSettings({ normalFont, monoFont: font });
+                }}
+              />
+            </div>
+
+            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2 relative z-10">
               <h2 className="text-2xl font-bold mb-6 text-ctp-accent">Generate Theme</h2>
 
               <div className="flex items-center justify-between mb-4">
