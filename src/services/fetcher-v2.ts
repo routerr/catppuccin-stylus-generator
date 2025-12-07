@@ -7,7 +7,13 @@ import type {
   DeepAnalysisResult,
   DeepAnalysisConfig,
 } from "../types/deep-analysis";
-import type { CrawlerResult } from "../types/theme";
+import {
+  scrapeWithFirecrawl,
+  extractColorsFromBranding,
+  type FirecrawlBranding,
+} from "./crawlers/firecrawl";
+import { scrapeWithScrapingBee } from "./crawlers/scrapingbee";
+import { scrapeWithBrowserless } from "./crawlers/browserless";
 import {
   extractCSSVariables,
   getVariableStats,
@@ -22,13 +28,28 @@ import {
 import { DEFAULT_DEEP_ANALYSIS_CONFIG } from "../types/deep-analysis";
 
 // CORS proxy options - we need these because browsers block direct cross-origin requests
+// Ordered by reliability (most reliable first)
 const CORS_PROXIES = [
-  "https://api.allorigins.win/raw?url=",
   "https://corsproxy.io/?",
+  "https://api.allorigins.win/raw?url=",
   "https://api.codetabs.com/v1/proxy?quest=",
 ];
 
 let currentProxyIndex = 0;
+
+/**
+ * Configuration for crawler services
+ */
+export interface CrawlerConfig {
+  /** Firecrawl API key (optional - enables JS rendering) */
+  firecrawlApiKey?: string;
+  /** ScrapingBee API key (optional - backup crawler) */
+  scrapingbeeApiKey?: string;
+  /** Browserless API key (optional - backup crawler) */
+  browserlessApiKey?: string;
+  /** Prefer JS-rendering crawlers over CORS proxy */
+  preferFirecrawl?: boolean;
+}
 
 /**
  * Fetch website with complete deep analysis
@@ -36,7 +57,8 @@ let currentProxyIndex = 0;
 export async function fetchWithDeepAnalysis(
   url: string,
   config: Partial<DeepAnalysisConfig> = {},
-  htmlContent?: string
+  htmlContent?: string,
+  crawlerConfig?: CrawlerConfig
 ): Promise<DeepAnalysisResult> {
   const startTime = Date.now();
   const fullConfig = { ...DEFAULT_DEEP_ANALYSIS_CONFIG, ...config };
@@ -44,9 +66,16 @@ export async function fetchWithDeepAnalysis(
   console.log(`🔍 Starting deep analysis for: ${url}`);
 
   // Step 1: Fetch basic content (or use provided content)
-  const basicContent = htmlContent
-    ? await processBasicContent(htmlContent, url)
-    : await fetchBasicContent(url);
+  let basicContent: Awaited<ReturnType<typeof processBasicContent>>;
+  let firecrawlBranding: FirecrawlBranding | undefined;
+
+  if (htmlContent) {
+    basicContent = await processBasicContent(htmlContent, url);
+  } else {
+    const result = await fetchBasicContent(url, crawlerConfig);
+    basicContent = result.basicContent;
+    firecrawlBranding = result.branding;
+  }
 
   // Step 2: Fetch all CSS (external + inline)
   const allCSS = await fetchAllCSS(url, basicContent.html);
@@ -80,9 +109,22 @@ export async function fetchWithDeepAnalysis(
   // Step 5: Detect color scheme (dark/light)
   const mode = detectColorScheme(basicContent.html, allCSS, cssVariables);
 
-  // Step 6: Extract dominant colors
-  const dominantColors = extractDominantColors(cssVariables, allCSS);
-  const accentColors = extractAccentColors(cssVariables, allCSS);
+  // Step 6: Extract dominant colors (enhanced with Firecrawl branding if available)
+  let dominantColors = extractDominantColors(cssVariables, allCSS);
+  let accentColors = extractAccentColors(cssVariables, allCSS);
+
+  // Enhance with Firecrawl branding colors if available
+  if (firecrawlBranding) {
+    const brandingColors = extractColorsFromBranding(firecrawlBranding);
+    if (brandingColors.length > 0) {
+      console.log(`🔥 Firecrawl branding colors: ${brandingColors.join(", ")}`);
+      // Prepend branding colors (they're likely more accurate for JS-rendered sites)
+      dominantColors = [...new Set([...brandingColors, ...dominantColors])];
+      accentColors = [
+        ...new Set([...brandingColors.slice(0, 3), ...accentColors]),
+      ];
+    }
+  }
 
   const analysisTime = Date.now() - startTime;
 
@@ -128,16 +170,76 @@ export async function fetchWithDeepAnalysis(
 }
 
 /**
- * Fetch basic HTML content with CORS proxy fallback
+ * Result from fetching basic content
  */
-async function fetchBasicContent(url: string): Promise<{
-  html: string;
-  title: string;
-  content: string;
-  externalStylesheets: string[];
-  inlineStyles: string[];
-}> {
-  // Try multiple CORS proxies if one fails
+interface FetchBasicContentResult {
+  basicContent: {
+    html: string;
+    title: string;
+    content: string;
+    externalStylesheets: string[];
+    inlineStyles: string[];
+  };
+  branding?: FirecrawlBranding;
+}
+
+/**
+ * Fetch basic HTML content with CORS proxy + JS-crawler fallback chain
+ */
+async function fetchBasicContent(
+  url: string,
+  crawlerConfig?: CrawlerConfig
+): Promise<FetchBasicContentResult> {
+  const {
+    firecrawlApiKey,
+    scrapingbeeApiKey,
+    browserlessApiKey,
+    preferFirecrawl,
+  } = crawlerConfig || {};
+
+  // Build fallback chain based on available API keys
+  const crawlerChain: Array<{
+    name: string;
+    tryFn: () => Promise<FetchBasicContentResult | null>;
+  }> = [];
+
+  if (firecrawlApiKey) {
+    crawlerChain.push({
+      name: "Firecrawl",
+      tryFn: () => tryFirecrawl(url, firecrawlApiKey),
+    });
+  }
+  if (scrapingbeeApiKey) {
+    crawlerChain.push({
+      name: "ScrapingBee",
+      tryFn: () => tryScrapingBee(url, scrapingbeeApiKey),
+    });
+  }
+  if (browserlessApiKey) {
+    crawlerChain.push({
+      name: "Browserless",
+      tryFn: () => tryBrowserless(url, browserlessApiKey),
+    });
+  }
+
+  // If preferFirecrawl and we have any crawlers, try them first
+  if (preferFirecrawl && crawlerChain.length > 0) {
+    console.log(
+      `🚀 JS-rendering preferred - trying ${crawlerChain.length} crawler(s) first...`
+    );
+    for (const crawler of crawlerChain) {
+      const result = await crawler.tryFn();
+      if (result) {
+        return result;
+      }
+      console.log(`⚠️ ${crawler.name} failed, trying next...`);
+    }
+    console.log(
+      "⚠️ All preferred crawlers failed, falling back to CORS proxies..."
+    );
+  }
+
+  // Try CORS proxies
   let lastError: Error | null = null;
 
   for (
@@ -168,11 +270,36 @@ async function fetchBasicContent(url: string): Promise<{
       }
 
       const html = await response.text();
+
+      // Validate that we got meaningful content (not just a JS shell)
+      const basicContent = await processBasicContent(html, url);
+      const hasStyles =
+        basicContent.inlineStyles.length > 0 ||
+        basicContent.externalStylesheets.length > 0;
+      const hasContent = basicContent.content.length > 100;
+
+      // If content is minimal and we have crawlers, try them
+      if (!hasStyles && !hasContent && crawlerChain.length > 0) {
+        console.log(
+          `⚠️ Proxy returned minimal content (JS-rendered site?), trying fallback crawlers...`
+        );
+        for (const crawler of crawlerChain) {
+          const result = await crawler.tryFn();
+          if (result) {
+            return result;
+          }
+        }
+        // Continue with CORS result if all crawlers fail
+      }
+
       console.log(
         `✅ Successfully fetched HTML with proxy ${proxyAttempt + 1}`
       );
 
-      return await processBasicContent(html, url);
+      return {
+        basicContent,
+        branding: undefined,
+      };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.warn(`⚠️  Proxy ${proxyAttempt + 1} failed:`, lastError.message);
@@ -180,12 +307,100 @@ async function fetchBasicContent(url: string): Promise<{
     }
   }
 
-  // All proxies failed
+  // All CORS proxies failed - try crawlers as last resort
+  if (!preferFirecrawl && crawlerChain.length > 0) {
+    console.log("⚠️ All CORS proxies failed, trying fallback crawlers...");
+    for (const crawler of crawlerChain) {
+      const result = await crawler.tryFn();
+      if (result) {
+        return result;
+      }
+      console.log(`⚠️ ${crawler.name} failed, trying next...`);
+    }
+  }
+
+  // Build error message with list of services tried
+  const servicesTried = crawlerChain.map((c) => c.name).join(", ");
   throw new Error(
-    `Failed to fetch website after trying ${CORS_PROXIES.length} CORS proxies. ` +
-      `Last error: ${lastError?.message || "Unknown error"}. ` +
-      `The website may be blocking proxy requests or is temporarily unavailable.`
+    `Failed to fetch website after trying ${CORS_PROXIES.length} CORS proxies` +
+      (servicesTried ? ` and crawlers (${servicesTried})` : "") +
+      `. Last error: ${lastError?.message || "Unknown error"}. ` +
+      `The website may be blocking requests or requires JavaScript rendering.`
   );
+}
+
+/**
+ * Try fetching with Firecrawl
+ */
+async function tryFirecrawl(
+  url: string,
+  apiKey: string
+): Promise<FetchBasicContentResult | null> {
+  const result = await scrapeWithFirecrawl(url, {
+    apiKey,
+    formats: ["html", "branding"],
+    waitFor: 5000,
+  });
+
+  if (result.success && result.html) {
+    console.log("🔥 Firecrawl fetch successful!");
+    return {
+      basicContent: await processBasicContent(result.html, url),
+      branding: result.branding,
+    };
+  }
+
+  console.warn("🔥 Firecrawl failed:", result.error);
+  return null;
+}
+
+/**
+ * Try fetching with ScrapingBee
+ */
+async function tryScrapingBee(
+  url: string,
+  apiKey: string
+): Promise<FetchBasicContentResult | null> {
+  const result = await scrapeWithScrapingBee(url, {
+    apiKey,
+    waitMs: 5000,
+    premiumProxy: true,
+  });
+
+  if (result.success && result.html) {
+    console.log("🐝 ScrapingBee fetch successful!");
+    return {
+      basicContent: await processBasicContent(result.html, url),
+      branding: undefined,
+    };
+  }
+
+  console.warn("🐝 ScrapingBee failed:", result.error);
+  return null;
+}
+
+/**
+ * Try fetching with Browserless
+ */
+async function tryBrowserless(
+  url: string,
+  apiKey: string
+): Promise<FetchBasicContentResult | null> {
+  const result = await scrapeWithBrowserless(url, {
+    apiKey,
+    waitMs: 5000,
+  });
+
+  if (result.success && result.html) {
+    console.log("🌐 Browserless fetch successful!");
+    return {
+      basicContent: await processBasicContent(result.html, url),
+      branding: undefined,
+    };
+  }
+
+  console.warn("🌐 Browserless failed:", result.error);
+  return null;
 }
 
 /**

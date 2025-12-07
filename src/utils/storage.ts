@@ -4,6 +4,8 @@ interface StoredKeys {
   browserbase?: string;
   exa?: string;
   firecrawl?: string;
+  scrapingbee?: string;
+  browserless?: string;
   brave?: string;
   openrouter?: string;
   chutes?: string;
@@ -13,7 +15,7 @@ interface StoredKeys {
   ollamaBase?: string;
 }
 
-const STORAGE_KEY = 'catppuccin-theme-gen-keys';
+const STORAGE_KEY = "catppuccin-theme-gen-keys";
 
 export function saveAPIKeys(keys: StoredKeys): void {
   try {
@@ -21,7 +23,7 @@ export function saveAPIKeys(keys: StoredKeys): void {
     const encoded = btoa(JSON.stringify(keys));
     localStorage.setItem(STORAGE_KEY, encoded);
   } catch (error) {
-    console.error('Failed to save API keys:', error);
+    console.error("Failed to save API keys:", error);
   }
 }
 
@@ -32,7 +34,7 @@ export function loadAPIKeys(): StoredKeys {
     const decoded = atob(encoded);
     return JSON.parse(decoded);
   } catch (error) {
-    console.error('Failed to load API keys:', error);
+    console.error("Failed to load API keys:", error);
     return {};
   }
 }
@@ -55,10 +57,10 @@ export function setOllamaBaseInStorage(url: string | undefined): void {
 
 export function downloadJSON(data: any, filename: string): void {
   const jsonStr = JSON.stringify(data, null, 2);
-  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const blob = new Blob([jsonStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
 
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);
@@ -68,11 +70,15 @@ export function downloadJSON(data: any, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function downloadText(content: string, filename: string, mimeType: string = 'text/plain'): void {
+export function downloadText(
+  content: string,
+  filename: string,
+  mimeType: string = "text/plain"
+): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
 
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);

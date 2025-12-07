@@ -27,9 +27,6 @@ export const useAppStore = create<AppState>()(
         enableDeepAnalysis: state.enableDeepAnalysis,
         flavor: state.flavor,
         accent: state.accent,
-        useV3Generator: state.useV3Generator,
-        enableCascadingGradients: state.enableCascadingGradients,
-        gradientCoverage: state.gradientCoverage,
       }),
     }
   )

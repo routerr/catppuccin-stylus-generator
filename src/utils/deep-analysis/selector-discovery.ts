@@ -209,31 +209,53 @@ function enrichWithDOMInfo(
 }
 
 /**
+ * Escape special regex characters in a string
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * Count occurrences of a selector in HTML (simplified)
  */
 function countSelectorOccurrences(selector: string, html: string): number {
   // Simple class-based matching
   if (selector.startsWith(".")) {
     const className = selector.substring(1).split(/[.:#\s\[>+~]/)[0];
-    const regex = new RegExp(`class="[^"]*\\b${className}\\b`, "g");
-    const matches = html.match(regex);
-    return matches ? matches.length : 0;
+    const escapedClassName = escapeRegex(className);
+    try {
+      const regex = new RegExp(`class="[^"]*\\b${escapedClassName}\\b`, "g");
+      const matches = html.match(regex);
+      return matches ? matches.length : 0;
+    } catch {
+      // Invalid regex, skip
+      return 0;
+    }
   }
 
   // Simple ID-based matching
   if (selector.startsWith("#")) {
     const id = selector.substring(1).split(/[.:#\s\[>+~]/)[0];
-    const regex = new RegExp(`id="${id}"`, "g");
-    const matches = html.match(regex);
-    return matches ? matches.length : 0;
+    const escapedId = escapeRegex(id);
+    try {
+      const regex = new RegExp(`id="${escapedId}"`, "g");
+      const matches = html.match(regex);
+      return matches ? matches.length : 0;
+    } catch {
+      return 0;
+    }
   }
 
   // Element-based matching (less reliable)
   const element = selector.split(/[.:#\s\[>+~]/)[0];
   if (element && element.match(/^[a-z]+$/i)) {
-    const regex = new RegExp(`<${element}\\b`, "gi");
-    const matches = html.match(regex);
-    return matches ? matches.length : 0;
+    try {
+      const regex = new RegExp(`<${element}\\b`, "gi");
+      const matches = html.match(regex);
+      return matches ? matches.length : 0;
+    } catch {
+      return 0;
+    }
   }
 
   return 1; // Default

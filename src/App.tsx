@@ -1,6 +1,7 @@
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { InputSelector } from "./components/InputSelector";
 import { APIKeyConfig } from "./components/APIKeyConfig";
+import { CrawlerConfig, type CrawlerKeys } from "./components/CrawlerConfig";
 import { ServiceSelector } from "./components/ServiceSelector";
 import { DeepAnalysisControls } from "./components/DeepAnalysisControls";
 import { ThemePreview } from "./components/ThemePreview";
@@ -16,9 +17,13 @@ import {
 import { useVersion } from "./hooks/useVersion";
 import { useAppStore } from "./store/useAppStore";
 import catppuccinLogo from "/catppuccin.png";
+import { useState } from "react";
 
 function App() {
   const version = useVersion();
+
+  // Crawler API keys state (local component state, not persisted in store)
+  const [crawlerKeys, setCrawlerKeys] = useState<CrawlerKeys>({});
 
   // Store hooks
   const {
@@ -32,18 +37,7 @@ function App() {
     setDiscoveredOllamaModels,
   } = useAppStore();
 
-  const {
-    flavor,
-    accent,
-    useV3Generator,
-    enableCascadingGradients,
-    gradientCoverage,
-    setFlavor,
-    setAccent,
-    setUseV3Generator,
-    setEnableCascadingGradients,
-    setGradientCoverage,
-  } = useAppStore();
+  const { flavor, accent, setFlavor, setAccent } = useAppStore();
 
   const {
     isProcessing,
@@ -451,27 +445,18 @@ function App() {
           provider: aiProvider,
           apiKey: aiProvider !== "ollama" ? aiKey : undefined,
           model: aiModel,
-          enableVariableMapping: true,
-          enableSVGMapping: true,
-          enableSelectorMapping: true,
-          useAIForVariables: true,
-          useAIForSVGs: true,
-          useAIForSelectors: true,
         },
-        useV4Generator: true,
-        userstyleV4: {
-          defaultFlavor: flavor,
-          defaultAccent: accent,
-        },
-        useV3Generator,
-        userstyleV3: useV3Generator
-          ? {
-              defaultFlavor: flavor,
-              defaultAccent: accent,
-              enableCascadingGradients,
-              gradientCoverage,
-            }
-          : undefined,
+        crawlerConfig:
+          crawlerKeys.firecrawl ||
+          crawlerKeys.scrapingbee ||
+          crawlerKeys.browserless
+            ? {
+                firecrawlApiKey: crawlerKeys.firecrawl,
+                scrapingbeeApiKey: crawlerKeys.scrapingbee,
+                browserlessApiKey: crawlerKeys.browserless,
+                preferFirecrawl: true,
+              }
+            : undefined,
       });
 
       updateThinkingStep("analyze", {
@@ -627,6 +612,11 @@ function App() {
               />
             </div>
 
+            <CrawlerConfig
+              onKeyChange={setCrawlerKeys}
+              disabled={isProcessing}
+            />
+
             <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
               <h2 className="text-2xl font-bold mb-6 text-ctp-accent">
                 Theme Options
@@ -639,12 +629,6 @@ function App() {
                 onFlavorChange={setFlavor}
                 onAccentChange={setAccent}
                 disabled={isProcessing}
-                useV3Generator={useV3Generator}
-                onUseV3GeneratorChange={setUseV3Generator}
-                enableCascadingGradients={enableCascadingGradients}
-                onEnableCascadingGradientsChange={setEnableCascadingGradients}
-                gradientCoverage={gradientCoverage}
-                onGradientCoverageChange={setGradientCoverage}
               />
             </div>
 
