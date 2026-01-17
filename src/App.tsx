@@ -290,6 +290,63 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  const handleFolderContent = async (folderResult: { html: string; css: string; url: string }) => {
+    if (aiProvider !== 'ollama' && !aiKey) {
+      setError('Please provide your AI API key');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError('');
+    setProgress('Processing folder content...');
+    setThemePackage(null);
+    setHasCompleted(false);
+    setPaletteDiagnostics(null);
+    setCrawlerWarnings([]);
+    saveSettings({ aiAssistedMapping: useAiMapping });
+
+    setThinkingSteps([
+      { id: 'parse', title: 'Parsing Folder', description: 'Reading HTML and CSS files', status: 'completed' },
+      { id: 'analyze', title: 'AI Color Analysis', description: 'Analyzing color scheme with AI', status: 'in_progress' },
+      { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
+      { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
+    ]);
+
+    try {
+      // Build palette profile from folder content
+      const { buildPaletteProfile } = await import('./services/palette-profile');
+      const paletteProfile = buildPaletteProfile({
+        url: folderResult.url,
+        html: folderResult.html,
+        css: folderResult.css,
+      });
+
+      // Create a CrawlerResult from folder content
+      const crawlerResult: CrawlerResult = {
+        url: folderResult.url,
+        title: 'Local Folder',
+        content: folderResult.html,
+        html: folderResult.html,
+        colors: [],
+        cssAnalysis: {
+          paletteProfile,
+        },
+      };
+
+      setLastCrawlerResult(crawlerResult);
+      setLastSource('direct-fetch');
+      setPaletteDiagnostics(paletteProfile.diagnostics);
+      setLastPaletteProfile(paletteProfile);
+      setLastCrawlAt(new Date().toLocaleString());
+
+      await processContent(crawlerResult, 'direct-fetch');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setProgress('');
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-ctp-base via-ctp-mantle to-ctp-crust text-ctp-text">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -380,6 +437,7 @@ function App() {
 
               <InputSelector
                 onURLSubmit={handleGenerate}
+                onFolderContent={handleFolderContent}
                 disabled={isProcessing}
                 canRegenerate={canRegenerate}
               />

@@ -10,46 +10,40 @@ const CHUTES_API_ENDPOINT = 'https://llm.chutes.ai/v1/chat/completions';
 // Chutes AI models - Official endpoint: https://llm.chutes.ai
 // NOTE: Check https://chutes.ai/app for current models and pricing
 export const CHUTES_MODELS: AIModel[] = [
-  // Popular models (updated 2025-12-05)
+  // Popular models (updated 2026-01-17)
   {
-    id: 'deepseek-ai/DeepSeek-V3.2',
-    name: 'DeepSeek V3.2',
+    id: 'deepseek-ai/DeepSeek-R1',
+    name: 'DeepSeek R1',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'deepseek-ai/DeepSeek-V3-0324',
-    name: 'DeepSeek V3 0324',
+    id: 'deepseek-ai/DeepSeek-V3',
+    name: 'DeepSeek V3',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'zai-org/GLM-4.6',
-    name: 'GLM 4.6',
+    id: 'mistralai/Mistral-Small-24B-Instruct-2501',
+    name: 'Mistral Small 3',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'tngtech/TNG-R1T-Chimera',
-    name: 'TNG R1T Chimera',
+    id: 'nvidia/Llama-3.1-Nemotron-70B-Instruct-HF',
+    name: 'Nemotron 70B',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'moonshotai/Kimi-K2-Instruct-0905',
-    name: 'Kimi K2 Instruct 0905',
+    id: 'Qwen/Qwen2.5-72B-Instruct',
+    name: 'Qwen 2.5 72B',
     provider: 'chutes',
     isFree: false,
   },
   {
-    id: 'Qwen/Qwen3-235B-A22B',
-    name: 'Qwen3 235B A22B',
-    provider: 'chutes',
-    isFree: false,
-  },
-  {
-    id: 'MiniMaxAI/MiniMax-M2',
-    name: 'MiniMax M2',
+    id: 'meta-llama/Llama-3.3-70B-Instruct',
+    name: 'Llama 3.3 70B',
     provider: 'chutes',
     isFree: false,
   },

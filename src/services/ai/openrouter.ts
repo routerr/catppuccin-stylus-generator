@@ -11,82 +11,46 @@ const OPENROUTER_API_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 // NOTE: Free models change frequently. Check https://openrouter.ai/models for current free models.
 // Models with ":free" suffix are free to use (rate-limited)
 export const OPENROUTER_MODELS: AIModel[] = [
-  // Free models (updated 2025-12-05)
+  // Free models (updated 2026-01-17)
   {
-    id: 'x-ai/grok-4.1-fast:free',
-    name: 'xAI Grok 4.1 Fast (Free, 2M ctx)',
+    id: 'google/gemini-2.0-flash-exp:free',
+    name: 'Gemini 2.0 Flash Exp (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'tngtech/deepseek-r1t2-chimera:free',
-    name: 'DeepSeek R1T2 Chimera (Free, 164K ctx)',
+    id: 'deepseek/deepseek-r1:free',
+    name: 'DeepSeek R1 (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'kwaipilot/kat-coder-pro:free',
-    name: 'KAT-Coder-Pro V1 (Free, 256K ctx)',
+    id: 'deepseek/deepseek-chat:free',
+    name: 'DeepSeek V3 (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'tngtech/deepseek-r1t-chimera:free',
-    name: 'DeepSeek R1T Chimera (Free, 164K ctx)',
+    id: 'meta-llama/llama-3.3-70b-instruct:free',
+    name: 'Llama 3.3 70B (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'z-ai/glm-4.5-air:free',
-    name: 'GLM 4.5 Air (Free, 131K ctx)',
+    id: 'nvidia/llama-3.1-nemotron-70b-instruct:free',
+    name: 'Nvidia Nemotron 70B (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'nvidia/nemotron-nano-12b-v2-vl:free',
-    name: 'NVIDIA Nemotron Nano 12B VL (Free, 128K ctx)',
+    id: 'qwen/qwen-2.5-coder-32b-instruct:free',
+    name: 'Qwen 2.5 Coder 32B (Free)',
     provider: 'openrouter',
     isFree: true,
   },
   {
-    id: 'tngtech/tng-r1t-chimera:free',
-    name: 'TNG R1T Chimera (Free, 164K ctx)',
-    provider: 'openrouter',
-    isFree: true,
-  },
-  {
-    id: 'qwen/qwen3-coder:free',
-    name: 'Qwen3 Coder 480B A35B (Free, 262K ctx)',
-    provider: 'openrouter',
-    isFree: true,
-  },
-  {
-    id: 'google/gemma-3-27b-it:free',
-    name: 'Google Gemma 3 27B (Free, 131K ctx)',
-    provider: 'openrouter',
-    isFree: true,
-  },
-  {
-    id: 'openai/gpt-oss-20b:free',
-    name: 'OpenAI GPT-OSS 20B (Free, 131K ctx)',
-    provider: 'openrouter',
-    isFree: true,
-  },
-  {
-    id: 'amazon/nova-2-lite-v1:free',
-    name: 'Amazon Nova 2 Lite (Free, 1M ctx)',
-    provider: 'openrouter',
-    isFree: true,
-  },
-  {
-    id: 'meituan/longcat-flash-chat:free',
-    name: 'Meituan LongCat Flash (Free, 131K ctx)',
-    provider: 'openrouter',
-    isFree: true,
-  },
-  {
-    id: 'arcee-ai/trinity-mini:free',
-    name: 'Arcee Trinity Mini (Free, 131K ctx)',
+    id: 'microsoft/phi-4:free',
+    name: 'Phi-4 (Free)',
     provider: 'openrouter',
     isFree: true,
   },

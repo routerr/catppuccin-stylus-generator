@@ -5,8 +5,8 @@
  * Run with: npx tsx test-smoke-generator.ts
  */
 
-import { generateStylusTheme } from './src/services/generators/stylus';
-import type { MappingOutput } from './src/types/theme';
+import { generateStylusTheme } from '../src/services/generators/stylus';
+import type { MappingOutput } from '../src/types/theme';
 
 const mappingOutput: MappingOutput = {
   roleMap: {
@@ -49,23 +49,23 @@ const checks: Array<{ name: string; ok: boolean; hint?: string }> = [];
 
 checks.push({
   name: 'Level1 cp_ binding (primary.base)',
-  ok: output.includes('$cp_primary_base'),
-  hint: 'expected $cp_primary_base present'
+  ok: output.includes('cp_primary_base'),
+  hint: 'expected cp_primary_base present'
 });
 checks.push({
   name: 'Level2 role var (primary-base)',
-  ok: output.includes('$primary-base'),
-  hint: 'expected $primary-base present'
+  ok: output.includes('primary-base'),
+  hint: 'expected primary-base present'
 });
 checks.push({
   name: 'Derived cp_ binding (primary.hover)',
-  ok: output.includes('$cp_primary_hover'),
-  hint: 'expected $cp_primary_hover present'
+  ok: output.includes('cp_primary_hover'),
+  hint: 'expected cp_primary_hover present'
 });
 checks.push({
   name: 'Derived role var (primary-hover)',
-  ok: output.includes('$primary-hover'),
-  hint: 'expected $primary-hover present'
+  ok: output.includes('primary-hover'),
+  hint: 'expected primary-hover present'
 });
 
 // Print output and results

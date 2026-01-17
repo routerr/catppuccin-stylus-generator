@@ -72,3 +72,9 @@ Documenting milestones, benchmarks, and near-finish states for the Catppuccin th
 - Mapping pipeline now emits contrast warnings (text vs backgrounds, accent vs surfaces) and will fallback to palette text when ratios fail; warnings surface in diagnostics.
 - UserStyle class colors now prioritize AI role guesses and class-name hints (CTA → accent, nav/link → bi-accent1, badge/tag → bi-accent2; status roles map to Catppuccin greens/yellows/reds/sapphires). Cycle fallback remains for variety.
 - Playwright badge shows last test time and RTT; last error surfaced when falling back to HTTP.
+
+## 2025-12-20 — Documentation Updates
+- Updated all project documentation to ensure accuracy and consistency with the current codebase
+- Removed references to nonexistent QUICKSTART.md
+- Clarified that generated themes are copied rather than downloaded
+- Added note about Playwright crawler being optional in deployment instructions

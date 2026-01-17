@@ -1,6 +1,8 @@
 Ollama from GitHub Pages (HTTPS)
 ================================
 
+> **Note**: The proxy examples below require custom implementation and are provided as reference only.
+
 Static hosting (e.g., GitHub Pages) cannot reach your `http://localhost:11434` due to HTTPS mixed content and CORS. Use one of these options:
 
 Option A: HTTPS tunnel (recommended)

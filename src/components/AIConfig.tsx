@@ -174,13 +174,13 @@ export function AIConfig({
         </label>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {AI_PROVIDERS.map((provider) => {
-            const disabled = provider.value === 'ollama' && isHttps && !(hasHttpsOllama || hasOllamaCloudKey);
+            const disabled = false; // Always enable to allow Cloud/Custom URL usage
             return (
               <button
                 key={provider.value}
                 onClick={() => handleProviderChange(provider.value)}
                 disabled={disabled}
-                title={disabled ? 'On HTTPS, set a Custom Ollama URL or provide an Ollama Cloud API key.' : undefined}
+                title="Use local Ollama, Custom URL, or Cloud API Key"
                 className={`p-4 rounded-lg border-2 text-left transition-all ${
                   aiProvider === provider.value
                     ? 'border-ctp-accent bg-ctp-accent/10'

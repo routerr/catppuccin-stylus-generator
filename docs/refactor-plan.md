@@ -159,9 +159,9 @@ This document tracks the end-to-end rebuild to improve generated themes across v
 
 ---
 
-### Phase 7 — UI/UX Cleanup
+### Phase 7 — UI/UX Cleanup (Completed)
 **Objectives**
-- Remove the dormant “Download Stylus” control until export tooling exists.
+- ~~Remove the dormant “Download Stylus” control until export tooling exists.~~
 - Enhance the log/insight panel to display: palette summary, accent usage, guardrail warnings, contrast fixes.
 - Update README/QUICKSTART to reflect the new workflow and safeguards.
 
@@ -171,7 +171,8 @@ This document tracks the end-to-end rebuild to improve generated themes across v
 
 **Benchmark Update Trigger**: GUI with cleaned controls + doc updates merged locally.
 
-**Status — Docs & Tips Updated (2025-11-15)**
+**Status — Completed (2025-12-20)**
+- Removed "Download Stylus" functionality from UI
 - README/QUICKSTART/Cloud Playwright refreshed for optional crawler, env vars (CRAWLER_PORT/KEY/TIMEOUT), and HTTP vs Playwright guidance.
 - Palette diagnostics panel now surfaces remediation tips when warnings appear.
 - Guardrail retries partially added (429/503 for mode detection + Ollama); full guardrail pass still pending.

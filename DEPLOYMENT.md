@@ -74,9 +74,9 @@ server {
 }
 ```
 
-### Docker (nginx)
+### Docker for Main App (nginx)
 ```dockerfile
-FROM node:18-alpine as build
+FROM node:20-alpine as build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -94,6 +94,8 @@ docker run -d -p 80:80 catppuccin-generator
 ```
 
 ## 5) Troubleshooting
+
+> **Note**: The Playwright crawler service is optional and legacy. The app primarily uses the API-based fetcher chain and can work without Playwright.
 - Blank page: ensure `base` matches your deployment path and all assets load.
 - 404 on refresh: configure SPA fallback (`try_files ... /index.html` or Netlify redirects).
 - Build fails: use Node 18+, reinstall deps, run `npm run build`.

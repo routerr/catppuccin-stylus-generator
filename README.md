@@ -88,7 +88,7 @@ graph LR
 3. **Profile**: Palette profile built with diagnostics and accent seed
 4. **Analyze**: AI identifies colors and optional class roles
 5. **Map**: Colors mapped to Catppuccin palette with accent plan
-6. **Generate**: UserStyle (.user.less) emitted and ready to copy/download
+6. **Generate**: UserStyle (.user.less) emitted and ready to copy
 
 ## Layout Preservation
 
@@ -178,7 +178,6 @@ Paste the endpoint/key into **API Key Configuration → Playwright Crawler** if 
    - Download or copy the generated `.user.less`
    - Install in Stylus/Cascadea and enjoy your Catppuccin theme
 
-See [QUICKSTART.md](QUICKSTART.md) for detailed step-by-step instructions.
 
 ## Playwright Crawler Setup (Optional)
 
