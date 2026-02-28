@@ -1,4 +1,5 @@
 import { CheckCircle2, Loader2, Circle, Brain, Sparkles, XCircle, RefreshCw } from 'lucide-react';
+import { useLanguage } from '../hooks/useLanguage';
 
 export interface ThinkingStep {
   id: string;
@@ -15,7 +16,10 @@ interface ThinkingProcessProps {
   onReset?: () => void;
 }
 
-export function ThinkingProcess({ steps, title = "AI Processing Steps", onReset }: ThinkingProcessProps) {
+export function ThinkingProcess({ steps, title, onReset }: ThinkingProcessProps) {
+  const { t } = useLanguage();
+  const displayTitle = title || t('aiProcessingSteps');
+
   if (steps.length === 0) return null;
 
   const hasError = steps.some(s => s.status === 'error');
@@ -24,7 +28,7 @@ export function ThinkingProcess({ steps, title = "AI Processing Steps", onReset 
     <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
       <div className="flex items-center gap-3 mb-6">
         <Brain className="h-6 w-6 text-ctp-accent" />
-        <h3 className="text-xl font-bold text-ctp-text">{title}</h3>
+        <h3 className="text-xl font-bold text-ctp-text">{displayTitle}</h3>
         <Sparkles className="h-5 w-5 text-ctp-yellow animate-pulse" />
       </div>
 
@@ -100,7 +104,7 @@ export function ThinkingProcess({ steps, title = "AI Processing Steps", onReset 
                 {/* Real-time process output for in-progress steps */}
                 {step.status === 'in_progress' && step.details && (
                   <div className="mt-2 p-2 bg-ctp-surface2/30 rounded text-xs font-mono text-ctp-accent border border-ctp-accent/30">
-                    <span>Output: </span>
+                    <span>{t('output')} </span>
                     <span>{step.details}</span>
                   </div>
                 )}
@@ -115,7 +119,7 @@ export function ThinkingProcess({ steps, title = "AI Processing Steps", onReset 
         <div className="mt-6 p-4 bg-gradient-to-r from-ctp-green/20 to-ctp-teal/20 border-2 border-ctp-green rounded-lg shadow-lg">
           <p className="text-ctp-text text-base font-semibold flex items-center gap-3">
             <CheckCircle2 className="h-6 w-6 text-ctp-green" />
-            All processing steps completed successfully!
+            {t('processingCompleted')}
           </p>
         </div>
       )}
@@ -127,14 +131,14 @@ export function ThinkingProcess({ steps, title = "AI Processing Steps", onReset 
             <XCircle className="h-6 w-6 text-ctp-red flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-ctp-text text-base font-semibold mb-3">
-                Processing failed. Please check the error details above.
+                {t('processingFailed')}
               </p>
               <button
                 onClick={onReset}
                 className="flex items-center gap-2 px-4 py-2 bg-ctp-red hover:bg-ctp-red/80 rounded-lg transition-colors text-ctp-base font-medium"
               >
                 <RefreshCw className="h-4 w-4" />
-                Reset and Try Again
+                {t('resetAndTryAgain')}
               </button>
             </div>
           </div>

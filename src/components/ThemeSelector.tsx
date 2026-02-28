@@ -1,10 +1,12 @@
 ﻿import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
+import { useLanguage } from '../hooks/useLanguage';
 import type { CatppuccinFlavor, AccentColor } from '../types/catppuccin';
 import { CATPPUCCIN_PALETTES } from '../constants/catppuccin-colors';
 
 export function ThemeSelector() {
   const { theme, setFlavor, setAccent, flavors, accents } = useTheme();
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +31,7 @@ export function ThemeSelector() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-ctp-surface0 hover:bg-ctp-surface1 border border-ctp-surface1 transition-colors"
-        title="Change app theme"
+        title={t('changeAppTheme')}
       >
         <div
           className="w-4 h-4 rounded-full border border-ctp-overlay0"
@@ -53,7 +55,7 @@ export function ThemeSelector() {
         <div className="absolute right-0 top-full mt-2 w-72 bg-ctp-base border border-ctp-surface1 rounded-xl shadow-xl z-50 overflow-hidden">
           {/* Flavor Selection */}
           <div className="p-3 border-b border-ctp-surface0">
-            <div className="text-xs font-medium text-ctp-subtext0 mb-2 uppercase tracking-wider">Flavor</div>
+            <div className="text-xs font-medium text-ctp-subtext0 mb-2 uppercase tracking-wider">{t('themeFlavor')}</div>
             <div className="grid grid-cols-4 gap-1">
               {flavors.map((flavor) => {
                 const isSelected = theme.flavor === flavor.name;
@@ -82,7 +84,7 @@ export function ThemeSelector() {
 
           {/* Accent Selection */}
           <div className="p-3">
-            <div className="text-xs font-medium text-ctp-subtext0 mb-2 uppercase tracking-wider">Accent</div>
+            <div className="text-xs font-medium text-ctp-subtext0 mb-2 uppercase tracking-wider">{t('themeAccent')}</div>
             <div className="grid grid-cols-7 gap-1">
               {accents.map((accent) => {
                 const isSelected = theme.accent === accent.name;
@@ -111,7 +113,7 @@ export function ThemeSelector() {
           {/* Current Theme Display */}
           <div className="px-3 pb-3">
             <div className="flex items-center justify-between p-2 bg-ctp-mantle rounded-lg">
-              <span className="text-xs text-ctp-subtext0">Current:</span>
+              <span className="text-xs text-ctp-subtext0">{t('themeCurrent')}</span>
               <span className="text-sm font-medium text-ctp-text">
                 {currentFlavorInfo?.displayName} · {accents.find(a => a.name === theme.accent)?.displayName}
               </span>

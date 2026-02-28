@@ -210,18 +210,22 @@ Return ONLY valid JSON with this exact structure (no code blocks, no markdown, n
 {
   "analysis": {
     "primaryColors": ["#hex1", "#hex2", ...],
-    "backgroundColors": ["#hex1", "#hex2", ...],
-    "textColors": ["#hex1", "#hex2", ...],
+    "secondaryColors": ["#hex1", "#hex2", ...],
+    "backgroundColor": "#hex",
+    "textColor": "#hex",
     "accentColors": ["#hex1", "#hex2", ...],
     "mode": "dark" or "light"
   },
   "mappings": [
     {
-      "from": "#original",
-      "to": "catppuccin-color-name",
-      "context": "where-used (e.g. buttons, links, headings)",
+      "originalColor": "#original",
+      "catppuccinColor": "catppuccin-color-name",
+      "reason": "where-used (e.g. primary button text, nav links, cards)",
       "cssProperties": ["color", "background-color", etc.],
-      "selectors": [".class", "element", etc.]
+      "selectors": [".class", "element", etc.],
+      "isTextOnly": true or false,
+      "hasVisibleBackground": true or false,
+      "hasBorder": true or false
     },
     ...
   ]
@@ -230,7 +234,9 @@ Return ONLY valid JSON with this exact structure (no code blocks, no markdown, n
 
 export function createClassMappingPrompt(crawlerResult: ExtendedCrawlerResult): string {
   const grouped = (crawlerResult.cssAnalysis as CSSAnalysisData | undefined)?.grouped;
-  let listSection = 'No grouped classes provided.';
+  const discoveredClasses = extractLikelyClassNames(crawlerResult.html, 180);
+  let listSection = '';
+
   if (grouped) {
     listSection = [
       'BUTTONS: ' + grouped.buttons.map(c => c.className).join(', '),
@@ -239,6 +245,10 @@ export function createClassMappingPrompt(crawlerResult: ExtendedCrawlerResult): 
       'TEXT: ' + grouped.text.map(c => c.className).join(', '),
       'BORDERS: ' + grouped.borders.map(c => c.className).join(', '),
     ].join('\\n');
+  } else if (discoveredClasses.length > 0) {
+    listSection = `DISCOVERED_CLASSES: ${discoveredClasses.join(', ')}`;
+  } else {
+    listSection = 'No classes provided. Output []';
   }
 
   return [
@@ -251,6 +261,28 @@ export function createClassMappingPrompt(crawlerResult: ExtendedCrawlerResult): 
     'CLASSES:',
     listSection,
   ].join('\\n');
+}
+
+function extractLikelyClassNames(html: string = '', limit: number): string[] {
+  if (!html) return [];
+
+  const classFrequency = new Map<string, number>();
+  const classAttrRegex = /class=["']([^"']+)["']/gi;
+  let match: RegExpExecArray | null = null;
+
+  while ((match = classAttrRegex.exec(html)) !== null) {
+    const classes = match[1].split(/\s+/).map((v) => v.trim()).filter(Boolean);
+    for (const cls of classes) {
+      if (cls.length < 2 || cls.length > 80) continue;
+      if (/^[0-9]+$/.test(cls)) continue;
+      classFrequency.set(cls, (classFrequency.get(cls) || 0) + 1);
+    }
+  }
+
+  return Array.from(classFrequency.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([name]) => name);
 }
 /** 
  * Create a prompt for AI-assisted JSON extraction from malformed responses

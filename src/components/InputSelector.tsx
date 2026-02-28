@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Globe, FolderOpen } from 'lucide-react';
 import { URLInput } from './URLInput';
 import { FolderUpload } from './FolderUpload';
+import { useLanguage } from '../hooks/useLanguage';
 
 type InputMode = 'url' | 'folder';
 
@@ -14,6 +15,7 @@ interface InputSelectorProps {
 
 export function InputSelector({ onURLSubmit, onFolderContent, disabled, canRegenerate }: InputSelectorProps) {
   const [mode, setMode] = useState<InputMode>('url');
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-4">
@@ -30,7 +32,7 @@ export function InputSelector({ onURLSubmit, onFolderContent, disabled, canRegen
           } disabled:opacity-50`}
         >
           <Globe className="h-4 w-4" />
-          URL
+          {t('urlMode')}
         </button>
         <button
           type="button"
@@ -43,7 +45,7 @@ export function InputSelector({ onURLSubmit, onFolderContent, disabled, canRegen
           } disabled:opacity-50`}
         >
           <FolderOpen className="h-4 w-4" />
-          Folder
+          {t('folderMode')}
         </button>
       </div>
 
@@ -51,14 +53,14 @@ export function InputSelector({ onURLSubmit, onFolderContent, disabled, canRegen
       {mode === 'url' ? (
         <div className="space-y-3">
           <p className="text-sm text-ctp-subtext0">
-            Paste any public URL and we&apos;ll crawl it automatically.
+            {t('urlHint')}
           </p>
           <URLInput onSubmit={onURLSubmit} disabled={disabled} canRegenerate={canRegenerate} />
         </div>
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-ctp-subtext0">
-            Upload a downloaded website folder (e.g., from browser&apos;s "Save As Complete").
+            {t('folderHint')}
           </p>
           <FolderUpload onFolderContent={onFolderContent} disabled={disabled} />
         </div>

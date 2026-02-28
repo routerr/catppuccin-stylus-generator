@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { FolderOpen, FileText, AlertCircle, Upload, FileArchive } from 'lucide-react';
 import JSZip from 'jszip';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface FolderUploadProps {
   onFolderContent: (result: { html: string; css: string; url: string }) => void;
@@ -8,6 +9,7 @@ interface FolderUploadProps {
 }
 
 export function FolderUpload({ onFolderContent, disabled }: FolderUploadProps) {
+  const { t } = useLanguage();
   const [error, setError] = useState('');
   const [isDragActive, setIsDragActive] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -59,7 +61,7 @@ export function FolderUpload({ onFolderContent, disabled }: FolderUploadProps) {
       }
 
       if (htmlFiles.length === 0) {
-        throw new Error('No HTML files found. Please upload a folder or zip containing at least one .html file.');
+        throw new Error(t('errNoHtml'));
       }
 
       setFileCount({ html: htmlFiles.length, css: cssFiles.length });
@@ -75,7 +77,7 @@ export function FolderUpload({ onFolderContent, disabled }: FolderUploadProps) {
       });
     } catch (err) {
       console.error('Upload processing error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to process files. Please try again.');
+      setError(err instanceof Error ? err.message : t('errProcessFiles'));
     } finally {
       setProcessing(false);
     }
@@ -163,12 +165,12 @@ export function FolderUpload({ onFolderContent, disabled }: FolderUploadProps) {
           
           <div>
             <p className="text-lg font-medium text-ctp-text mb-1">
-              {processing ? 'Processing files...' : isDragActive ? 'Drop content here' : 'Drop folder or zip here'}
+              {processing ? t('dropProcessing') : isDragActive ? t('dropActive') : t('dropInactive')}
             </p>
             <p className="text-sm text-ctp-subtext0">
               {processing 
-                ? 'Parsing HTML and CSS content' 
-                : 'Or click to select a folder (supports .zip)'}
+                ? t('dropSubProcessing') 
+                : t('dropSubInactive')}
             </p>
           </div>
         </div>
@@ -177,9 +179,7 @@ export function FolderUpload({ onFolderContent, disabled }: FolderUploadProps) {
       {fileCount && !processing && (
         <div className="flex items-center gap-4 p-3 bg-ctp-green/10 border border-ctp-green/20 rounded-lg animate-fade-in">
           <FileText className="h-5 w-5 text-ctp-green" />
-          <span className="text-sm text-ctp-text">
-            Extracted <strong className="text-ctp-green">{fileCount.html} HTML</strong> and <strong className="text-ctp-teal">{fileCount.css} CSS</strong> files
-          </span>
+          <span className="text-sm text-ctp-text" dangerouslySetInnerHTML={{ __html: t('extractedCount', { html: `<strong class="text-ctp-green">${fileCount.html}</strong>`, css: `<strong class="text-ctp-teal">${fileCount.css}</strong>` }) }} />
         </div>
       )}
 

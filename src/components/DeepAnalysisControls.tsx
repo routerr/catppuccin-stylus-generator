@@ -1,4 +1,5 @@
 import { Sparkles, Palette, Droplet, Layers, Zap } from 'lucide-react';
+import { useLanguage } from '../hooks/useLanguage';
 import type { CatppuccinFlavor, AccentColor } from '../types/catppuccin';
 
 interface DeepAnalysisControlsProps {
@@ -56,6 +57,7 @@ export function DeepAnalysisControls({
   gradientCoverage = 'comprehensive',
   onGradientCoverageChange,
 }: DeepAnalysisControlsProps) {
+  const { t } = useLanguage();
   return (
     <div className="space-y-4">
       {/* Deep Analysis Toggle */}
@@ -73,10 +75,10 @@ export function DeepAnalysisControls({
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-ctp-accent" aria-hidden="true" />
-              <span className="font-semibold text-ctp-text">Deep Analysis Mode</span>
+              <span className="font-semibold text-ctp-text">{t('deepAnalysisMode')}</span>
             </div>
             <p className="text-sm text-ctp-subtext0 mt-1">
-              AI-powered precision mapping with CSS variables, SVGs, and design system detection
+              {t('deepAnalysisDesc')}
             </p>
           </div>
         </label>
@@ -90,7 +92,7 @@ export function DeepAnalysisControls({
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-medium text-ctp-text">
                 <Palette className="w-4 h-4 text-ctp-accent" />
-                {useV3Generator ? 'Default Flavor' : 'Flavor'}
+                {useV3Generator ? t('defaultFlavor') : t('flavor')}
               </label>
               <select
                 value={flavor}
@@ -106,7 +108,7 @@ export function DeepAnalysisControls({
               </select>
               {useV3Generator && (
                 <p className="text-xs text-ctp-subtext0">
-                  Users can change in Stylus UI after install
+                  {t('usersChangeFlavor')}
                 </p>
               )}
             </div>
@@ -115,7 +117,7 @@ export function DeepAnalysisControls({
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-medium text-ctp-text">
                 <Droplet className="w-4 h-4 text-ctp-accent" />
-                {useV3Generator ? 'Default Accent' : 'Main Accent'}
+                {useV3Generator ? t('defaultAccent') : t('mainAccent')}
               </label>
               <select
                 value={accent}
@@ -131,7 +133,7 @@ export function DeepAnalysisControls({
               </select>
               {useV3Generator && (
                 <p className="text-xs text-ctp-subtext0">
-                  Users can switch between all 14 accents
+                  {t('usersChangeAccent')}
                 </p>
               )}
             </div>
@@ -152,11 +154,11 @@ export function DeepAnalysisControls({
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <Zap className="w-5 h-5 text-ctp-accent" />
-                    <span className="font-semibold text-ctp-text">V3 Generator</span>
+                    <span className="font-semibold text-ctp-text">{t('v3Generator')}</span>
                     <span className="px-2 py-0.5 bg-ctp-green/20 text-ctp-green text-xs font-bold rounded-full">NEW</span>
                   </div>
                   <p className="text-sm text-ctp-subtext0 mt-1">
-                    Dynamic multi-flavor support – users can change flavors and accents in Stylus UI after install!
+                    {t('v3GeneratorDesc')}
                   </p>
                 </div>
               </label>
@@ -168,7 +170,7 @@ export function DeepAnalysisControls({
             <div className="space-y-3 p-4 bg-ctp-surface1/30 rounded-xl border border-ctp-surface2">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-ctp-text">
                 <Layers className="w-4 h-4 text-ctp-accent" />
-                V3 Advanced Options
+                {t('v3AdvancedOptions')}
               </h3>
 
               {/* Cascading Gradients Toggle */}
@@ -181,9 +183,9 @@ export function DeepAnalysisControls({
                   className="w-4 h-4 rounded border-2 border-ctp-surface2 bg-ctp-surface0 checked:bg-ctp-accent checked:border-ctp-accent focus:ring-2 focus:ring-ctp-accent/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <div className="flex-1">
-                  <span className="text-sm font-medium text-ctp-text">Cascading Gradients</span>
+                  <span className="text-sm font-medium text-ctp-text">{t('cascadingGradients')}</span>
                   <p className="text-xs text-ctp-subtext0 mt-0.5">
-                    3-level gradient system with analogous color harmony (±72° hue)
+                    {t('cascadingGradientsDesc')}
                   </p>
                 </div>
               </label>
@@ -191,7 +193,7 @@ export function DeepAnalysisControls({
               {/* Gradient Coverage Selector */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-ctp-text block">
-                  Gradient Coverage
+                  {t('gradientCoverage')}
                 </label>
                 <select
                   value={gradientCoverage}
@@ -213,13 +215,10 @@ export function DeepAnalysisControls({
       {enabled && (
         <div className="p-3 bg-ctp-accent/10 border border-ctp-accent/20 rounded-lg">
           <p className="text-xs text-ctp-subtext0">
-            💡 <strong>Deep Analysis</strong> provides superior theme quality by analyzing CSS variables,
-            SVG icons, and design system patterns. Best for modern websites with design systems
-            (DuckDuckGo, GitHub, etc.)
+            💡 <strong>{t('deepAnalysisMode')}</strong> {t('deepAnalysisInfo').replace('Deep Analysis ', '')}
             {useV3Generator && (
               <>
-                {' '}<strong className="text-ctp-green">V3 Generator</strong> creates themes with dynamic
-                flavor/accent switching – one theme, 56 combinations (4 flavors × 14 accents)!
+                {' '}<strong className="text-ctp-green">{t('v3Generator')}</strong> {t('v3Info').replace('V3 Generator ', '')}
               </>
             )}
           </p>

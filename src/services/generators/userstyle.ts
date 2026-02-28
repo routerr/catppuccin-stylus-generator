@@ -10,8 +10,8 @@ function hexToRgb(hex: string): number[] {
   const h = hex.replace(/#/, '');
   // Split the string into 2-digit pairs
   const rgb = h.match(/../g) || [];
-  // Convert each pair into a number and divide by 255
-  return rgb.map((v) => parseInt(v, 16) / 255);
+  // Convert each pair into a number (0-255)
+  return rgb.map((v) => parseInt(v, 16));
 }
 
 function luminance(rgb: number[]): number {
@@ -65,6 +65,7 @@ export interface CSSAnalysisData {
     normalFont?: string;
     monoFont?: string;
   };
+  detectedMode?: 'dark' | 'light';
 }
 
 /**
@@ -110,8 +111,6 @@ export function generateUserStyle(
   const palette = CATPPUCCIN_PALETTES[flavor];
   const accentPlan = createAccentPlan((cssAnalysis as any)?.paletteProfile, flavor, defaultAccent);
   const useAltForButtons = accentPlan.buttonVariant;
-  const useAltBi = 'bi1'; // deterministic: pair main-accent with bi-accent1
-  const hoverBiPick = 'bi-accent1'; // deterministic: gradient pairs with bi-accent1
 
   // Extract hover angles from AI mappings (more flexible and dynamic)
   const colorMappings = Array.isArray(mappings) ? mappings : [];
@@ -123,29 +122,6 @@ export function generateUserStyle(
     general: accentPlan.hoverAngles.general,
   };
 
-  // Determine if elements should use text gradients vs background gradients
-  const textOnlyElements = {
-    links: colorMappings.some(m => m.reason?.toLowerCase().includes('link') && m.isTextOnly) || true, // Links are text-only by default
-    buttons: colorMappings.some(m => m.reason?.toLowerCase().includes('button') && m.isTextOnly) || false,
-    headings: true, // Headings are always text-only
-  };
-
-  // Flavor-based intensity tuning for subtle gradients and tints
-  const intensity = (() => {
-    // percentages for LESS fade(); decimals for Stylus handled elsewhere
-    switch (flavor) {
-      case 'latte':
-        return { weak: 10, mid: 14, strong: 18, inputHover: 22 };
-      case 'frappe':
-        return { weak: 12, mid: 16, strong: 20, inputHover: 26 };
-      case 'macchiato':
-        return { weak: 12, mid: 16, strong: 20, inputHover: 28 };
-      case 'mocha':
-      default:
-        return { weak: 12, mid: 16, strong: 20, inputHover: 28 };
-    }
-  })();
-
   // Build CSS variable block depending on input shape
   let cssVarMappings = '';
   if ((mappings as MappingOutput).roleMap) {
@@ -155,6 +131,7 @@ export function generateUserStyle(
     const legacy = mappings as ColorMapping[];
     cssVarMappings = generateCSSVariableMappings(legacy);
   }
+  const preferredFlavorVar = cssAnalysis?.detectedMode === 'light' ? '@lightFlavor' : '@darkFlavor';
 
   return `/* ==UserStyle==
 @name ${meta.name}
@@ -177,21 +154,57 @@ export function generateUserStyle(
 
 @-moz-document domain("${meta.domain}") {
 ${generateFontImports(cssAnalysis?.fontSettings)}
-  /* Apply dark flavor for dark mode */
+  /* Baseline theme: always apply one flavor so the stylesheet never becomes a no-op */
+  :root {
+    #catppuccin(${preferredFlavorVar});
+  }
+
+  /* Explicit dark mode */
   :root[data-mode="dark"],
   :root[data-theme="dark"],
   html[data-theme="dark"],
-  body[data-theme="dark"] {
+  body[data-theme="dark"],
+  [data-color-scheme="dark"],
+  .dark,
+  .dark-theme {
     #catppuccin(@darkFlavor);
   }
 
-  /* Apply light flavor for light mode */
+  /* Explicit light mode */
   :root[data-mode="light"],
   :root[data-theme="light"],
   html[data-theme="light"],
   body[data-theme="light"],
-  :root {
+  [data-color-scheme="light"],
+  .light,
+  .light-theme {
     #catppuccin(@lightFlavor);
+  }
+
+  /* Auto/system modes follow OS preference */
+  @media (prefers-color-scheme: dark) {
+    :root[data-mode="auto"],
+    :root[data-theme="auto"],
+    :root[data-theme="system"],
+    :root[data-color-scheme="auto"],
+    body[data-mode="auto"],
+    body[data-theme="auto"],
+    body[data-theme="system"],
+    body[data-color-scheme="auto"] {
+      #catppuccin(@darkFlavor);
+    }
+  }
+  @media (prefers-color-scheme: light) {
+    :root[data-mode="auto"],
+    :root[data-theme="auto"],
+    :root[data-theme="system"],
+    :root[data-color-scheme="auto"],
+    body[data-mode="auto"],
+    body[data-theme="auto"],
+    body[data-theme="system"],
+    body[data-color-scheme="auto"] {
+      #catppuccin(@lightFlavor);
+    }
   }
 
   #catppuccin(@flavor) {
@@ -199,148 +212,77 @@ ${generateFontImports(cssAnalysis?.fontSettings)}
     #lib.defaults();
 
 ${cssVarMappings}
+${buildUserstyleThemeBody({
+      cssAnalysis,
+      mappings,
+      accentPlan,
+      flavor,
+      defaultAccent,
+      hoverAngles,
+      palette,
+      useAltForButtons,
+    })}
+  }
+}
 
-    /* ═══════════════════════════════════════════════════════════
-       CATPPUCCIN ACCENT SYSTEM (Analogous Harmony)
-       ═══════════════════════════════════════════════════════════
+#hslify(@color) {
+  @raw: e(%("%s %s% %s%", hue(@color), saturation(@color), lightness(@color)));
+}
 
-       This theme uses an analogous color harmony system:
+`;
+}
 
-       @accent (main-accent):
-         - The primary accent color selected by the user
-         - Used for primary interactive elements (buttons, links)
+function buildUserstyleThemeBody(params: {
+  cssAnalysis?: CSSAnalysisData;
+  mappings: ColorMapping[] | MappingOutput;
+  accentPlan: AccentPlan;
+  flavor: CatppuccinFlavor;
+  defaultAccent: AccentColor;
+  hoverAngles: {
+    links: number;
+    buttons: number;
+    cards: number;
+    badges: number;
+    general: number;
+  };
+  palette: typeof CATPPUCCIN_PALETTES[CatppuccinFlavor];
+  useAltForButtons: 'alt1' | 'alt2';
+}): string {
+  const {
+    cssAnalysis,
+    mappings,
+    accentPlan,
+    flavor,
+    defaultAccent,
+    hoverAngles,
+    palette,
+    useAltForButtons,
+  } = params;
 
-       @bi-accent1, @bi-accent2 (±72° hue, analogous harmony):
-         - Two colors that work as BOTH:
-           1. Main-colors for different elements (alongside @accent)
-           2. Gradient companions for any main-color
-         - Create harmonious color transitions
-         - Example: linear-gradient(@accent, @bi-accent1)
+  const surfaces = [palette.base.hex, palette.surface0.hex, palette.surface1.hex, palette.surface2.hex];
+  const defaultAccentHex = palette[defaultAccent].hex;
+  const linkContrast = surfaces.reduce((m, s) => Math.min(m, contrastRatio(defaultAccentHex, s)), 99);
+  const minTextContrast = surfaces.reduce((m, s) => Math.min(m, contrastRatio(palette.text.hex, s)), 99);
+  const minBaseContrast = surfaces.reduce((m, s) => Math.min(m, contrastRatio(palette.base.hex, s)), 99);
+  const linkFallback = minTextContrast >= minBaseContrast ? '@text' : '@base';
+  const altMain = useAltForButtons === 'alt1'
+    ? PRECOMPUTED_ACCENTS[flavor][defaultAccent].biAccent1
+    : PRECOMPUTED_ACCENTS[flavor][defaultAccent].biAccent2;
+  const buttonContrast = contrastRatio(palette[altMain].hex, palette.surface0.hex);
 
-       MAIN-COLORS FOR ELEMENTS:
-         The three analogous colors used as primary colors for elements:
-         - @accent: Primary elements (main CTAs, primary buttons)
-         - @bi-accent1: Secondary elements (secondary buttons, badges)
-         - @bi-accent2: Tertiary elements (tags, chips, highlights)
-
-       CASCADING SYSTEM:
-         When bi-accents are used as main-colors (alt1/alt2),
-         they get their OWN bi-accents for gradients:
-
-         Primary: @accent → gradients with @bi-accent1/@bi-accent2
-         Secondary: @alt1-main (bi-accent1) → gradients with @alt1-bi1/@alt1-bi2
-         Tertiary: @alt2-main (bi-accent2) → gradients with @alt2-bi1/@alt2-bi2
-
-       ═══════════════════════════════════════════════════════════ */
-
-    /* Hover gradient parameters (AI-generated or dynamic) */
+  return `
+    /* Accent runtime variables */
     @hover-angle-links: ${hoverAngles.links}deg;
     @hover-angle-buttons: ${hoverAngles.buttons}deg;
     @hover-angle-cards: ${hoverAngles.cards}deg;
     @hover-angle-badges: ${hoverAngles.badges}deg;
     @hover-angle-general: ${hoverAngles.general}deg;
-    @hover-bi: @${hoverBiPick};
+    @link-contrast: ${linkContrast};
+    @link-fallback: ${linkFallback};
+    @button-contrast: ${buttonContrast};
 
-    /* Intensity tuning (flavor-aware) */
-    @tint-weak: ${intensity.weak}%;
-    @tint-mid: ${intensity.mid}%;
-    @tint-strong: ${intensity.strong}%;
-    @tint-input-hover: ${intensity.inputHover}%;
-
-    /* Contrast-based color adjustments for WCAG compliance */
-    /* Default/min contrast for links computed across common surfaces */
-    @link-contrast: ${(() => {
-      const surfaces = [palette.base.hex, palette.surface0.hex, palette.surface1.hex, palette.surface2.hex];
-      const acc = palette[defaultAccent].hex;
-      let m = 99;
-      for (const s of surfaces) m = Math.min(m, contrastRatio(acc, s));
-      return m;
-    })()};
-    /* Fallback link color (prefer text over base) */
-    @link-fallback: ${(() => {
-      const surfaces = [palette.base.hex, palette.surface0.hex, palette.surface1.hex, palette.surface2.hex];
-      const t = palette.text.hex; const b = palette.base.hex;
-      const minT = surfaces.reduce((m, s) => Math.min(m, contrastRatio(t, s)), 99);
-      const minB = surfaces.reduce((m, s) => Math.min(m, contrastRatio(b, s)), 99);
-      return minT >= minB ? '@text' : '@base';
-    })()};
-    /* Button contrast (ALT main text against surface0) */
-    @button-contrast: ${(() => {
-      const altMain = useAltForButtons === 'alt1' ? PRECOMPUTED_ACCENTS[flavor][defaultAccent].biAccent1 : PRECOMPUTED_ACCENTS[flavor][defaultAccent].biAccent2;
-      return contrastRatio(palette[altMain].hex, palette.surface0.hex);
-    })()};
-    @destructive-button-contrast: ${contrastRatio(palette.red.hex, palette.surface0.hex)};
-
-    /* ═══════════════════════════════════════════════════════════
-       RUNTIME ACCENT DERIVATION
-       ═══════════════════════════════════════════════════════════
-
-       When user changes @accentColor in UserStyle UI, this mixin
-       automatically updates ALL derived accents including the
-       full cascading hierarchy (bi-accents for each main-color).
-
-       ═══════════════════════════════════════════════════════════ */
-${(() => {
-      let out = '';
-      ACCENT_NAMES.forEach((name) => {
-        const mainSet = PRECOMPUTED_ACCENTS[flavor][name];
-        const bi1Set = PRECOMPUTED_ACCENTS[flavor][mainSet.biAccent1];
-        const bi2Set = PRECOMPUTED_ACCENTS[flavor][mainSet.biAccent2];
-
-        out += `    #derive-accents() when (@accentColor = ${name}) {\n`;
-        out += `      @accent: @${name};\n`;
-        out += `      /* Bi-accents for main accent (analogous harmony at ±72°) */\n`;
-        out += `      @bi-accent1: @${mainSet.biAccent1};\n`;
-        out += `      @bi-accent2: @${mainSet.biAccent2};\n`;
-        out += `      @bi-accent: @${mainSet.biAccent1};\n`;
-        out += `      /* Cascading: alt1 (bi-accent1 as main with its bi-accents) */\n`;
-        out += `      @alt1-main: @${mainSet.biAccent1};\n`;
-        out += `      @alt1-bi1: @${bi1Set.biAccent1};\n`;
-        out += `      @alt1-bi2: @${bi1Set.biAccent2};\n`;
-        out += `      /* Cascading: alt2 (bi-accent2 as main with its bi-accents) */\n`;
-        out += `      @alt2-main: @${mainSet.biAccent2};\n`;
-        out += `      @alt2-bi1: @${bi2Set.biAccent1};\n`;
-        out += `      @alt2-bi2: @${bi2Set.biAccent2};\n`;
-        out += `      /* Button accent (uses one of the bi-accent sets) */\n`;
-        out += `      @ALT_MAIN: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-main;\n`;
-        out += `      @ALT_BI: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-bi1;\n`;
-
-        // Recompute per-accent link contrast across common surfaces
-        const accentHex = CATPPUCCIN_PALETTES[flavor][name].hex;
-        const surfaces = [
-          CATPPUCCIN_PALETTES[flavor].base.hex,
-          CATPPUCCIN_PALETTES[flavor].surface0.hex,
-          CATPPUCCIN_PALETTES[flavor].surface1.hex,
-          CATPPUCCIN_PALETTES[flavor].surface2.hex,
-        ];
-        const minLink = surfaces.reduce((m, s) => Math.min(m, contrastRatio(accentHex, s)), 99);
-        out += `      @link-contrast: ${minLink};\n`;
-        // Button contrast for chosen ALT main (deterministic bi-accent pairing)
-        const altChoice: AccentColor = (useAltForButtons === 'alt1' ? mainSet.biAccent1 : mainSet.biAccent2) as AccentColor;
-        const altHex = CATPPUCCIN_PALETTES[flavor][altChoice].hex;
-        const btnC = contrastRatio(altHex, CATPPUCCIN_PALETTES[flavor].surface0.hex);
-        out += `      @button-contrast: ${btnC};\n`;
-        out += `    }\n`;
-      });
-      out += '    #derive-accents();\n';
-      return out;
-    })()}
-    /* Deprecated alias below was removed to avoid undefined references */
-
-    /* Custom styling rules */
-    /* Add website-specific color overrides here */
-
-    /* ═══════════════════════════════════════════════════════════════════
-       CRITICAL: PRESERVE ORIGINAL GRADIENT TEXT - DO NOT MODIFY
-       ═══════════════════════════════════════════════════════════════════
-       Elements with gradient text (like Tailwind gradient text) must keep
-       their original colors for visual impact and branding.
-
-       This section MUST come early to establish highest priority.
-       ═══════════════════════════════════════════════════════════════════ */
-
-    /* Explicitly preserve gradient text - HIGHEST PRIORITY */
-    /* Force original colors by preventing any theme color application */
+${buildRuntimeAccentDerivation(flavor, useAltForButtons, defaultAccent)}
+    /* Preserve native gradient text */
     [class*="bg-clip-text"],
     [class*="text-transparent"],
     [class*="bg-gradient"],
@@ -350,7 +292,6 @@ ${(() => {
     .bg-clip-text,
     .text-transparent,
     .text-clip {
-      /* Prevent theme colors from being applied */
       color: revert !important;
       background: revert !important;
       background-color: revert !important;
@@ -359,702 +300,138 @@ ${(() => {
       background-clip: revert !important;
       -webkit-text-fill-color: revert !important;
       text-fill-color: revert !important;
-    }
-
-    /* Protect ALL elements with gradient classes - extra safety layer */
-    *[class*="bg-clip-text"],
-    *[class*="text-transparent"],
-    *[class*="bg-gradient"],
-    *[class*="from-"],
-    *[class*="via-"],
-    *[class*="to-"],
-    span[class*="bg-clip-text"],
-    span[class*="text-transparent"],
-    span[class*="bg-gradient"],
-    div[class*="bg-clip-text"],
-    div[class*="text-transparent"],
-    div[class*="bg-gradient"],
-    h1 [class*="bg-clip-text"],
-    h2 [class*="bg-clip-text"],
-    h3 [class*="bg-clip-text"],
-    h4 [class*="bg-clip-text"],
-    h5 [class*="bg-clip-text"],
-    h6 [class*="bg-clip-text"] {
-      /* Force preservation of ALL gradient properties */
-      color: revert !important;
-      background: revert !important;
-      background-color: revert !important;
-      background-image: revert !important;
-      -webkit-background-clip: revert !important;
-      background-clip: revert !important;
-      -webkit-text-fill-color: revert !important;
-      text-fill-color: revert !important;
-    }
-
-    /* Elements with gradient backgrounds need solid text color on hover */
-    /* CRITICAL: This ensures text remains visible against gradient backgrounds */
-    [class*="bg-gradient"]:hover,
-    [class*="from-"]:hover,
-    [class*="via-"]:hover,
-    [class*="to-"]:hover,
-    button[class*="bg-gradient"]:hover,
-    a[class*="bg-gradient"]:hover,
-    [role="button"][class*="bg-gradient"]:hover {
-      /* Force solid text color - never use background-clip: text on gradient backgrounds */
-      color: @text !important;
-      -webkit-text-fill-color: @text !important;
-      /* Prevent any gradient text styling */
-      -webkit-background-clip: padding-box !important;
-      background-clip: padding-box !important;
-    }
-
-    /* Background colors - use theme base colors */
-    body:not([class*="bg-clip-text"]):not([class*="bg-gradient"]) {
-      background-color: @base;
-      color: @text;
     }
 
 ${generateFontCSS(cssAnalysis?.fontSettings)}
 
-    /* SVG elements - preserve transparency and use currentColor for fills */
-    /* SVGs should inherit color from parent text, not have forced backgrounds */
-    svg {
-      /* SVGs typically don't have backgrounds, preserve this */
-      background: none;
-      background-color: transparent;
+    body {
+      background-color: @base !important;
+      color: @text !important;
     }
 
-    /* ═══════════════════════════════════════════════════════════════════
-       Links - ONLY COLOR CHANGES, NO LAYOUT MODIFICATIONS
-       ═══════════════════════════════════════════════════════════════════
-       CRITICAL: Do NOT add position, display, width, height, padding, margin
-       or any layout-related properties. These break flex/grid layouts!
-       ═══════════════════════════════════════════════════════════════════ */
-    a:not([class*="bg-clip-text"]):not([class*="text-transparent"]):not([class*="bg-gradient"]),
-    a.link:not([class*="bg-clip-text"]):not([class*="text-transparent"]),
-    a[class]:not([class*="bg-clip-text"]):not([class*="text-transparent"]),
-    a[class][href]:not([class*="bg-clip-text"]):not([class*="text-transparent"]) {
-      /* Default state: Apply Catppuccin text color */
+    a,
+    a:visited {
       color: @accent !important;
-
-      &:hover,
-      &:focus-visible {
-        /* Remove underline on hover for clean look */
-        text-decoration: none;
-
-        /* Apply gradient to text using background-clip (text-only elements) */
-        /* Gradient: main-accent with bi-accent1 companion (analogous harmony) */
-        @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
-          background: linear-gradient(@hover-angle-links, @accent 0%, @bi-accent1 12%, @accent 100%) !important;
-          -webkit-background-clip: text !important;
-          background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-
-          /* Ensure nested text elements inherit gradient properly */
-          & *:not(svg):not(svg *) {
-            background: inherit !important;
-            -webkit-background-clip: inherit !important;
-            background-clip: inherit !important;
-            -webkit-text-fill-color: inherit !important;
-          }
-
-          /* Keep SVG icons visible by using color instead of text-fill-color */
-          & svg {
-            color: @accent !important;
-            -webkit-text-fill-color: currentColor !important;
-          }
-        }
-
-        /* Fallback for non-supporting browsers */
-        @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
-          /* Contrast-aware text color adjustment */
-          & when (@link-contrast < 4.5) {
-            color: @link-fallback !important;
-          }
-          & when not (@link-contrast < 4.5) {
-            color: @accent !important;
-          }
-        }
-      }
-
-      &:active,
-      &.active,
-      &[aria-current="page"] {
-        /* Active state: keep accent without filters for predictability */
-        color: @accent;
-      }
-
-      &:visited {
-        /* Visited links: slightly muted */
-        color: fade(@accent, 85%);
-      }
     }
 
-    /* Buttons - apply gradients based on background visibility */
-    /* CRITICAL: 70-80% use main-accent, 20-30% use bi-accents for variety */
-    /* IMPORTANT: Exclude elements with existing gradient backgrounds to prevent invisible text */
-    button:not([class*="bg-gradient"]):not([class*="from-"]):not([class*="via-"]):not([class*="to-"]),
-    input[type="button"]:not([class*="bg-gradient"]),
-    input[type="submit"]:not([class*="bg-gradient"]) {
-      /* Default state: Use main-accent (70-80% rule) */
-      color: @accent;
-
-      &:hover {
-        /* Apply gradient to background: main-accent with its bi-accent companion */
-        background-image: linear-gradient(@hover-angle-buttons, @accent 0%, @bi-accent1 8%, @accent 100%);
-        /* Text must be solid color for readability against gradient background */
-        color: @text !important;
-        -webkit-text-fill-color: @text !important;
-      }
-
-      &:active {
-        /* Apply stronger gradient on active state */
-        background-image: linear-gradient(@hover-angle-buttons, @bi-accent1 0%, @accent 50%, @bi-accent1 100%);
-        color: @accent;
-      }
+    a:hover,
+    a:focus-visible {
+      color: @accent !important;
+      text-decoration-color: fade(@accent, 65%);
     }
 
-    /* Secondary buttons - use bi-accent1 for variety (20-30% rule) */
-    button.secondary:not([class*="bg-gradient"]):not([class*="from-"]),
-    button[class*="secondary"]:not([class*="bg-gradient"]):not([class*="from-"]),
-    button[class*="outline"]:not([class*="bg-gradient"]):not([class*="from-"]),
-    .btn-secondary:not([class*="bg-gradient"]):not([class*="from-"]),
-    .button-secondary:not([class*="bg-gradient"]):not([class*="from-"]) {
-      color: @bi-accent1;
-
-      &:hover {
-        background-image: linear-gradient(@hover-angle-buttons, @bi-accent1 0%, @alt1-bi1 8%, @bi-accent1 100%);
-        /* Text must be solid color for readability against gradient background */
-        color: @text !important;
-        -webkit-text-fill-color: @text !important;
-      }
+    button,
+    [role="button"],
+    input[type="button"],
+    input[type="submit"] {
+      accent-color: @accent;
     }
 
-    /* Tertiary buttons - use bi-accent2 for variety (20-30% rule) */
-    button.tertiary:not([class*="bg-gradient"]):not([class*="from-"]),
-    button[class*="tertiary"]:not([class*="bg-gradient"]):not([class*="from-"]),
-    button[class*="ghost"]:not([class*="bg-gradient"]):not([class*="from-"]),
-    .btn-tertiary:not([class*="bg-gradient"]):not([class*="from-"]),
-    .button-tertiary:not([class*="bg-gradient"]):not([class*="from-"]) {
-      color: @bi-accent2;
-
-      &:hover {
-        background-image: linear-gradient(@hover-angle-buttons, @bi-accent2 0%, @alt2-bi1 8%, @bi-accent2 100%);
-        /* Text must be solid color for readability against gradient background */
-        color: @text !important;
-        -webkit-text-fill-color: @text !important;
-      }
-    }
-
-    /* Buttons with invisible backgrounds (text-only) - apply gradient to text */
-    /* CRITICAL: Exclude elements with gradient backgrounds - text would be invisible */
-    button.text-button:not([class*="bg-gradient"]):not([class*="from-"]),
-    button[class*="text"]:not([class*="bg-gradient"]):not([class*="from-"]):not([class*="text-transparent"]),
-    button[class*="link"]:not([class*="bg-gradient"]):not([class*="from-"]),
-    .text-button:not([class*="bg-gradient"]):not([class*="from-"]),
-    .link-button:not([class*="bg-gradient"]):not([class*="from-"]) {
-      /* Only change color, preserve original background */
-      color: @accent;
-
-      &:hover {
-        /* Apply gradient to text using background-clip */
-        @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
-          background: linear-gradient(@hover-angle-buttons, @accent 0%, @hover-bi 100%) !important;
-          -webkit-background-clip: text !important;
-          background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-
-          /* Ensure nested text elements inherit gradient properly */
-          & *:not(svg):not(svg *) {
-            background: inherit !important;
-            -webkit-background-clip: inherit !important;
-            background-clip: inherit !important;
-            -webkit-text-fill-color: inherit !important;
-          }
-
-          /* Keep SVG icons visible */
-          & svg {
-            color: @accent !important;
-            -webkit-text-fill-color: currentColor !important;
-          }
-        }
-
-        /* Fallback for non-supporting browsers */
-        @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
-          color: @hover-bi !important;
-        }
-      }
-    }
-
-    /* Headings and emphasis - use theme text colors */
-    /* CRITICAL: Do NOT apply color to headings with gradient children */
-    h1:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
-    h2:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
-    h3:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
-    h4:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
-    h5:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])),
-    h6:not([class*="bg-clip-text"]):not([class*="bg-gradient"]):not(:has([class*="bg-clip-text"])) {
-      color: @text;
-    }
-
-    /* Ensure gradient text spans/children are never styled */
-    h1 > [class*="bg-clip-text"],
-    h1 > [class*="text-transparent"],
-    h1 > [class*="bg-gradient"],
-    h2 > [class*="bg-clip-text"],
-    h2 > [class*="text-transparent"],
-    h2 > [class*="bg-gradient"],
-    h3 > [class*="bg-clip-text"],
-    h3 > [class*="text-transparent"],
-    h3 > [class*="bg-gradient"],
-    h4 > [class*="bg-clip-text"],
-    h4 > [class*="text-transparent"],
-    h4 > [class*="bg-gradient"],
-    h5 > [class*="bg-clip-text"],
-    h5 > [class*="text-transparent"],
-    h5 > [class*="bg-gradient"],
-    h6 > [class*="bg-clip-text"],
-    h6 > [class*="text-transparent"],
-    h6 > [class*="bg-gradient"] {
-      /* Never apply any theme colors to these */
-    }
-
-    strong:not([class*="bg-clip-text"]):not([class*="text-transparent"]),
-    b:not([class*="bg-clip-text"]):not([class*="text-transparent"]) {
-      color: @text;
-    }
-
-    /* Class-specific styling (from CSS analysis) */
-    /* These rules will be added if directory analysis is used */
-${generateClassSpecificRules(cssAnalysis, mappings, accentPlan)}
-
-    /* Inputs – only change colors, preserve original styling */
     input,
     textarea,
-    select,
-    input[type="text"],
-    input[type="search"],
-    input[type="email"],
-    input[type="password"],
-    input[type="url"],
-    input[type="tel"],
-    input[type="number"] {
-      /* Only modify colors, preserve original background/border styles */
+    select {
       color: @text;
       caret-color: @accent;
-
-      &::placeholder { color: @subtext0; opacity: .75; }
-      &::-webkit-input-placeholder { color: @subtext0; opacity: .75; }
-      &::-moz-placeholder { color: @subtext0; opacity: .75; }
-      &:-ms-input-placeholder { color: @subtext0; opacity: .75; }
-
-      &:hover {
-        /* Subtle border color change on hover (only if border exists) */
-        border-color: @overlay1;
-      }
-
-      &:focus {
-        /* Accent border on focus (only if border exists) */
-        border-color: @accent;
-        outline-color: @accent;
-        caret-color: @accent;
-      }
     }
 
-    /* Autofill – override browser default yellow/blue backgrounds with theme colors */
-    input:-webkit-autofill,
-    input:-webkit-autofill:hover,
-    input:-webkit-autofill:focus,
-    input:-webkit-autofill:active,
-    textarea:-webkit-autofill,
-    textarea:-webkit-autofill:hover,
-    textarea:-webkit-autofill:focus,
-    select:-webkit-autofill,
-    select:-webkit-autofill:hover,
-    select:-webkit-autofill:focus {
-      /* Use subtle surface color instead of browser's yellow */
-      -webkit-box-shadow: 0 0 0 1000px @surface0 inset !important;
-      -webkit-text-fill-color: @text !important;
-      transition: background-color 5000s ease-in-out 0s;
-      caret-color: @accent;
-    }
-
-    /* Material Design / Angular components - only change colors */
-    /* Form fields and inputs - preserve original styling */
-    .mat-form-field,
-    .mat-mdc-form-field,
-    .mat-input-element,
-    .mat-mdc-input-element,
-    .mdc-text-field,
-    .mdc-text-field__input,
-    .ant-input,
-    .form-control {
-      color: @text;
-    }
-
-    /* Focus indicators and outlines */
-    .mat-focus-indicator,
-    .mat-mdc-focus-indicator {
-      &:focus {
-        outline-color: @accent;
-      }
-    }
-
-    /* Contenteditable elements (modern chat/input interfaces) */
-    /* Only change colors, preserve original layout and styling */
-    [contenteditable],
-    [contenteditable="true"],
-    [role="textbox"],
-    .contenteditable {
-      color: @text;
-
-      &:focus {
-        border-color: @accent;
-        outline-color: @accent;
-      }
-    }
-
-    /* Copyable code/text areas - only change colors */
-    .copy-code,
-    .code-toolbar,
-    .copy-button,
-    button[class*="copy"],
-    textarea.copyable,
-    .clipboard,
-    .copy-to-clipboard,
-    .copy-snippet {
-      color: @text;
-    }
-
-    /* Code blocks */
     code,
-    pre {
-      background: @crust;
-      color: @text;
-    }
-
-    /* Syntax highlighting (Prism.js / highlight.js) */
-    pre[class*="language-"],
-    code[class*="language-"],
+    pre,
     .hljs {
       background: @crust;
       color: @text;
     }
-    .token.comment,
-    .hljs-comment,
-    .hljs-quote { color: @overlay1; font-style: italic; }
-    .token.keyword,
-    .hljs-keyword,
-    .hljs-selector-tag { color: @mauve; }
-    .token.string,
-    .hljs-string,
-    .hljs-attr,
-    .hljs-attribute { color: @green; }
-    .token.function,
-    .hljs-function,
-    .hljs-title.function_ { color: @blue; }
-    .token.number,
-    .token.boolean,
-    .hljs-number { color: @peach; }
-    .token.operator,
-    .hljs-operator { color: @sky; }
-    .token.constant,
-    .token.symbol,
-    .hljs-literal { color: @yellow; }
-    .token.class-name,
-    .hljs-type,
-    .hljs-built_in,
-    .token.builtin { color: @sapphire; }
-    .token.punctuation,
-    .hljs-punctuation { color: @overlay2; }
 
-    /* Text selection – general */
     ::selection {
-      background: fade(@accent, 35%);
-      color: @base;
-    }
-    ::-moz-selection {
-      background: fade(@accent, 35%);
+      background: fade(@accent, 30%);
       color: @base;
     }
 
-    /* Text selection inside inputs – keep transparent to blend with input background */
-    input::selection,
-    textarea::selection,
-    select::selection {
-      background: fade(@accent, 20%) !important;
-      color: @text !important;
-    }
-    input::-moz-selection,
-    textarea::-moz-selection,
-    select::-moz-selection {
-      background: fade(@accent, 20%) !important;
-      color: @text !important;
-    }
-
-    /* Scrollbar (WebKit) */
-    ::-webkit-scrollbar {
-      width: 10px;
-      height: 10px;
-    }
-    ::-webkit-scrollbar-track {
-      background: @base;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: fade(@overlay2, 35%);
-      border-radius: 8px;
-      border: 2px solid @base;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: fade(@overlay2, 50%);
-    }
-
-    /* Form controls - checkboxes, radios, switches */
-    input[type="checkbox"],
-    input[type="radio"] {
-      accent-color: @accent;
-      background-color: @surface0;
-    }
-
-    /* Role-based switches */
-    [role="switch"] {
-      accent-color: @accent;
-    }
-
-    /* Generic toggle/switch UI helpers (class-based for common libs) */
-    /* IMPORTANT: Only change colors, preserve original sizing and layout */
-    .switch,
-    .toggle {
-      /* Only modify background color, preserve original size/position */
-      background-color: fade(@overlay2, 25%);
-    }
-    .switch::after,
-    .toggle::after {
-      /* Only modify background color of toggle knob */
-      background-color: @surface2;
-    }
-    .switch[aria-checked="true"],
-    .toggle.is-on,
-    .toggle[aria-checked="true"],
-    .toggle[aria-pressed="true"] {
-      /* Only change background when active */
-      background-color: fade(@accent, 65%);
-    }
-    .switch[aria-checked="true"]::after,
-    .toggle.is-on::after,
-    .toggle[aria-checked="true"]::after,
-    .toggle[aria-pressed="true"]::after {
-      /* Only change knob color when active, preserve transform from original */
-      background-color: @base;
-    }
-
-    input:disabled,
-    select:disabled,
-    textarea:disabled,
-    button:disabled,
-    [aria-disabled="true"] {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    /* Select dropdown options */
-    select,
-    option {
-      background: @base;
-      color: @text;
-    }
-
-    /* Horizontal rules */
-    hr {
-      opacity: 0.6;
-    }
-
-    /* Tables - color only, no layout changes */
-    table {
-      background: @base;
-    }
-    thead {
-      background: @surface0;
-      color: @text;
-    }
-    /* Avoid setting th/td padding or borders to preserve layout */
-    tbody tr:nth-child(even) {
-      background: fade(@surface0, 60%);
-    }
-    tbody tr:hover {
-      /* Subtle gradient background for interactive feel */
-      background: fade(@surface0, 80%);
-      background-image: linear-gradient(@hover-angle-general, fade(@surface0, 75%), fade(@surface1, 85%));
-    }
-
-    /* Dense tables variant removed to avoid spacing changes */
-
-    /* Cards / panels / containers */
-    .card,
-    .panel,
-    .box,
-    .container,
-    .paper,
-    .well {
-      background: fade(@surface0, 90%);
-    }
-
-    /* Tooltips & popovers */
-    [role="tooltip"],
-    .tooltip,
-    .popover {
-      background: @mantle;
-      color: @text;
-    }
-
-    /* Dropdown menus */
-    .menu,
-    .dropdown-menu,
-    [role="menu"] {
-      background: @base;
-    }
-    .menu-item,
-    [role="menuitem"],
-    .dropdown-item {
-      color: @text;
-      
-    }
-    .menu-item:hover,
-    [role="menuitem"]:hover,
-    .dropdown-item:hover {
-      /* Solid background with accent text */
-      background: @surface0;
-      color: @bi-accent1;
-    }
-
-    /* Modals & dialogs */
-    .modal,
-    .dialog,
-    [role="dialog"],
-    [aria-modal="true"] {
-      background: @base;
-      color: @text;
-    }
-    .modal-backdrop,
-    .overlay,
-    .backdrop {
-      background: fade(@crust, 70%);
-    }
-
-    /* Alerts / banners */
-    .alert,
-    .banner,
-    .notice {
-      background: fade(@surface0, 90%);
-      color: @text;
-    }
-
-    /* Badges / chips - VARIETY (20-30% rule) */
-    /* Primary badges - main-accent (70%) */
-    .badge,
-    .tag,
-    .chip,
-    .badge-primary,
-    .tag-primary {
-      background: fade(@accent, 20%);
-      color: @accent;
-
-      &:hover {
-        /* Gradient: main-accent with bi-accent companion */
-        background-image: linear-gradient(@hover-angle-badges, fade(@accent, 25%), fade(@bi-accent1, 25%));
-        color: @text;
-      }
-    }
-
-    /* Secondary badges - bi-accent1 (15%) */
-    .badge-secondary,
-    .tag-secondary,
-    .chip-secondary,
-    .badge:nth-child(3n+2),
-    .tag:nth-child(3n+2) {
-      background: fade(@bi-accent1, 20%);
-      color: @bi-accent1;
-
-      &:hover {
-        /* Gradient: bi-accent1 with its own bi-accent companion */
-        background-image: linear-gradient(@hover-angle-badges, fade(@bi-accent1, 25%), fade(@alt1-bi1, 25%));
-        color: @text;
-      }
-    }
-
-    /* Tertiary badges - bi-accent2 (15%) */
-    .badge-tertiary,
-    .tag-tertiary,
-    .chip-tertiary,
-    .badge:nth-child(3n+3),
-    .tag:nth-child(3n+3) {
-      background: fade(@bi-accent2, 20%);
-      color: @bi-accent2;
-
-      &:hover {
-        /* Gradient: bi-accent2 with its own bi-accent companion */
-        background-image: linear-gradient(@hover-angle-badges, fade(@bi-accent2, 25%), fade(@alt2-bi1, 25%));
-        color: @text;
-      }
-    }
-
-    /* Cards - add subtle hover gradients */
-    .card,
-    .panel,
-    [class*="card"] {
-      &:hover {
-        /* Subtle gradient background for elevated feel */
-        background-image: linear-gradient(@hover-angle-cards, fade(@surface0, 70%), fade(@surface1, 70%));
-      }
-    }
-
-    /* Interactive badges/tags with clickable actions */
-    .badge-interactive,
-    .tag-clickable,
-    .chip-button,
-    button.badge,
-    button.tag,
-    button.chip,
-    a.badge,
-    a.tag,
-    a.chip {
-      cursor: pointer;
-
-      &:hover {
-        /* Gradient to text for clickable badges */
-        @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
-          background: linear-gradient(@hover-angle-badges, @accent, @bi-accent1) !important;
-          -webkit-background-clip: text !important;
-          background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-
-          /* Ensure nested text elements inherit gradient properly */
-          & *:not(svg):not(svg *) {
-            background: inherit !important;
-            -webkit-background-clip: inherit !important;
-            background-clip: inherit !important;
-            -webkit-text-fill-color: inherit !important;
-          }
-
-          /* Keep SVG icons visible */
-          & svg {
-            color: @accent !important;
-            -webkit-text-fill-color: currentColor !important;
-          }
-        }
-        @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {
-          color: @bi-accent1;
-        }
-      }
-    }
-  }
-}
-
-#hslify(@color) {
-  @raw: e(%("%s %s% %s%", hue(@color), saturation(@color), lightness(@color)));
-}
-
+${generateClassSpecificRules(cssAnalysis, mappings, accentPlan)}
 `;
+}
+
+function buildRuntimeAccentDerivation(
+  flavor: CatppuccinFlavor,
+  useAltForButtons: 'alt1' | 'alt2',
+  defaultAccent: AccentColor
+): string {
+  let out = '';
+
+  for (const name of ACCENT_NAMES) {
+    const mainSet = PRECOMPUTED_ACCENTS[flavor][name];
+    const bi1Set = PRECOMPUTED_ACCENTS[flavor][mainSet.biAccent1];
+    const bi2Set = PRECOMPUTED_ACCENTS[flavor][mainSet.biAccent2];
+    const palette = CATPPUCCIN_PALETTES[flavor];
+
+    out += `    #derive-accents() when (@accentColor = ${name}) {\n`;
+    out += `      @accent: @${name};\n`;
+    out += `      @bi-accent1: @${mainSet.biAccent1};\n`;
+    out += `      @bi-accent2: @${mainSet.biAccent2};\n`;
+    out += `      @bi-accent: @${mainSet.biAccent1};\n`;
+    out += `      @alt1-main: @${mainSet.biAccent1};\n`;
+    out += `      @alt1-bi1: @${bi1Set.biAccent1};\n`;
+    out += `      @alt1-bi2: @${bi1Set.biAccent2};\n`;
+    out += `      @alt2-main: @${mainSet.biAccent2};\n`;
+    out += `      @alt2-bi1: @${bi2Set.biAccent1};\n`;
+    out += `      @alt2-bi2: @${bi2Set.biAccent2};\n`;
+    out += `      @ALT_MAIN: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-main;\n`;
+    out += `      @ALT_BI: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-bi1;\n`;
+
+    const surfaces = [palette.base.hex, palette.surface0.hex, palette.surface1.hex, palette.surface2.hex];
+    const minLink = surfaces.reduce((m, s) => Math.min(m, contrastRatio(palette[name].hex, s)), 99);
+    out += `      @link-contrast: ${minLink};\n`;
+    const altChoice = useAltForButtons === 'alt1' ? mainSet.biAccent1 : mainSet.biAccent2;
+    out += `      @button-contrast: ${contrastRatio(palette[altChoice].hex, palette.surface0.hex)};\n`;
+    out += `    }\n`;
+  }
+
+  // "Gray" option in UI was previously unhandled.
+  out += `    #derive-accents() when (@accentColor = subtext0) {\n`;
+  out += `      @accent: @subtext0;\n`;
+  out += `      @bi-accent1: @sapphire;\n`;
+  out += `      @bi-accent2: @blue;\n`;
+  out += `      @bi-accent: @sapphire;\n`;
+  out += `      @alt1-main: @sapphire;\n`;
+  out += `      @alt1-bi1: @sky;\n`;
+  out += `      @alt1-bi2: @blue;\n`;
+  out += `      @alt2-main: @blue;\n`;
+  out += `      @alt2-bi1: @sapphire;\n`;
+  out += `      @alt2-bi2: @lavender;\n`;
+  out += `      @ALT_MAIN: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-main;\n`;
+  out += `      @ALT_BI: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-bi1;\n`;
+  const neutralPalette = CATPPUCCIN_PALETTES[flavor];
+  const neutralSurfaces = [
+    neutralPalette.base.hex,
+    neutralPalette.surface0.hex,
+    neutralPalette.surface1.hex,
+    neutralPalette.surface2.hex,
+  ];
+  out += `      @link-contrast: ${neutralSurfaces.reduce((m, s) => Math.min(m, contrastRatio(neutralPalette.subtext0.hex, s)), 99)};\n`;
+  const neutralAlt = useAltForButtons === 'alt1' ? neutralPalette.sapphire.hex : neutralPalette.blue.hex;
+  out += `      @button-contrast: ${contrastRatio(neutralAlt, neutralPalette.surface0.hex)};\n`;
+  out += `    }\n`;
+
+  // Default branch for unexpected values.
+  const fallbackSet = PRECOMPUTED_ACCENTS[flavor][defaultAccent];
+  const fallbackBi1 = PRECOMPUTED_ACCENTS[flavor][fallbackSet.biAccent1];
+  const fallbackBi2 = PRECOMPUTED_ACCENTS[flavor][fallbackSet.biAccent2];
+  out += `    #derive-accents() {\n`;
+  out += `      @accent: @${defaultAccent};\n`;
+  out += `      @bi-accent1: @${fallbackSet.biAccent1};\n`;
+  out += `      @bi-accent2: @${fallbackSet.biAccent2};\n`;
+  out += `      @bi-accent: @${fallbackSet.biAccent1};\n`;
+  out += `      @alt1-main: @${fallbackSet.biAccent1};\n`;
+  out += `      @alt1-bi1: @${fallbackBi1.biAccent1};\n`;
+  out += `      @alt1-bi2: @${fallbackBi1.biAccent2};\n`;
+  out += `      @alt2-main: @${fallbackSet.biAccent2};\n`;
+  out += `      @alt2-bi1: @${fallbackBi2.biAccent1};\n`;
+  out += `      @alt2-bi2: @${fallbackBi2.biAccent2};\n`;
+  out += `      @ALT_MAIN: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-main;\n`;
+  out += `      @ALT_BI: @alt${useAltForButtons === 'alt1' ? '1' : '2'}-bi1;\n`;
+  out += `    }\n`;
+  out += `    #derive-accents();\n`;
+
+  return out;
 }
 
 /**
@@ -1464,18 +841,20 @@ function generateClassSpecificRules(
   mappings?: ColorMapping[] | MappingOutput,
   accentPlan?: AccentPlan
 ): string {
-  if (!cssAnalysis || !cssAnalysis.grouped) {
+  const mappingRoleGuesses = Array.isArray(mappings) ? buildMappingRoleGuesses(mappings) : [];
+  const grouped = resolveGroupedAnalysis(cssAnalysis, mappingRoleGuesses);
+  if (!grouped) {
     return '    /* No class-specific analysis available */';
   }
 
   const lines: string[] = [];
-  const grouped = cssAnalysis.grouped;
   const colorCycle = accentPlan?.classColorCycle || ['@accent', '@bi-accent1', '@bi-accent2'];
-  const roleGuessMap = buildRoleGuessMap(cssAnalysis?.aiRoleGuesses);
+  const roleGuessMap = buildRoleGuessMap([...(cssAnalysis?.aiRoleGuesses || []), ...mappingRoleGuesses]);
+  const seenSelectors = new Set<string>();
 
   const hintColorFromClass = (className?: string) => {
     if (!className) return undefined;
-    const lower = className.toLowerCase();
+    const lower = normalizeClassName(className).toLowerCase();
     // Navigation / secondary UI
     if (/(nav|menu|tab|secondary|subnav|sidebar|pill-nav)/.test(lower)) return '@bi-accent1';
     // Badges / tags / chips
@@ -1508,26 +887,39 @@ function generateClassSpecificRules(
   };
 
   const getColor = (idx: number, className?: string) => {
-    if (className) {
-      const roleColor = pickColorForRole(roleGuessMap[className], idx);
+    const normalized = normalizeClassName(className || '');
+    if (normalized) {
+      const roleColor = pickColorForRole(roleGuessMap[normalized], idx);
       if (roleColor) return roleColor;
-      const hintColor = hintColorFromClass(className);
+      const hintColor = hintColorFromClass(normalized);
       if (hintColor) return hintColor;
     }
     return colorCycle[(Math.abs(idx) + seedOffset) % colorCycle.length];
   };
 
+  const selectClass = (name: string): string | null => {
+    const selector = toClassSelector(name);
+    if (!selector || seenSelectors.has(selector)) return null;
+    seenSelectors.add(selector);
+    return selector;
+  };
+
   // Helper to check if a mapping indicates text-only/invisible background
   const isTextOnlyMapping = (className: string): boolean => {
     if (!mappings || !Array.isArray(mappings)) return false;
-    // Check if any mapping mentions this class and has isTextOnly=true
-    return mappings.some((m: ColorMapping) =>
-      m.reason?.toLowerCase().includes(className.toLowerCase()) && m.isTextOnly
-    );
+    const normalized = normalizeClassName(className).toLowerCase();
+    return mappings.some((m: ColorMapping) => {
+      const mappingSelectors = Array.isArray((m as any).selectors)
+        ? ((m as any).selectors as string[]).map((v) => normalizeClassName(v).toLowerCase())
+        : [];
+      const matchesSelector = mappingSelectors.includes(normalized);
+      const matchesReason = m.reason?.toLowerCase().includes(normalized);
+      return Boolean((matchesSelector || matchesReason) && m.isTextOnly);
+    });
   };
 
   // Helper to get appropriate angle variable for a class
-  const getHoverAngleVar = (className: string, elementType: 'button' | 'link' | 'card' | 'badge'): string => {
+  const getHoverAngleVar = (elementType: 'button' | 'link' | 'card' | 'badge'): string => {
     // Return the appropriate LESS variable based on element type
     switch (elementType) {
       case 'button':
@@ -1546,17 +938,18 @@ function generateClassSpecificRules(
   // Button classes
   if (grouped.buttons && grouped.buttons.length > 0) {
     lines.push('');
-    lines.push('    /* Button classes with proper accent distribution (70-30 rule) */');
+    lines.push('    /* Site-specific button selectors */');
     grouped.buttons.slice(0, 100).forEach((btn, index) => {
+      const selector = selectClass(btn.className);
+      if (!selector) return;
       const isTextOnly = isTextOnlyMapping(btn.className);
-      const angleVar = getHoverAngleVar(btn.className, 'button');
+      const angleVar = getHoverAngleVar('button');
       const colorVar = getColor(index, btn.className);
       const gradientInfo = getGradientForColor(colorVar);
       const gradientCompanion = gradientInfo.hover;
       const activeCompanion = gradientInfo.active;
 
-      lines.push('    .' + btn.className + ' {');
-      lines.push('      /* Deterministic accent plan based on palette profile */');
+      lines.push(`    ${selector} {`);
       lines.push('      color: ' + colorVar + ';');
 
       if (isTextOnly) {
@@ -1617,21 +1010,20 @@ function generateClassSpecificRules(
   // Link classes (anchor-scoped – apply broadly to improve coverage)
   if (grouped.links && grouped.links.length > 0) {
     lines.push('');
-    lines.push('    /* Link classes – gradient text on hover (invisible background elements) */');
+    lines.push('    /* Site-specific link selectors */');
     grouped.links.slice(0, 100).forEach((link, linkIndex) => {
-      const cls = link.className.trim();
+      const cls = selectClass(link.className);
       if (!cls) return;
-      const angleVar = getHoverAngleVar(cls, 'link');
-      const linkColor = getColor(linkIndex + 1, cls);
+      const normalized = normalizeClassName(link.className);
+      const angleVar = getHoverAngleVar('link');
+      const linkColor = getColor(linkIndex + 1, normalized);
       const linkGradient = getGradientForColor(linkColor);
 
       // anchor with class, and anchor inside element with class
-      lines.push('    a.' + cls + ', .' + cls + ' a {');
-      lines.push('      /* Default state: Catppuccin accent color */');
+      lines.push(`    a${cls}, ${cls} a {`);
       lines.push('      color: ' + linkColor + ' !important;');
       lines.push('    }');
-      lines.push('    a.' + cls + ':hover, .' + cls + ' a:hover {');
-      lines.push('      /* Apply gradient to text (text-only elements) */');
+      lines.push(`    a${cls}:hover, ${cls} a:hover {`);
       lines.push('      @supports ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
       lines.push(`        background: linear-gradient(${angleVar}, ${linkColor} 0%, ${linkGradient.hover} 100%) !important;`);
       lines.push('        -webkit-background-clip: text !important;');
@@ -1650,7 +1042,6 @@ function generateClassSpecificRules(
       lines.push('          -webkit-text-fill-color: currentColor !important;');
       lines.push('        }');
       lines.push('      }');
-      lines.push('      /* Fallback for non-supporting browsers */');
       lines.push('      @supports not ((-webkit-background-clip: text) and (-webkit-text-fill-color: transparent)) {');
       lines.push('        & when (@link-contrast < 4.5) {');
       lines.push('          color: @link-fallback !important;');
@@ -1660,7 +1051,7 @@ function generateClassSpecificRules(
       lines.push('        }');
       lines.push('      }');
       lines.push('    }');
-      lines.push('    a.' + cls + ':active, .' + cls + ' a:active, a.' + cls + '.active, .' + cls + ' a.active {');
+      lines.push(`    a${cls}:active, ${cls} a:active, a${cls}.active, ${cls} a.active {`);
       lines.push('      color: ' + linkGradient.active + ';');
       lines.push('    }');
     });
@@ -1669,11 +1060,12 @@ function generateClassSpecificRules(
   // Background classes
   if (grouped.backgrounds && grouped.backgrounds.length > 0) {
     lines.push('');
-    lines.push('    /* Background classes */');
+    lines.push('    /* Site-specific background selectors */');
     grouped.backgrounds.slice(0, 100).forEach((bg, bgIndex) => {
-      const name = bg.className;
+      const selector = selectClass(bg.className);
+      if (!selector) return;
       const bgColor = getColor(bgIndex + 2);
-      lines.push('    .' + bg.className + ' {');
+      lines.push(`    ${selector} {`);
       lines.push('      background: fade(' + bgColor + ', 35%) !important;');
       lines.push('    }');
     });
@@ -1682,10 +1074,12 @@ function generateClassSpecificRules(
   // Text classes
   if (grouped.text && grouped.text.length > 0) {
     lines.push('');
-    lines.push('    /* Text classes */');
+    lines.push('    /* Site-specific text selectors */');
     grouped.text.slice(0, 100).forEach((txt, textIndex) => {
+      const selector = selectClass(txt.className);
+      if (!selector) return;
       const textColor = getColor(textIndex + 3, txt.className);
-      lines.push('    .' + txt.className + ' {');
+      lines.push(`    ${selector} {`);
       lines.push('      color: ' + textColor + ' !important;');
       lines.push('    }');
     });
@@ -1694,13 +1088,14 @@ function generateClassSpecificRules(
   // Border classes – allow color-only overrides to reflect AI findings
   if (grouped.borders && grouped.borders.length > 0) {
     lines.push('');
-    lines.push('    /* Border classes – color-only, no width/radius changes */');
+    lines.push('    /* Site-specific border selectors */');
     grouped.borders.slice(0, 100).forEach(br => {
-      lines.push('    .' + br.className + ' {');
+      const selector = selectClass(br.className);
+      if (!selector) return;
+      lines.push(`    ${selector} {`);
       lines.push('      border-color: @overlay1 !important;');
       lines.push('    }');
-      // Subtle hover accent
-      lines.push('    .' + br.className + ':hover {');
+      lines.push(`    ${selector}:hover {`);
       lines.push('      border-color: @alt1-main !important;');
       lines.push('    }');
     });
@@ -1782,23 +1177,165 @@ function getGradientForColor(colorVar: string): { hover: string; active: string 
 function buildRoleGuessMap(guesses?: Array<{ className: string; role: string; confidence?: number }>) {
   const map: Record<string, string[]> = {};
   (guesses || []).forEach((g) => {
-    const name = g.className?.trim();
+    const name = normalizeClassName(g.className || '');
     if (!name) return;
     if (!map[name]) map[name] = [];
-    map[name].push((g.role || '').toLowerCase());
+    const role = (g.role || '').toLowerCase();
+    if (!role) return;
+    if (!map[name].includes(role)) {
+      map[name].push(role);
+    }
   });
   return map;
 }
 
-function resolveColorFromRoleGuess(roles?: string[]) {
-  if (!roles || roles.length === 0) return undefined;
-  const set = new Set(roles.map((r) => r.toLowerCase()));
-  if (set.has('primary') || set.has('cta') || set.has('accent')) return '@accent';
-  if (set.has('secondary') || set.has('link') || set.has('nav')) return '@bi-accent1';
-  if (set.has('tertiary') || set.has('badge') || set.has('tag')) return '@bi-accent2';
-  if (set.has('danger') || set.has('error') || set.has('alert')) return '@red';
-  if (set.has('warning')) return '@yellow';
-  if (set.has('success')) return '@green';
-  if (set.has('info')) return '@sapphire';
-  return undefined;
+function buildMappingRoleGuesses(mappings: ColorMapping[]): Array<{ className: string; role: string; confidence?: number }> {
+  const guesses: Array<{ className: string; role: string; confidence?: number }> = [];
+  const seen = new Set<string>();
+
+  mappings.forEach((mapping) => {
+    const role = inferRoleFromMapping(mapping);
+    const selectors = Array.isArray((mapping as any).selectors) ? ((mapping as any).selectors as string[]) : [];
+    selectors.forEach((selector) => {
+      extractClassNamesFromSelector(selector).forEach((className) => {
+        const key = `${className}|${role}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        guesses.push({ className, role, confidence: 0.75 });
+      });
+    });
+  });
+
+  return guesses;
+}
+
+function inferRoleFromMapping(mapping: ColorMapping): string {
+  const raw = [
+    mapping.reason,
+    (mapping as any).context,
+    (mapping as any).to,
+    mapping.catppuccinColor,
+    Array.isArray((mapping as any).cssProperties) ? ((mapping as any).cssProperties as string[]).join(' ') : '',
+    Array.isArray((mapping as any).selectors) ? ((mapping as any).selectors as string[]).join(' ') : '',
+  ].join(' ').toLowerCase();
+
+  if (/(danger|error|alert|destructive|critical)/.test(raw)) return 'danger';
+  if (/(warn|warning|caution)/.test(raw)) return 'warning';
+  if (/(success|ok|positive)/.test(raw)) return 'success';
+  if (/(info|notice|help|hint)/.test(raw)) return 'info';
+  if (/(badge|tag|chip|pill|label)/.test(raw)) return 'badge';
+  if (/(card|panel|surface)/.test(raw)) return 'panel';
+  if (/(background|canvas|container)/.test(raw)) return 'background';
+  if (/(nav|menu|breadcrumb|tabbar|sidebar)/.test(raw)) return 'nav';
+  if (/(link|anchor|href)/.test(raw)) return 'link';
+  if (/(button|btn|cta|submit|action|primary)/.test(raw)) return 'primary';
+  return 'text';
+}
+
+function resolveGroupedAnalysis(
+  cssAnalysis?: CSSAnalysisData,
+  extraGuesses: Array<{ className: string; role: string; confidence?: number }> = []
+): CSSAnalysisData['grouped'] | undefined {
+  const sourceGrouped = cssAnalysis?.grouped;
+
+  const groups = {
+    buttons: [] as Array<{ className: string; properties: any[] }>,
+    links: [] as Array<{ className: string; properties: any[] }>,
+    backgrounds: [] as Array<{ className: string; properties: any[] }>,
+    text: [] as Array<{ className: string; properties: any[] }>,
+    borders: [] as Array<{ className: string; properties: any[] }>,
+  };
+  const addedByGroup = {
+    buttons: new Set<string>(),
+    links: new Set<string>(),
+    backgrounds: new Set<string>(),
+    text: new Set<string>(),
+    borders: new Set<string>(),
+  };
+
+  const add = (target: keyof typeof groups, className: string) => {
+    const normalized = normalizeClassName(className);
+    if (!normalized || addedByGroup[target].has(normalized)) return;
+    groups[target].push({ className: normalized, properties: [] });
+    addedByGroup[target].add(normalized);
+  };
+
+  if (sourceGrouped) {
+    sourceGrouped.buttons.forEach((entry) => add('buttons', entry.className));
+    sourceGrouped.links.forEach((entry) => add('links', entry.className));
+    sourceGrouped.backgrounds.forEach((entry) => add('backgrounds', entry.className));
+    sourceGrouped.text.forEach((entry) => add('text', entry.className));
+    sourceGrouped.borders.forEach((entry) => add('borders', entry.className));
+  }
+
+  const allGuesses = [...(cssAnalysis?.aiRoleGuesses || []), ...extraGuesses];
+  allGuesses.forEach((guess) => {
+    const role = (guess.role || '').toLowerCase();
+    if (['primary', 'secondary', 'tertiary', 'cta'].includes(role)) {
+      add('buttons', guess.className);
+    } else if (['link', 'nav'].includes(role)) {
+      add('links', guess.className);
+    } else if (['background', 'card', 'panel', 'badge', 'tag'].includes(role)) {
+      add('backgrounds', guess.className);
+    } else if (['danger', 'warning', 'success', 'info'].includes(role)) {
+      add('borders', guess.className);
+    } else {
+      add('text', guess.className);
+    }
+  });
+
+  const total =
+    groups.buttons.length +
+    groups.links.length +
+    groups.backgrounds.length +
+    groups.text.length +
+    groups.borders.length;
+
+  return total > 0 ? groups : undefined;
+}
+
+function normalizeClassName(value: string): string {
+  const input = value.trim();
+  if (!input) return '';
+
+  const classes = extractClassNamesFromSelector(input);
+  if (classes.length > 0) {
+    return classes[0];
+  }
+
+  const first = input.split(/\s+/)[0];
+  return first.replace(/^[.#]/, '').replace(/\\/g, '');
+}
+
+function extractClassNamesFromSelector(selector: string): string[] {
+  const source = selector.trim();
+  if (!source) return [];
+
+  const classes: string[] = [];
+  const classRegex = /\.((?:\\.|[^\s>+~#.,:[\]()])+)/g;
+  let match: RegExpExecArray | null = null;
+  while ((match = classRegex.exec(source)) !== null) {
+    const candidate = match[1].replace(/\\/g, '');
+    if (!candidate) continue;
+    classes.push(candidate);
+  }
+
+  if (classes.length > 0) return classes;
+  if (/^[a-zA-Z0-9_-]+$/.test(source)) return [source];
+  return [];
+}
+
+function escapeCssIdentifier(value: string): string {
+  const cssEscape = (globalThis as any)?.CSS?.escape;
+  if (typeof cssEscape === 'function') {
+    return cssEscape(value);
+  }
+  return value.replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
+}
+
+function toClassSelector(className: string): string | null {
+  const normalized = normalizeClassName(className);
+  if (!normalized) return null;
+  if (normalized.length > 120) return null;
+  return `.${escapeCssIdentifier(normalized)}`;
 }

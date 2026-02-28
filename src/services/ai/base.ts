@@ -4,12 +4,169 @@
 
 import type { WebsiteColorAnalysis, ColorMapping } from '../../types/catppuccin';
 import type { AIAnalysisResponse, JSONExtractionOptions } from './types';
-import { createJSONExtractionPrompt } from './prompts';
 
 // Timeout constants (exported for use in other AI modules)
 export const MODE_DETECTION_TIMEOUT_MS = 60000; // 60s for mode detection (reasoning models can be slow)
 export const COLOR_ANALYSIS_TIMEOUT_MS = 90000; // 90s for color analysis
 export const JSON_EXTRACTION_TIMEOUT_MS = 60000; // 60s for JSON extraction
+
+const CATPPUCCIN_COLOR_NAMES = new Set([
+  'base',
+  'mantle',
+  'crust',
+  'surface0',
+  'surface1',
+  'surface2',
+  'overlay0',
+  'overlay1',
+  'overlay2',
+  'subtext0',
+  'subtext1',
+  'text',
+  'rosewater',
+  'flamingo',
+  'pink',
+  'mauve',
+  'red',
+  'maroon',
+  'peach',
+  'yellow',
+  'green',
+  'teal',
+  'sky',
+  'sapphire',
+  'blue',
+  'lavender',
+]);
+
+function normalizeHex(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const v = value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v.toLowerCase();
+  if (/^#[0-9a-fA-F]{3}$/.test(v)) {
+    return (
+      '#' +
+      v[1] + v[1] +
+      v[2] + v[2] +
+      v[3] + v[3]
+    ).toLowerCase();
+  }
+  return null;
+}
+
+function normalizeColorToken(value: unknown, fallbackHint = ''): string {
+  const lower = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (CATPPUCCIN_COLOR_NAMES.has(lower)) return lower;
+
+  const hint = fallbackHint.toLowerCase();
+  if (/danger|error|alert|destructive/.test(hint)) return 'red';
+  if (/warn|warning|caution/.test(hint)) return 'yellow';
+  if (/success|ok|positive/.test(hint)) return 'green';
+  if (/info|notice|help/.test(hint)) return 'sapphire';
+  if (/border|outline|divider/.test(hint)) return 'overlay1';
+  if (/background|surface|card|panel/.test(hint)) return 'surface0';
+  if (/text|font|heading|content/.test(hint)) return 'text';
+  if (/link|button|cta|interactive|accent|primary/.test(hint)) return 'mauve';
+  return 'mauve';
+}
+
+function normalizeAnalysis(raw: unknown): WebsiteColorAnalysis {
+  const analysis = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const primaryColors = Array.isArray(analysis.primaryColors)
+    ? (analysis.primaryColors.map(normalizeHex).filter(Boolean) as string[])
+    : [];
+  const secondaryColors = Array.isArray(analysis.secondaryColors)
+    ? (analysis.secondaryColors.map(normalizeHex).filter(Boolean) as string[])
+    : [];
+  const backgroundColors = Array.isArray(analysis.backgroundColors)
+    ? (analysis.backgroundColors.map(normalizeHex).filter(Boolean) as string[])
+    : [];
+  const textColors = Array.isArray(analysis.textColors)
+    ? (analysis.textColors.map(normalizeHex).filter(Boolean) as string[])
+    : [];
+  const accentColors = Array.isArray(analysis.accentColors)
+    ? (analysis.accentColors.map(normalizeHex).filter(Boolean) as string[])
+    : [];
+
+  const backgroundColor = normalizeHex(analysis.backgroundColor)
+    || backgroundColors[0]
+    || primaryColors[0]
+    || '#1e1e2e';
+  const textColor = normalizeHex(analysis.textColor)
+    || textColors[0]
+    || '#cdd6f4';
+
+  return {
+    primaryColors: primaryColors.length > 0 ? primaryColors : [backgroundColor, textColor],
+    secondaryColors: secondaryColors.length > 0 ? secondaryColors : textColors.slice(0, 3),
+    backgroundColor,
+    textColor,
+    accentColors,
+  };
+}
+
+function normalizeMappings(rawMappings: unknown): ColorMapping[] {
+  if (!Array.isArray(rawMappings)) return [];
+
+  const normalized: ColorMapping[] = [];
+  for (let i = 0; i < rawMappings.length; i++) {
+    const raw = rawMappings[i];
+    if (!raw || typeof raw !== 'object') continue;
+    const entry = raw as Record<string, unknown>;
+
+    const selectors = Array.isArray(entry.selectors)
+      ? entry.selectors.filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+      : [];
+    const cssProperties = Array.isArray(entry.cssProperties)
+      ? entry.cssProperties.filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+      : [];
+
+    const reason =
+      (typeof entry.reason === 'string' && entry.reason.trim())
+      || (typeof entry.context === 'string' && entry.context.trim())
+      || `ai-mapping-${i + 1}`;
+    const originalColor =
+      normalizeHex(entry.originalColor)
+      || normalizeHex(entry.from)
+      || '#000000';
+    const catppuccinColor = normalizeColorToken(
+      entry.catppuccinColor ?? entry.to,
+      `${reason} ${cssProperties.join(' ')} ${selectors.join(' ')}`
+    );
+
+    const normalizedEntry: ColorMapping = {
+      originalColor,
+      catppuccinColor: catppuccinColor as ColorMapping['catppuccinColor'],
+      reason,
+      hasVisibleBackground: Boolean(entry.hasVisibleBackground),
+      hasBorder: Boolean(entry.hasBorder),
+      isTextOnly: Boolean(entry.isTextOnly),
+    };
+
+    if (typeof entry.hoverGradientAngle === 'number' && Number.isFinite(entry.hoverGradientAngle)) {
+      normalizedEntry.hoverGradientAngle = Math.round(entry.hoverGradientAngle);
+    }
+
+    // Preserve richer AI metadata for downstream selector-aware generation.
+    (normalizedEntry as any).selectors = selectors;
+    (normalizedEntry as any).cssProperties = cssProperties;
+    if (typeof entry.context === 'string') (normalizedEntry as any).context = entry.context;
+    if (typeof entry.to === 'string') (normalizedEntry as any).to = entry.to;
+    if (typeof entry.from === 'string') (normalizedEntry as any).from = entry.from;
+
+    normalized.push(normalizedEntry);
+  }
+
+  return normalized;
+}
+
+function normalizeAIAnalysisPayload(raw: unknown): AIAnalysisResponse {
+  const parsed = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  return {
+    analysis: normalizeAnalysis(parsed.analysis),
+    mappings: normalizeMappings(parsed.mappings),
+  };
+}
 
 /**
  * Create an AbortSignal with timeout, with fallback for older browsers
@@ -120,10 +277,7 @@ export function parseColorAnalysisResponse(
     }
 
     console.log('Validation passed, returning result');
-    return {
-      analysis: parsed.analysis,
-      mappings: parsed.mappings,
-    };
+    return normalizeAIAnalysisPayload(parsed);
   } catch (error) {
     console.error('Failed to parse response as JSON:', error);
     console.error('Problematic JSON string (first 500 chars):', jsonStr.slice(0, 500));
@@ -243,20 +397,12 @@ export function extractJSONManually(text: string): AIAnalysisResponse {
         const value = parsed[key];
         if (value && typeof value === 'object' && value.analysis && value.mappings) {
           console.log(`Found valid structure nested under key '${key}'`);
-          return {
-            analysis: value.analysis,
-            mappings: value.mappings,
-          };
+          return normalizeAIAnalysisPayload(value);
         }
       }
     }
 
     throw new Error(`Invalid JSON structure: missing ${!parsed.analysis ? 'analysis' : 'mappings'}. Keys found: ${Object.keys(parsed).join(', ')}`);
-  }
-
-  if (!Array.isArray(parsed.analysis.primaryColors)) {
-    console.error('Invalid primaryColors:', parsed.analysis.primaryColors);
-    throw new Error('Invalid analysis: primaryColors must be an array');
   }
 
   if (!Array.isArray(parsed.mappings) || parsed.mappings.length === 0) {
@@ -265,11 +411,9 @@ export function extractJSONManually(text: string): AIAnalysisResponse {
   }
 
   console.log('Manual extraction successful!');
-  console.log(`Found ${parsed.analysis.primaryColors.length} primary colors and ${parsed.mappings.length} mappings`);
-  return {
-    analysis: parsed.analysis,
-    mappings: parsed.mappings,
-  };
+  const normalized = normalizeAIAnalysisPayload(parsed);
+  console.log(`Found ${normalized.analysis.primaryColors.length} primary colors and ${normalized.mappings.length} mappings`);
+  return normalized;
 }
 
 /**
@@ -296,8 +440,7 @@ export async function extractJSONWithAI(
   let extractionModel = options.model;
   if (options.model.includes('deepseek-r1') || options.model.includes('DeepResearch') || options.model.includes('r1') || options.model.includes('mai-ds')) {
     // Switch to a simpler model that doesn't use reasoning
-    // This is provider-specific, so we'll use a generic fallback
-    extractionModel = options.model.includes('chutes') ? 'unsloth/gemma-3-4b-it' : 'minimax/minimax-m2:free';
+    extractionModel = 'minimax/minimax-m2:free';
     console.log(`Switching from reasoning model ${options.model} to simpler model ${extractionModel} for JSON extraction`);
   }
 
@@ -384,7 +527,7 @@ export async function detectWebsiteMode(
       'Content-Type': 'application/json',
     };
 
-    // OpenRouter-specific headers (causes CORS issues with Chutes)
+    // OpenRouter-specific headers
     if (includeRefererHeaders) {
       headers['HTTP-Referer'] = window.location.origin;
       headers['X-Title'] = 'Catppuccin Theme Generator';

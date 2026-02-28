@@ -1,6 +1,7 @@
 // LocalStorage utilities for API keys and settings
 
 import type { FetcherAPIKeys, FetcherAPIService } from '../types/theme';
+import type { AppLanguage } from '../i18n';
 
 interface StoredKeys {
   browserbase?: string;
@@ -9,10 +10,13 @@ interface StoredKeys {
   brave?: string;
   openrouter?: string;
   chutes?: string;
+  'openai-compatible'?: string;
   // Ollama Cloud API key
   ollama?: string;
   // Custom base URL for Ollama (e.g., https://your-tunnel.example.com)
   ollamaBase?: string;
+  // Custom base URL for OpenAI-compatible providers
+  openaiCompatibleBase?: string;
   // API-based fetcher keys
   scrapingbee?: string;
   browserless?: string;
@@ -53,6 +57,7 @@ export interface StoredSettings {
   aiAssistedMapping?: boolean;
   normalFont?: string;
   monoFont?: string;
+  language?: AppLanguage;
 }
 
 export function loadSettings(): StoredSettings {

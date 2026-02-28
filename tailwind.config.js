@@ -47,6 +47,7 @@ export default {
 
           // Dynamic accent (changes based on user selection)
           accent: 'var(--ctp-accent)',
+          'bi-accent': 'var(--ctp-bi-accent)',
         },
       },
     },

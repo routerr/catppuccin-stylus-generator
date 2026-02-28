@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { KeyRound, Settings2, X } from 'lucide-react';
 import { InputSelector } from './components/InputSelector';
 import { AIConfig } from './components/AIConfig';
 import { FetcherConfig } from './components/FetcherConfig';
@@ -6,10 +7,11 @@ import { ThemePreview } from './components/ThemePreview';
 import { ThinkingProcess, type ThinkingStep } from './components/ThinkingProcess';
 import { FontSelector } from './components/FontSelector';
 import { ThemeSelector } from './components/ThemeSelector';
+import { LanguageSelector } from './components/LanguageSelector';
+import { useLanguage } from './hooks/useLanguage';
 import type { AIProvider, ThemePackage, CrawlerResult, FetcherAPIKeys, FetcherAPIService, FetcherService } from './types/theme';
 import type { PaletteDiagnostics } from './services/palette-profile';
 import { loadSettings, saveSettings } from './utils/storage';
-import { fetchWebsiteContent } from './services/fetcher';
 import { fetchWithAPI } from './services/fetcher-api';
 import { analyzeWebsiteColors } from './services/ai';
 import { createUserStylePackage } from './services/generators';
@@ -17,16 +19,18 @@ import { useVersion } from './hooks/useVersion';
 import catppuccinLogo from '/catppuccin.png';
 
 function App() {
+  const { language, t } = useLanguage();
   const [aiProvider, setAIProvider] = useState<AIProvider>('openrouter');
   const [aiModel, setAIModel] = useState('tngtech/deepseek-r1t2-chimera:free');
   const [aiKey, setAIKey] = useState('');
+  const [aiBaseUrl, setAIBaseUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState('');
   const [themePackage, setThemePackage] = useState<ThemePackage | null>(null);
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
-  const [discoveredOllamaModels, setDiscoveredOllamaModels] = useState<string[]>([]);
   const [crawlerWarnings, setCrawlerWarnings] = useState<string[]>([]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(true);
   const version = useVersion();
 
   // Fetcher API state
@@ -35,14 +39,14 @@ function App() {
 
   // Regeneration support state
   const [lastCrawlerResult, setLastCrawlerResult] = useState<CrawlerResult | null>(null);
-  const [lastSource, setLastSource] = useState<FetcherService>('direct-fetch');
-  const [lastAIConfig, setLastAIConfig] = useState<{ provider: AIProvider; model: string; apiKey: string } | null>(null);
+  const [lastSource, setLastSource] = useState<FetcherService | string>('direct-fetch');
+  const [lastAIConfig, setLastAIConfig] = useState<{ provider: AIProvider; model: string; apiKey: string; baseUrl: string } | null>(null);
   const [lastAiMappingChoice, setLastAiMappingChoice] = useState<boolean | null>(null);
   const [hasCompleted, setHasCompleted] = useState(false);
   const [paletteDiagnostics, setPaletteDiagnostics] = useState<PaletteDiagnostics | null>(null);
   const [useAiMapping, setUseAiMapping] = useState<boolean>(() => {
     const settings = loadSettings();
-    return settings.aiAssistedMapping ?? false;
+    return settings.aiAssistedMapping ?? true;
   });
   const [accentBadgeCardTable, setAccentBadgeCardTable] = useState(true);
   const [accentAlerts, setAccentAlerts] = useState(true);
@@ -65,12 +69,37 @@ function App() {
     lastAIConfig && (
       lastAIConfig.provider !== aiProvider ||
       lastAIConfig.model !== aiModel ||
-      lastAIConfig.apiKey !== aiKey
+      lastAIConfig.apiKey !== aiKey ||
+      lastAIConfig.baseUrl !== aiBaseUrl
     )
   );
   const mappingChangedSinceLast = lastAiMappingChoice !== null && lastAiMappingChoice !== useAiMapping;
   const canRegenerate = hasCompleted && (aiChangedSinceLast || mappingChangedSinceLast);
   const canQuickRerun = !!lastCrawlerResult;
+  const configuredFetcherKeyCount = Object.values(fetcherAPIKeys).filter((value) => Boolean(value?.trim())).length;
+  const hasAiCredential = Boolean(aiKey.trim());
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = isSettingsOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isSettingsOpen]);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   const updateStep = (id: string, updates: Partial<ThinkingStep>) => {
     setThinkingSteps(prev => prev.map(step =>
@@ -79,14 +108,14 @@ function App() {
   };
 
   const handleGenerate = async (url: string) => {
-    if (aiProvider !== 'ollama' && !aiKey) {
+    if (!aiKey) {
       setError('Please provide your AI API key');
       return;
     }
 
     setIsProcessing(true);
     setError('');
-    setProgress('Starting...');
+    setProgress(t('msgStarting'));
     setThemePackage(null);
     setHasCompleted(false);
     setPaletteDiagnostics(null);
@@ -100,27 +129,27 @@ function App() {
       if (canRegenerate && lastCrawlerResult) {
         // Skip fetching, use cached content
         setThinkingSteps([
-          { id: 'analyze', title: 'AI Color Analysis', description: 'Re-analyzing color scheme with new AI config', status: 'in_progress' },
-          { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
-          { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
+          { id: 'analyze', title: t('stepAnalyzeTitle'), description: t('stepAnalyzeDescRe'), status: 'in_progress' },
+          { id: 'map', title: t('stepMapTitle'), description: t('stepMapDesc'), status: 'pending' },
+          { id: 'generate', title: t('stepGenerateTitle'), description: t('stepGenerateDesc'), status: 'pending' },
         ]);
-        setProgress('Using cached content for fast regeneration...');
+        setProgress(t('msgCached'));
         setPaletteDiagnostics(lastCrawlerResult.cssAnalysis?.paletteProfile?.diagnostics || null);
         setLastPaletteProfile(lastCrawlerResult.cssAnalysis?.paletteProfile || null);
-        await processContent(lastCrawlerResult, lastSource);
+        await processContent(lastCrawlerResult, lastSource as FetcherService);
         return;
       }
 
       // Normal generation: fetch from URL
       setThinkingSteps([
-        { id: 'fetch', title: 'Fetching Website', description: `Using ${fetcherService === 'auto' ? 'best available' : fetcherService} fetcher`, status: 'in_progress' },
-        { id: 'analyze', title: 'AI Color Analysis', description: 'Analyzing color scheme with AI', status: 'pending' },
-        { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
-        { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
+        { id: 'fetch', title: t('stepFetchTitle'), description: fetcherService === 'auto' ? t('stepFetchDescBest') : t('stepFetchDesc', { service: fetcherService }), status: 'in_progress' },
+        { id: 'analyze', title: t('stepAnalyzeTitle'), description: t('stepAnalyzeDesc'), status: 'pending' },
+        { id: 'map', title: t('stepMapTitle'), description: t('stepMapDesc'), status: 'pending' },
+        { id: 'generate', title: t('stepGenerateTitle'), description: t('stepGenerateDesc'), status: 'pending' },
       ]);
 
       // Step 1: Fetch website content using API-based fetcher
-      setProgress('Fetching website content...');
+      setProgress(t('msgFetching'));
       const fetchResult = await fetchWithAPI(url, {
         service: fetcherService,
         apiKeys: fetcherAPIKeys,
@@ -134,7 +163,7 @@ function App() {
 
       updateStep('fetch', {
         status: 'completed',
-        details: `Found ${fetchResult.colors.length} colors from ${fetchResult.title} (via ${fetchResult.serviceUsed})`
+        details: t('msgFetchFound', { count: fetchResult.colors.length, title: fetchResult.title, service: fetchResult.serviceUsed })
       });
 
       // Convert to crawler-compatible format
@@ -144,19 +173,19 @@ function App() {
         content: fetchResult.html,
         html: fetchResult.html,
         colors: fetchResult.colors,
-        cssAnalysis: fetchResult.cssAnalysis,
+        cssAnalysis: undefined,
       };
 
-      if (fetchResult.warnings?.length) {
-        setCrawlerWarnings(fetchResult.warnings);
+      if ((fetchResult as any).warnings?.length) {
+        setCrawlerWarnings((fetchResult as any).warnings);
       }
 
       setLastCrawlerResult(crawlerResult);
-      setLastSource(fetchResult.fetcher);
+      setLastSource(fetchResult.serviceUsed as string);
       setPaletteDiagnostics(crawlerResult.cssAnalysis?.paletteProfile?.diagnostics || null);
-       setLastPaletteProfile(crawlerResult.cssAnalysis?.paletteProfile || null);
+      setLastPaletteProfile(crawlerResult.cssAnalysis?.paletteProfile || null);
       setLastCrawlAt(new Date().toLocaleString());
-      await processContent(crawlerResult, fetchResult.fetcher);
+      await processContent(crawlerResult, fetchResult.serviceUsed as unknown as FetcherService);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setProgress('');
@@ -168,23 +197,24 @@ function App() {
     try {
       // Step 2: Analyze colors with AI
       updateStep('analyze', { status: 'in_progress' });
-      setProgress('Analyzing colors with AI...');
+      setProgress(t('msgAnalyzing'));
 
-      const { analysis, mappings, classRoles } = await analyzeWebsiteColors(crawlerResult, {
+      const { analysis, mappings, mode, classRoles } = await analyzeWebsiteColors(crawlerResult, {
         provider: aiProvider,
         apiKey: aiKey,
         model: aiModel,
+        baseUrl: aiBaseUrl,
       }, { aiClassMapping: useAiMapping });
 
       updateStep('analyze', {
         status: 'completed',
-        details: `Identified ${mappings.length} color mappings using ${aiProvider}/${aiModel}`
+        details: t('msgAnalyzeIdentified', { count: mappings.length, provider: aiProvider, model: aiModel })
       });
 
       // Step 3: Map colors
       updateStep('map', {
         status: 'in_progress',
-        description: 'Creating semantic color mappings for UI elements'
+        description: t('stepMapDescInProg')
       });
 
       // Small delay to show the step
@@ -192,19 +222,20 @@ function App() {
 
       updateStep('map', {
         status: 'completed',
-        details: `Mapped colors for buttons, text, backgrounds, and more`
+        details: t('msgMapMapped')
       });
 
       // Step 4: Generate UserStyle theme
       updateStep('generate', { status: 'in_progress' });
-      setProgress('Generating UserStyle theme...');
+      setProgress(t('msgGenerating'));
 
       // Attach AI role guesses to cssAnalysis for regeneration
       const cachedGuesses = (crawlerResult as any).cssAnalysis?.aiRoleGuesses;
-      const combinedRoleGuesses = classRoles ?? analysis.classRoles ?? cachedGuesses;
+      const combinedRoleGuesses = classRoles ?? (analysis as any).classRoles ?? cachedGuesses;
       const updatedCssAnalysis = {
         ...((crawlerResult as any).cssAnalysis || {}),
         aiRoleGuesses: combinedRoleGuesses,
+        detectedMode: mode || (analysis as any)?.mode,
         accentToggles: {
           badgeCardTable: accentBadgeCardTable,
           alerts: accentAlerts,
@@ -226,13 +257,13 @@ function App() {
 
       updateStep('generate', {
         status: 'completed',
-        details: 'Generated themes for Latte, Frappé, Macchiato, and Mocha'
+        details: t('msgGenerateGenerated')
       });
 
       setThemePackage(pkg);
       // Persist last crawler + cssAnalysis (including AI role guesses) for fast regenerate
       setLastCrawlerResult({ ...crawlerResult, cssAnalysis: updatedCssAnalysis });
-      setLastAIConfig({ provider: aiProvider, model: aiModel, apiKey: aiKey });
+      setLastAIConfig({ provider: aiProvider, model: aiModel, apiKey: aiKey, baseUrl: aiBaseUrl });
       setLastAiMappingChoice(useAiMapping);
       setHasCompleted(true);
       setProgress('');
@@ -248,7 +279,7 @@ function App() {
         const message = err instanceof Error ? err.message : String(err);
         // Detect parse/JSON errors and surface a toast
         if (/json|parse/i.test(message)) {
-          setParseErrorToast('AI response could not be parsed. Try again or switch models.');
+          setParseErrorToast(t('parseErrorHelp'));
           setTimeout(() => setParseErrorToast(null), 6000);
         }
         throw err;
@@ -261,16 +292,16 @@ function App() {
     if (!lastCrawlerResult) return;
     setIsProcessing(true);
     setError('');
-    setProgress('Re-running with cached crawl...');
+    setProgress(t('msgReaching'));
     setPaletteDiagnostics(lastCrawlerResult.cssAnalysis?.paletteProfile?.diagnostics || null);
     setLastPaletteProfile(lastCrawlerResult.cssAnalysis?.paletteProfile || null);
     setThinkingSteps([
-      { id: 'analyze', title: 'AI Color Analysis', description: 'Re-analyzing color scheme with current AI settings', status: 'in_progress' },
-      { id: 'map', title: 'Mapping to Catppuccin', description: 'Mapping colors to Catppuccin palette', status: 'pending' },
-      { id: 'generate', title: 'Generating Themes', description: 'Creating Stylus, LESS, and CSS themes', status: 'pending' },
+      { id: 'analyze', title: t('stepAnalyzeTitle'), description: t('stepAnalyzeDescRe'), status: 'in_progress' },
+      { id: 'map', title: t('stepMapTitle'), description: t('stepMapDesc'), status: 'pending' },
+      { id: 'generate', title: t('stepGenerateTitle'), description: t('stepGenerateDesc'), status: 'pending' },
     ]);
     try {
-      await processContent(lastCrawlerResult, lastSource);
+      await processContent(lastCrawlerResult, lastSource as FetcherService);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An error occurred');
     } finally {
@@ -291,7 +322,7 @@ function App() {
   };
 
   const handleFolderContent = async (folderResult: { html: string; css: string; url: string }) => {
-    if (aiProvider !== 'ollama' && !aiKey) {
+    if (!aiKey) {
       setError('Please provide your AI API key');
       return;
     }
@@ -348,89 +379,129 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ctp-base via-ctp-mantle to-ctp-crust text-ctp-text">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Theme Selector - Top Right */}
-        <div className="flex justify-end mb-4">
-          <ThemeSelector />
+    <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-ctp-base via-ctp-mantle to-ctp-crust text-ctp-text">
+      <div className="pointer-events-none absolute inset-x-0 -top-24 h-80 bg-[radial-gradient(circle_at_top,rgba(var(--ctp-accent-rgb),0.22),transparent_60%)]" />
+      <div className="pointer-events-none absolute -right-24 top-72 h-64 w-64 rounded-full bg-ctp-blue/20 blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-4 py-6 sm:py-10">
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <div className="rounded-full border border-ctp-surface2 bg-ctp-surface0/60 px-3 py-1 text-xs text-ctp-subtext1">
+            {t('appTitle')}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-ctp-surface2 bg-ctp-surface0/80 px-3 py-2 text-sm text-ctp-text transition-colors hover:bg-ctp-surface1"
+            >
+              <Settings2 className="h-4 w-4" />
+              {t('settings')}
+            </button>
+            <LanguageSelector />
+            <ThemeSelector />
+          </div>
         </div>
 
-        <header className="text-center mb-12">
-          {/* Catppuccin Icon */}
-          <div className="flex justify-center mb-6">
-            <img
-              src={catppuccinLogo}
-              alt="Catppuccin"
-              onError={(e) => {
-                console.error('Image failed to load:', e);
-                // Cast to HTMLImageElement and set fallback
-                if (e.currentTarget instanceof HTMLImageElement) {
-                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='100' height='100'%3E%3Crect width='100' height='100' fill='%2345475a'/%3E%3Ccircle cx='50' cy='50' r='40' fill='%23cba6f7'/%3E%3Cpath d='M30,30 L70,30 L70,70 L30,70 Z' fill='%23cba6f7'/%3E%3Cpath d='M40,40 L60,40 L60,60 L40,60 Z' fill='%23f5e0dc'/%3E%3C/svg%3E";
-                }
-              }}
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full shadow-lg shadow-ctp-accent/50 hover:shadow-ctp-accent/70 transition-all duration-300 hover:scale-110"
-            />
-          </div>
-
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-ctp-accent to-ctp-bi-accent bg-clip-text text-transparent">
-            Catppuccin Theme Generator
-          </h1>
-          <p className="text-ctp-subtext0 text-lg">
-            Analyze any website and generate beautiful Catppuccin themes in Stylus, LESS, and CSS
-          </p>
-          <p className="text-ctp-green text-sm mt-2">
-            ✨ Generated and powered by advanced AI models for accurate color analysis! ✨
-          </p>
-          <a
-            href="https://github.com/catppuccin/catppuccin"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-2 text-sm text-ctp-lavender hover:text-ctp-mauve underline transition-colors"
-          >
-            Learn more about Catppuccin
-          </a>
-          <a
-            href="https://github.com/openstyles/stylus"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block mt-1 text-sm text-ctp-lavender hover:text-ctp-mauve underline transition-colors"
-          >
-            Learn more about Stylus
-          </a>
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Left Column - Configuration */}
-          <div className="space-y-6">
-            {/* URL Input - Primary Action */}
-            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-accent/30 relative z-10">
-              <h2 className="text-2xl font-bold mb-2 text-ctp-accent">Generate Theme</h2>
-              <p className="text-sm text-ctp-subtext0 mb-4">
-                👇 Configure AI &amp; fetcher settings below first, then enter a URL to generate your theme
-              </p>
-
-              <div className="flex items-center justify-between mb-4">
+        <header className="mb-8 rounded-3xl border border-ctp-accent/30 bg-ctp-surface0/70 p-6 shadow-2xl backdrop-blur-sm sm:p-8">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.3fr,1fr]">
+            <div>
+              <div className="mb-5 flex items-center gap-4">
+                <img
+                  src={catppuccinLogo}
+                  alt="Catppuccin"
+                  onError={(e) => {
+                    console.error('Image failed to load:', e);
+                    if (e.currentTarget instanceof HTMLImageElement) {
+                      e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='100' height='100'%3E%3Crect width='100' height='100' fill='%2345475a'/%3E%3Ccircle cx='50' cy='50' r='40' fill='%23cba6f7'/%3E%3Cpath d='M30,30 L70,30 L70,70 L30,70 Z' fill='%23cba6f7'/%3E%3Cpath d='M40,40 L60,40 L60,60 L40,60 Z' fill='%23f5e0dc'/%3E%3C/svg%3E";
+                    }
+                  }}
+                  className="h-16 w-16 rounded-2xl border border-ctp-surface2 shadow-lg shadow-ctp-accent/40 sm:h-20 sm:w-20"
+                />
                 <div>
-                  <p className="text-sm text-ctp-text font-semibold">AI-assisted selector mapping</p>
-                  <p className="text-xs text-ctp-subtext0">
-                    Classifies selectors (buttons, alerts, badges, etc.) to guide accent rotation. Stored locally.
-                    {useAiMapping && aiProvider === 'ollama' && (
-                      <span className="ml-1 text-ctp-green font-semibold">Ollama mapping active (local, no API key needed).</span>
-                    )}
+                  <h1 className="bg-gradient-to-r from-ctp-accent to-ctp-mauve bg-clip-text text-3xl font-bold text-transparent sm:text-4xl">
+                    {t('appHeading')}
+                  </h1>
+                  <p className="mt-1 text-ctp-subtext0">
+                    {t('appSubheading')}
                   </p>
                 </div>
-                <label className="inline-flex items-center cursor-pointer">
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <a
+                  href="https://github.com/catppuccin/catppuccin"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ctp-lavender underline transition-colors hover:text-ctp-mauve"
+                >
+                  {t('catppuccinProject')}
+                </a>
+                <a
+                  href="https://github.com/openstyles/stylus"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ctp-lavender underline transition-colors hover:text-ctp-mauve"
+                >
+                  {t('stylusExtension')}
+                </a>
+              </div>
+            </div>
+
+            <div className="grid gap-3 text-sm">
+              <div className="rounded-xl border border-ctp-surface2 bg-ctp-mantle/80 p-4">
+                <div className="text-xs uppercase tracking-wide text-ctp-subtext1">{t('aiAccess')}</div>
+                <div className={`mt-1 font-semibold ${hasAiCredential ? 'text-ctp-green' : 'text-ctp-yellow'}`}>
+                  {hasAiCredential ? t('configured') : t('needsApiKey')}
+                </div>
+                <div className="mt-1 text-xs text-ctp-subtext0">
+                  {t('provider')} <span className="text-ctp-text">{aiProvider}</span>
+                </div>
+              </div>
+              <div className="rounded-xl border border-ctp-surface2 bg-ctp-mantle/80 p-4">
+                <div className="text-xs uppercase tracking-wide text-ctp-subtext1">{t('fetcherKeys')}</div>
+                <div className="mt-1 font-semibold text-ctp-text">{t('configuredCount', { count: configuredFetcherKeyCount })}</div>
+                <div className="mt-1 text-xs text-ctp-subtext0">
+                  {t('service')} <span className="text-ctp-text">{fetcherService}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-ctp-accent/40 bg-ctp-accent/10 px-4 py-3 font-medium text-ctp-accent transition-colors hover:bg-ctp-accent/20"
+              >
+                <KeyRound className="h-4 w-4" />
+                {t('openSettings')}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="mb-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="space-y-6">
+            <div className="relative rounded-2xl border border-ctp-accent/30 bg-ctp-surface0/80 p-6 shadow-2xl backdrop-blur-sm">
+              <h2 className="mb-2 text-2xl font-bold text-ctp-accent">{t('generateThemeHeading')}</h2>
+              <p className="mb-4 text-sm text-ctp-subtext0">
+                {t('generateThemeDesc')}
+              </p>
+
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-ctp-text">{t('aiMappingDesc')}</p>
+                  <p className="text-xs text-ctp-subtext0">
+                    {t('aiMappingSubDesc')}
+                  </p>
+                </div>
+                <label className="inline-flex cursor-pointer items-center">
                   <input
                     type="checkbox"
-                    className="sr-only peer"
+                    className="peer sr-only"
                     checked={useAiMapping}
                     onChange={(e) => {
                       setUseAiMapping(e.target.checked);
                       saveSettings({ aiAssistedMapping: e.target.checked });
                     }}
                   />
-                  <div className="w-11 h-6 bg-ctp-surface2 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ctp-accent rounded-full peer peer-checked:bg-ctp-accent flex items-center px-1 transition">
-                    <div className="w-4 h-4 bg-ctp-base rounded-full transition-transform peer-checked:translate-x-5" />
+                  <div className="flex h-6 w-11 items-center rounded-full bg-ctp-surface2 px-1 transition peer-checked:bg-ctp-accent peer-focus:ring-2 peer-focus:ring-ctp-accent">
+                    <div className="h-4 w-4 rounded-full bg-ctp-base transition-transform peer-checked:translate-x-5" />
                   </div>
                 </label>
               </div>
@@ -441,154 +512,131 @@ function App() {
                 disabled={isProcessing}
                 canRegenerate={canRegenerate}
               />
-              <div className="mt-3 flex flex-wrap gap-3 items-center">
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={handleRegenerateFromCache}
                   disabled={!canQuickRerun || isProcessing}
-                  className={`px-3 py-2 rounded-md text-sm font-medium border ${
+                  className={`rounded-md border px-3 py-2 text-sm font-medium ${
                     canQuickRerun && !isProcessing
-                      ? 'bg-ctp-surface1 hover:bg-ctp-surface2 text-ctp-text border-ctp-surface2'
-                      : 'bg-ctp-surface1/50 text-ctp-overlay1 border-ctp-surface2 cursor-not-allowed'
+                      ? 'border-ctp-surface2 bg-ctp-surface1 text-ctp-text hover:bg-ctp-surface2'
+                      : 'cursor-not-allowed border-ctp-surface2 bg-ctp-surface1/50 text-ctp-overlay1'
                   }`}
-                  title={canQuickRerun ? 'Reuse the last crawl without refetching' : 'Run a crawl first to enable quick re-run'}
+                  title={canQuickRerun ? t('rerunTooltip') : t('runCrawlFirst')}
                 >
-                  Re-run with same crawl{lastCrawlerResult?.url ? ` (${new URL(lastCrawlerResult.url).hostname})` : ''}
+                  {t('rerunSameCrawl')}{lastCrawlerResult?.url ? ` (${new URL(lastCrawlerResult.url).hostname})` : ''}
                 </button>
                 {lastCrawlAt && (
-                  <span className="text-xs text-ctp-subtext0">Last crawl: {lastCrawlAt}</span>
+                  <span className="text-xs text-ctp-subtext0">{t('lastCrawl')}{lastCrawlAt}</span>
                 )}
-                <div className="flex items-center gap-2 text-xs text-ctp-subtext0">
-                  <span className="font-semibold text-ctp-subtext1">Accent coverage</span>
-                  <label className="inline-flex items-center gap-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={accentBadgeCardTable}
-                      onChange={(e) => setAccentBadgeCardTable(e.target.checked)}
-                      className="h-4 w-4 rounded border-ctp-surface2 text-ctp-accent focus:ring-ctp-accent"
-                    />
-                    <span>Badges/Cards/Tables</span>
-                  </label>
-                  <label className="inline-flex items-center gap-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={accentAlerts}
-                      onChange={(e) => setAccentAlerts(e.target.checked)}
-                      className="h-4 w-4 rounded border-ctp-surface2 text-ctp-accent focus:ring-ctp-accent"
-                    />
-                    <span>Alerts/Notifications</span>
-                  </label>
-                </div>
               </div>
 
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-ctp-subtext0">
+                <span className="font-semibold text-ctp-subtext1">{t('accentCoverage')}</span>
+                <label className="inline-flex cursor-pointer items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={accentBadgeCardTable}
+                    onChange={(e) => setAccentBadgeCardTable(e.target.checked)}
+                    className="h-4 w-4 rounded border-ctp-surface2 text-ctp-accent focus:ring-ctp-accent"
+                  />
+                  <span>{t('badgesCardsTables')}</span>
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={accentAlerts}
+                    onChange={(e) => setAccentAlerts(e.target.checked)}
+                    className="h-4 w-4 rounded border-ctp-surface2 text-ctp-accent focus:ring-ctp-accent"
+                  />
+                  <span>{t('alertsNotifications')}</span>
+                </label>
+              </div>
+
+              {progress && (
+                <div className="mt-4 rounded-lg border border-ctp-blue/30 bg-ctp-blue/10 px-3 py-2 text-sm text-ctp-blue">
+                  {progress}
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-4 rounded-lg border border-ctp-red/40 bg-ctp-red/10 px-3 py-2 text-sm text-ctp-red">
+                  {error}
+                </div>
+              )}
+
               {crawlerWarnings.length > 0 && (
-                <div className="mt-3 text-xs text-ctp-yellow bg-ctp-surface1/70 border border-ctp-surface2 rounded-lg p-3">
+                <div className="mt-4 rounded-lg border border-ctp-surface2 bg-ctp-surface1/70 p-3 text-xs text-ctp-yellow">
                   {crawlerWarnings.map((w, idx) => (
                     <div key={idx} className="flex items-start gap-2">
                       <span className="text-ctp-yellow">•</span>
                       <span>{w}</span>
                     </div>
                   ))}
-                  <div className="mt-1 text-ctp-subtext1">The app will continue with direct HTTP fetch as a fallback.</div>
+                  <div className="mt-1 text-ctp-subtext1">{t('fallbackWarning')}</div>
                 </div>
               )}
             </div>
-
-            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
-              <AIConfig
-                aiProvider={aiProvider}
-                onAIProviderChange={setAIProvider}
-                aiModel={aiModel}
-                onAIModelChange={setAIModel}
-                onKeyChange={(key) => setAIKey(key)}
-                ollamaModels={discoveredOllamaModels}
-                onModelsDiscovered={(models) => setDiscoveredOllamaModels(models)}
-              />
-            </div>
-
-            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2">
-              <FetcherConfig
-                onConfigChange={(config) => {
-                  setFetcherService(config.service);
-                  setFetcherAPIKeys(config.apiKeys);
-                }}
-              />
-            </div>
-
-            <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-ctp-surface2 relative z-20">
-              <FontSelector
-                normalFont={normalFont}
-                monoFont={monoFont}
-                onNormalFontChange={(font) => {
-                  setNormalFont(font);
-                  saveSettings({ normalFont: font });
-                }}
-                onMonoFontChange={(font) => {
-                  setMonoFont(font);
-                  saveSettings({ monoFont: font });
-                }}
-              />
-            </div>
           </div>
 
-          {/* Right Column - Diagnostics & Preview */}
           <div className="space-y-6">
             {paletteDiagnostics && (
-              <div className="bg-ctp-surface0/80 backdrop-blur-sm rounded-2xl p-6 border border-ctp-surface2">
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <h3 className="text-xl font-semibold text-ctp-accent">Palette Diagnostics</h3>
+              <div className="rounded-2xl border border-ctp-surface2 bg-ctp-surface0/80 p-6 backdrop-blur-sm">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <h3 className="text-xl font-semibold text-ctp-accent">{t('paletteDiagnostics')}</h3>
                   <button
                     type="button"
                     onClick={handleDownloadPaletteProfile}
                     disabled={!lastPaletteProfile}
-                    className={`text-xs px-3 py-1.5 rounded-md border ${
+                    className={`rounded-md border px-3 py-1.5 text-xs ${
                       lastPaletteProfile
                         ? 'border-ctp-accent text-ctp-accent hover:bg-ctp-accent/10'
-                        : 'border-ctp-surface2 text-ctp-overlay1 cursor-not-allowed'
+                        : 'cursor-not-allowed border-ctp-surface2 text-ctp-overlay1'
                     }`}
-                    title={lastPaletteProfile ? 'Download palette profile JSON' : 'Run a crawl to enable download'}
+                    title={lastPaletteProfile ? t('downloadJsonUrl') : t('runCrawlDownload')}
                   >
-                    Download profile JSON
+                    {t('downloadJsonUrl')}
                   </button>
                 </div>
-                <div className="text-sm space-y-2 text-ctp-subtext0">
+                <div className="space-y-2 text-sm text-ctp-subtext0">
                   <p>
-                    <span className="text-ctp-subtext1">CSS Variables:</span>{' '}
+                    <span className="text-ctp-subtext1">{t('cssVariables')}</span>{' '}
                     <span className="text-ctp-text">{paletteDiagnostics.cssVariableCount}</span>
                   </p>
                   <p>
-                    <span className="text-ctp-subtext1">Inferred Roles:</span>{' '}
+                    <span className="text-ctp-subtext1">{t('inferredRoles')}</span>{' '}
                     <span className="text-ctp-text">{paletteDiagnostics.inferredRoles.length}</span>
                   </p>
                   {paletteDiagnostics.warnings.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-ctp-yellow font-medium">Warnings</p>
-                      <ul className="list-disc list-inside space-y-1">
+                      <p className="font-medium text-ctp-yellow">{t('warnings')}</p>
+                      <ul className="list-inside list-disc space-y-1">
                         {paletteDiagnostics.warnings.map((warning, idx) => (
                           <li key={idx}>{warning}</li>
                         ))}
                       </ul>
-                      <div className="text-xs text-ctp-subtext1 space-y-1">
-                        <div className="font-semibold text-ctp-subtext0">改善建議：</div>
-                        <ul className="list-disc list-inside space-y-1">
-                          <li>若是 JS 重站，開啟並測試 Playwright 爬蟲（API Key → Playwright Crawler）；抓不到 CSS 規則會讓角色推斷不足。</li>
-                          <li>提供更多 CSS 變數/內嵌 style：有自訂樣式時，優先在頁面/快照中保留 <code className="px-1 py-0.5 bg-ctp-surface1 rounded text-ctp-text">--color-*</code>、<code className="px-1 py-0.5 bg-ctp-surface1 rounded text-ctp-text">--theme-*</code> 等 token。</li>
-                          <li>避免過度簡化的 HTML：若使用靜態快照/上傳資料夾，請包含主要 CSS 檔，讓 class/變數分析更完整。</li>
+                      <div className="space-y-1 text-xs text-ctp-subtext1">
+                        <div className="font-semibold text-ctp-subtext0">{t('improveRecommendations')}</div>
+                        <ul className="list-inside list-disc space-y-1">
+                          <li>{t('rec1')}</li>
+                          <li>{t('rec2')}</li>
+                          <li>{t('rec3')}</li>
                         </ul>
                       </div>
                     </div>
                   )}
                   {paletteDiagnostics.inferredRoles.slice(0, 10).length > 0 && (
                     <div>
-                      <p className="text-ctp-subtext1 font-medium">Sample Roles</p>
-                      <ul className="list-disc list-inside space-y-1">
+                      <p className="font-medium text-ctp-subtext1">{t('sampleRoles')}</p>
+                      <ul className="list-inside list-disc space-y-1">
                         {paletteDiagnostics.inferredRoles.slice(0, 10).map((role) => (
                           <li key={role}>{role}</li>
                         ))}
                       </ul>
                       {paletteDiagnostics.inferredRoles.length > 10 && (
                         <p className="text-xs text-ctp-overlay1">
-                          +{paletteDiagnostics.inferredRoles.length - 10} more
+                          {t('moreRoles', { count: paletteDiagnostics.inferredRoles.length - 10 })}
                         </p>
                       )}
                     </div>
@@ -597,7 +645,6 @@ function App() {
               </div>
             )}
 
-            {/* Thinking Process Display */}
             {(isProcessing || thinkingSteps.length > 0) && (
               <ThinkingProcess steps={thinkingSteps} />
             )}
@@ -608,40 +655,39 @@ function App() {
 
         {parseErrorToast && <ParseErrorToast message={parseErrorToast} />}
 
-        <footer className="text-center text-ctp-overlay0 text-sm mt-12 pb-8">
+        <footer className="mt-12 pb-8 text-center text-sm text-ctp-overlay0">
           <p className="mb-2">
-            Made with Catppuccin |
+            {t('madeWith')}
             <a
               href="https://github.com/catppuccin/catppuccin"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-1 hover:text-ctp-lavender transition-colors"
+              className="ml-1 transition-colors hover:text-ctp-lavender"
             >
-              GitHub
+              {t('github')}
             </a>
           </p>
-          <p className="text-ctp-overlay1 text-xs mb-3">
-            Generated by Github Copilot, Claude Code, Roo Code, OpenAI Codex, Gemini Code assistant<br />
-            Models: 
-            Claude Opus 4.5, Claude Opus 4.1, Claude Sonnet 4.5, MiniMax M2, GPT 4.1, GPT 5, 
+          <p className="mb-3 text-xs text-ctp-overlay1">
+            {t('generatedBy')}<br />
+            {t('modelsUsed')}
+            Claude Opus 4.5, Claude Opus 4.1, Claude Sonnet 4.5, MiniMax M2, GPT 4.1, GPT 5,
             GPT 5 Codex, DeepSeek R1 0528 Qwen 3, Gemini 2.5 Pro
           </p>
 
-          {/* Version Banner */}
           {version && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-ctp-accent/10 to-ctp-bi-accent/10 rounded-lg border border-ctp-accent/20">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-ctp-accent/20 bg-gradient-to-r from-ctp-accent/10 to-ctp-mauve/10 px-4 py-2">
               <div className="flex items-center gap-2">
-                <span className="text-ctp-accent font-mono font-semibold">
+                <span className="font-mono font-semibold text-ctp-accent">
                   v{version.version}
                 </span>
                 <span className="text-ctp-overlay1">•</span>
-                <span className="text-ctp-overlay0 text-xs">
+                <span className="text-xs text-ctp-overlay0">
                   {version.commitHash}
                 </span>
                 {version.branchName !== 'main' && (
                   <>
                     <span className="text-ctp-overlay1">•</span>
-                    <span className="text-ctp-yellow text-xs">
+                    <span className="text-xs text-ctp-yellow">
                       {version.branchName}
                     </span>
                   </>
@@ -650,6 +696,76 @@ function App() {
             </div>
           )}
         </footer>
+      </div>
+
+      <div
+        className={`fixed inset-0 z-50 transition ${isSettingsOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        aria-hidden={!isSettingsOpen}
+      >
+        <div
+          className={`absolute inset-0 bg-ctp-crust/75 backdrop-blur-sm transition-opacity ${isSettingsOpen ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setIsSettingsOpen(false)}
+        />
+        <div className="absolute inset-0 overflow-y-auto p-4 sm:p-8">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Settings panel"
+            className={`mx-auto w-full max-w-6xl rounded-2xl border border-ctp-surface2 bg-ctp-base shadow-2xl transition-all ${isSettingsOpen ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'}`}
+          >
+            <div className="flex items-center justify-between border-b border-ctp-surface1 px-6 py-4">
+              <div>
+                <h2 className="text-xl font-semibold text-ctp-text">{t('settings')}</h2>
+                <p className="text-sm text-ctp-subtext0">{t('settingsDesc')}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(false)}
+                className="rounded-lg border border-ctp-surface2 bg-ctp-surface0 p-2 text-ctp-subtext1 transition-colors hover:bg-ctp-surface1 hover:text-ctp-text"
+                aria-label="Close settings"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6 p-6">
+              <div className="rounded-2xl border border-ctp-surface2 bg-ctp-surface0/80 p-6">
+                <AIConfig
+                  aiProvider={aiProvider}
+                  onAIProviderChange={setAIProvider}
+                  aiModel={aiModel}
+                  onAIModelChange={setAIModel}
+                  onKeyChange={(key) => setAIKey(key)}
+                  onBaseUrlChange={(baseUrl) => setAIBaseUrl(baseUrl)}
+                />
+              </div>
+
+              <div className="rounded-2xl border border-ctp-surface2 bg-ctp-surface0/80 p-6">
+                <FetcherConfig
+                  onConfigChange={(config) => {
+                    setFetcherService(config.service);
+                    setFetcherAPIKeys(config.apiKeys);
+                  }}
+                />
+              </div>
+
+              <div className="rounded-2xl border border-ctp-surface2 bg-ctp-surface0/80 p-6">
+                <FontSelector
+                  normalFont={normalFont}
+                  monoFont={monoFont}
+                  onNormalFontChange={(font) => {
+                    setNormalFont(font);
+                    saveSettings({ normalFont: font });
+                  }}
+                  onMonoFontChange={(font) => {
+                    setMonoFont(font);
+                    saveSettings({ monoFont: font });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -660,12 +776,13 @@ export default App;
 // Simple toast for parse errors
 /* eslint-disable jsx-a11y/no-redundant-roles */
 function ParseErrorToast({ message }: { message: string }) {
+  const { t } = useLanguage();
   return (
     <div
       role="alert"
       className="fixed bottom-6 right-6 z-50 max-w-sm bg-ctp-surface0 border border-ctp-red text-ctp-red px-4 py-3 rounded-lg shadow-lg"
     >
-      <div className="font-semibold text-sm">Parse Error</div>
+      <div className="font-semibold text-sm">{t('parseError')}</div>
       <div className="text-xs text-ctp-text">{message}</div>
     </div>
   );

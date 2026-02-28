@@ -3,83 +3,63 @@ import type { CrawlerResult } from '../../types/theme';
 import type { ColorAnalysisResult, ExtendedCrawlerResult } from './types';
 import { createModeDetectionPrompt, createColorAnalysisPrompt, createClassMappingPrompt } from './prompts';
 import { parseColorAnalysisResponse, extractJSONWithAI, detectWebsiteMode, fetchWithRetry, createTimeoutSignal, COLOR_ANALYSIS_TIMEOUT_MS } from './base';
+import { DEFAULT_OPENAI_COMPATIBLE_BASE } from './model-catalog';
 
-// Chutes AI API endpoint
-const CHUTES_API_ENDPOINT = 'https://llm.chutes.ai/v1/chat/completions';
-
-// Chutes AI models - Official endpoint: https://llm.chutes.ai
-// NOTE: Check https://chutes.ai/app for current models and pricing
-export const CHUTES_MODELS: AIModel[] = [
-  // Popular models (updated 2026-01-17)
+export const OPENAI_COMPATIBLE_MODELS: AIModel[] = [
   {
-    id: 'deepseek-ai/DeepSeek-R1',
-    name: 'DeepSeek R1',
-    provider: 'chutes',
+    id: 'gpt-4.1-mini',
+    name: 'GPT-4.1 mini',
+    provider: 'openai-compatible',
     isFree: false,
   },
   {
-    id: 'deepseek-ai/DeepSeek-V3',
-    name: 'DeepSeek V3',
-    provider: 'chutes',
-    isFree: false,
-  },
-  {
-    id: 'mistralai/Mistral-Small-24B-Instruct-2501',
-    name: 'Mistral Small 3',
-    provider: 'chutes',
-    isFree: false,
-  },
-  {
-    id: 'nvidia/Llama-3.1-Nemotron-70B-Instruct-HF',
-    name: 'Nemotron 70B',
-    provider: 'chutes',
-    isFree: false,
-  },
-  {
-    id: 'Qwen/Qwen2.5-72B-Instruct',
-    name: 'Qwen 2.5 72B',
-    provider: 'chutes',
-    isFree: false,
-  },
-  {
-    id: 'meta-llama/Llama-3.3-70B-Instruct',
-    name: 'Llama 3.3 70B',
-    provider: 'chutes',
+    id: 'gpt-4o-mini',
+    name: 'GPT-4o mini',
+    provider: 'openai-compatible',
     isFree: false,
   },
 ];
 
-/**
- * Analyze website colors using Chutes AI API
- */
-export async function analyzeColorsWithChutes(
+function trimTrailingSlash(value: string): string {
+  return value.replace(/\/+$/, '');
+}
+
+function resolveBase(baseUrl?: string): string {
+  const input = trimTrailingSlash(baseUrl?.trim() || DEFAULT_OPENAI_COMPATIBLE_BASE);
+  if (input.endsWith('/v1') || /\/v\d+$/.test(input)) {
+    return input;
+  }
+  return `${input}/v1`;
+}
+
+function chatCompletionsEndpoint(baseUrl?: string): string {
+  return `${resolveBase(baseUrl)}/chat/completions`;
+}
+
+export async function analyzeColorsWithOpenAICompatible(
   crawlerResult: CrawlerResult,
   apiKey: string,
   model: string,
+  baseUrl?: string,
   options?: { aiClassMapping?: boolean }
 ): Promise<ColorAnalysisResult> {
   const extendedResult: ExtendedCrawlerResult = crawlerResult as ExtendedCrawlerResult;
+  const endpoint = chatCompletionsEndpoint(baseUrl);
 
-  // Step 1: Detect dark/light mode using AI
   const modePrompt = createModeDetectionPrompt(extendedResult);
   const detectedMode = await detectWebsiteMode(
-    CHUTES_API_ENDPOINT,
+    endpoint,
     apiKey,
     model,
     modePrompt,
-    false // Chutes doesn't support HTTP-Referer/X-Title headers
+    false,
   );
 
-  console.log(`Detected mode: ${detectedMode}`);
-
-  // Step 2: Color analysis with detected mode in prompt
   extendedResult.detectedMode = detectedMode;
   const prompt = createColorAnalysisPrompt(extendedResult);
 
   try {
-    // Stage 1: AI analyzes colors (may return messy output)
-    console.log('Stage 1: Analyzing colors with Chutes AI...');
-    const response = await fetchWithRetry(CHUTES_API_ENDPOINT, {
+    const response = await fetchWithRetry(endpoint, {
       method: 'POST',
       mode: 'cors',
       headers: {
@@ -106,43 +86,46 @@ export async function analyzeColorsWithChutes(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Chutes AI API error: ${response.statusText} - ${JSON.stringify(errorData)}`);
+      throw new Error(`OpenAI-compatible API error: ${response.statusText} - ${JSON.stringify(errorData)}`);
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
-
     if (!content) {
-      throw new Error('No response from Chutes AI');
+      throw new Error('No response from OpenAI-compatible provider');
     }
 
-    // Try to parse directly first
     try {
-      console.log('Attempting direct JSON parsing...');
       const result = parseColorAnalysisResponse(content);
-      const classRoles = options?.aiClassMapping ? await requestClassMappingChutes(apiKey, model, extendedResult) : undefined;
+      const classRoles = options?.aiClassMapping
+        ? await requestClassMappingOpenAICompatible(apiKey, model, endpoint, extendedResult)
+        : undefined;
       return { ...result, mode: detectedMode, classRoles };
-    } catch (parseError) {
-      // Stage 2: If direct parsing fails, use AI to extract JSON
-      console.log('Direct parsing failed, using AI to extract JSON...');
-      console.log('Parse error:', parseError);
+    } catch {
       const result = await extractJSONWithAI({
-        apiEndpoint: CHUTES_API_ENDPOINT,
+        apiEndpoint: endpoint,
         apiKey,
         model,
         rawResponse: content,
       });
-      const classRoles = options?.aiClassMapping ? await requestClassMappingChutes(apiKey, model, extendedResult) : undefined;
+      const classRoles = options?.aiClassMapping
+        ? await requestClassMappingOpenAICompatible(apiKey, model, endpoint, extendedResult)
+        : undefined;
       return { ...result, mode: detectedMode, classRoles };
     }
   } catch (error) {
-    throw new Error(`Failed to analyze colors with Chutes AI: ${error}`);
+    throw new Error(`Failed to analyze colors with OpenAI-compatible provider: ${error}`);
   }
 }
 
-async function requestClassMappingChutes(apiKey: string, model: string, crawlerResult: ExtendedCrawlerResult) {
+async function requestClassMappingOpenAICompatible(
+  apiKey: string,
+  model: string,
+  endpoint: string,
+  crawlerResult: ExtendedCrawlerResult
+) {
   const prompt = createClassMappingPrompt(crawlerResult);
-  const response = await fetchWithRetry(CHUTES_API_ENDPOINT, {
+  const response = await fetchWithRetry(endpoint, {
     method: 'POST',
     mode: 'cors',
     headers: {
@@ -160,12 +143,18 @@ async function requestClassMappingChutes(apiKey: string, model: string, crawlerR
     }),
     signal: createTimeoutSignal(COLOR_ANALYSIS_TIMEOUT_MS),
   });
+
   if (!response.ok) {
-    console.warn('AI-assisted mapping failed (Chutes)', response.statusText);
     return [];
   }
+
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
   if (!content) return [];
-  try { return JSON.parse(content); } catch { return []; }
+
+  try {
+    return JSON.parse(content);
+  } catch {
+    return [];
+  }
 }

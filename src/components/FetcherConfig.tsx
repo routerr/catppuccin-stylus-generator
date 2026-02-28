@@ -7,6 +7,7 @@ import {
   setPreferredFetcher 
 } from '../utils/storage';
 import { getAvailableServices, type FetcherServiceType } from '../services/fetcher-api';
+import { useLanguage } from '../hooks/useLanguage';
 import type { FetcherAPIKeys } from '../types/theme';
 
 interface FetcherConfigProps {
@@ -88,6 +89,7 @@ const SERVICES: ServiceInfo[] = [
 ];
 
 export function FetcherConfig({ onConfigChange }: FetcherConfigProps) {
+  const { t } = useLanguage();
   const [apiKeys, setApiKeys] = useState<FetcherAPIKeys>({});
   const [preferredService, setPreferredServiceState] = useState<FetcherServiceType>('auto');
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
@@ -132,7 +134,7 @@ export function FetcherConfig({ onConfigChange }: FetcherConfigProps) {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-ctp-text flex items-center gap-2">
           <Globe className="h-5 w-5 text-ctp-blue" />
-          Web Fetcher Configuration
+          {t('fetcherConfigHeading')}
         </h3>
         <button
           onClick={handleSave}
@@ -141,12 +143,12 @@ export function FetcherConfig({ onConfigChange }: FetcherConfigProps) {
           {saved ? (
             <>
               <CheckCircle className="h-4 w-4" />
-              Saved!
+              {t('saved')}
             </>
           ) : (
             <>
               <Save className="h-4 w-4" />
-              Save Config
+              {t('saveConfig')}
             </>
           )}
         </button>
@@ -157,11 +159,7 @@ export function FetcherConfig({ onConfigChange }: FetcherConfigProps) {
         <div className="flex items-start gap-3">
           <Zap className="h-5 w-5 text-ctp-blue flex-shrink-0 mt-0.5" />
           <div className="text-ctp-subtext1">
-            <strong className="text-ctp-text">API-based fetchers</strong> extract website content including HTML, CSS, and colors.
-            <br />
-            <span className="text-ctp-subtext0">
-              Jina Reader is free and always available. For best results with JavaScript-heavy sites, configure Firecrawl or ScrapingBee.
-            </span>
+            <span dangerouslySetInnerHTML={{ __html: t('fetcherNote').replace('API-based fetchers', '<strong class="text-ctp-text">API-based fetchers</strong>') }} />
           </div>
         </div>
       </div>
@@ -169,7 +167,7 @@ export function FetcherConfig({ onConfigChange }: FetcherConfigProps) {
       {/* Service Selection */}
       <div>
         <label className="block text-sm font-medium text-ctp-subtext1 mb-3">
-          Preferred Fetcher Service
+          {t('preferredFetcher')}
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {SERVICES.map(service => {
@@ -224,7 +222,7 @@ export function FetcherConfig({ onConfigChange }: FetcherConfigProps) {
                 </div>
                 {service.requiresKey && !isAvailable && (
                   <div className="mt-2 text-xs text-ctp-peach">
-                    API key required ↓
+                    {t('apiKeyRequired')}
                   </div>
                 )}
               </button>
@@ -237,11 +235,11 @@ export function FetcherConfig({ onConfigChange }: FetcherConfigProps) {
       <div className="space-y-4">
         <h4 className="text-sm font-medium text-ctp-subtext1 flex items-center gap-2">
           <Key className="h-4 w-4" />
-          API Keys (Optional)
+          {t('apiKeysOptional')}
         </h4>
         
-        <div className="bg-ctp-yellow/10 border border-ctp-yellow/30 rounded-lg p-3 text-xs text-ctp-yellow">
-          <strong>Security Note:</strong> API keys are stored locally in your browser using base64 encoding. They are only sent to their respective services.
+        <div className="bg-ctp-yellow/10 border border-ctp-yellow/30 rounded-lg p-3 text-xs text-ctp-yellow flex">
+          <span dangerouslySetInnerHTML={{ __html: t('apiKeysNote').replace('Security Note:', '<strong>Security Note:</strong>') }} />
         </div>
 
         {SERVICES.filter(s => s.requiresKey && s.keyField).map(service => (
@@ -287,7 +285,7 @@ export function FetcherConfig({ onConfigChange }: FetcherConfigProps) {
 
       {/* Current Status */}
       <div className="bg-ctp-surface0 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-ctp-subtext1 mb-3">Service Priority Chain</h4>
+        <h4 className="text-sm font-medium text-ctp-subtext1 mb-3">{t('servicePriority')}</h4>
         <div className="flex flex-wrap gap-2">
           {availableServices
             .filter(s => s.available)
@@ -309,7 +307,7 @@ export function FetcherConfig({ onConfigChange }: FetcherConfigProps) {
             ))}
         </div>
         <p className="text-xs text-ctp-subtext0 mt-2">
-          If the preferred service fails, the next available service will be used automatically.
+          {t('servicePriorityDesc')}
         </p>
       </div>
     </div>

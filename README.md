@@ -139,16 +139,18 @@ Paste the endpoint/key into **API Key Configuration → Playwright Crawler** if 
 - **Free Models (in code as of 2025-12-01)**: `x-ai/grok-4.1-fast:free`, `qwen/qwen3-235b-a22b:free`, `qwen/qwen3-coder:free`, `moonshotai/kimi-k2:free`, `openai/gpt-oss-20b:free`, `alibaba/tongyi-deepresearch-30b-a3b:free`, `meituan/longcat-flash-chat:free`, `z-ai/glm-4.5-air:free`, `tngtech/deepseek-r1t2-chimera:free`, `tngtech/deepseek-r1t-chimera:free`, `google/gemma-3-27b-it:free`, `google/gemini-2.0-flash-exp:free`, `meta-llama/llama-3.3-70b-instruct:free`, `nousresearch/hermes-3-llama-3.1-405b:free`, `mistralai/mistral-small-3.1-24b-instruct:free`
 - **Premium Models**: GPT-4o, Claude 3.5 Sonnet, Gemini Pro, Llama 3.1 70B
 - API Key: Get from [openrouter.ai](https://openrouter.ai)
+- Model list is fetched from the OpenRouter Models API and sorted by lowest known price.
 
-### Chutes AI
-- Paid models with competitive pricing; see [llm.chutes.ai](https://llm.chutes.ai/v1/models)
-- API Key: Get from [chutes.ai](https://chutes.ai)
+### OpenAI-Compatible
+- Supports any OpenAI-compatible `v1` endpoint via custom base URL.
+- Model list is fetched from the provider `/models` endpoint and sorted by lowest known price.
+- API key and base URL are configured in the settings panel.
 
-### Ollama
-- **Local AI models** - No API key required
-- Run on localhost (default: `http://localhost:11434`)
-- Cloud option: Custom Ollama URL
-- Models: Llama 3.2, Mistral, Qwen, etc.
+### Ollama Cloud
+- Cloud API key required.
+- Default base URL: `https://ollama.com` (custom remote base URL supported).
+- Model list is fetched from `GET /api/tags`.
+- Ollama does not currently expose per-model token pricing in this endpoint, so price sort is applied where pricing metadata exists.
 
 ## Usage
 
@@ -160,8 +162,9 @@ Paste the endpoint/key into **API Key Configuration → Playwright Crawler** if 
    - Add Firecrawl/ScrapingBee/Browserless keys if you have them; Jina works with no key
 
 2. **Configure AI Provider**
-   - Select provider (OpenRouter/Chutes/Ollama)
-   - Enter API key (Ollama URL optional for cloud)
+   - Select provider (OpenRouter/OpenAI-compatible/Ollama Cloud)
+   - Enter API key
+   - Optional: set custom base URL for OpenAI-compatible or Ollama Cloud provider
    - Pick a model (defaults to DeepSeek R1T2 Chimera free on OpenRouter)
 
 3. **Accent & Fonts**

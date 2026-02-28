@@ -6,6 +6,7 @@ import {
   type FontOption,
   ALL_FONTS,
 } from '../constants/fonts';
+import { useLanguage } from '../hooks/useLanguage';
 
 export interface FontSelectorProps {
   /** Comma-separated font families or JSON array string */
@@ -74,6 +75,7 @@ function MultiFontDropdown({
   onFamiliesChange,
   placeholder,
 }: MultiFontDropdownProps) {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -124,11 +126,11 @@ function MultiFontDropdown({
   }, [filteredFonts]);
 
   const groupLabels: Record<string, string> = {
-    special: '🔧 特殊選項',
-    'sans-serif': '📝 Sans-Serif 無襯線',
-    serif: '📖 Serif 襯線',
-    monospace: '💻 Monospace 等寬',
-    'nerd-fonts': '🤓 Nerd Fonts',
+    special: `🔧 ${t('specialOptions')}`,
+    'sans-serif': `📝 ${t('sansSerifGroup')}`,
+    serif: `📖 ${t('serifGroup')}`,
+    monospace: `💻 ${t('monospaceGroup')}`,
+    'nerd-fonts': `🤓 ${t('nerdFontsGroup')}`,
   };
 
   const handleAddFont = (family: string) => {
@@ -230,7 +232,7 @@ function MultiFontDropdown({
                     onClick={() => handleMoveUp(index)}
                     disabled={index === 0}
                     className="p-1 text-ctp-overlay1 hover:text-ctp-text disabled:opacity-30"
-                    title="上移"
+                    title={t('moveUp')}
                   >
                     ↑
                   </button>
@@ -239,7 +241,7 @@ function MultiFontDropdown({
                     onClick={() => handleMoveDown(index)}
                     disabled={index === selectedFamilies.length - 1}
                     className="p-1 text-ctp-overlay1 hover:text-ctp-text disabled:opacity-30"
-                    title="下移"
+                    title={t('moveDown')}
                   >
                     ↓
                   </button>
@@ -247,7 +249,7 @@ function MultiFontDropdown({
                     type="button"
                     onClick={() => handleRemoveFont(index)}
                     className="p-1 text-ctp-overlay1 hover:text-ctp-red transition-colors"
-                    title="移除"
+                    title={t('remove')}
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -266,7 +268,7 @@ function MultiFontDropdown({
       >
         <span className="flex items-center gap-2 text-ctp-subtext0">
           <Plus className="h-4 w-4" />
-          {selectedFamilies.length === 0 ? placeholder : '添加備用字體...'}
+          {selectedFamilies.length === 0 ? placeholder : t('addFallbackFont')}
         </span>
         <ChevronDown
           className={`h-4 w-4 text-ctp-overlay1 transition-transform ${
@@ -294,7 +296,7 @@ function MultiFontDropdown({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ctp-overlay1" />
                 <input
                   type="text"
-                  placeholder="搜尋字體..."
+                  placeholder={t('searchFonts')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 bg-ctp-surface1 border border-ctp-surface2 rounded-md text-sm text-ctp-text placeholder-ctp-overlay1 focus:outline-none focus:ring-2 focus:ring-ctp-accent"
@@ -318,7 +320,7 @@ function MultiFontDropdown({
                 >
                   <div className="flex items-center gap-2">
                     <X className="h-4 w-4" />
-                    <span>清除所有選擇（保持原樣）</span>
+                    <span>{t('clearAllKeepOriginal')}</span>
                   </div>
                 </button>
               )}
@@ -375,8 +377,8 @@ function MultiFontDropdown({
               {filteredFonts.length === 0 && (
                 <div className="px-4 py-8 text-center text-ctp-overlay1">
                   {selectedFamilies.length > 0 && !searchQuery
-                    ? '所有字體都已選擇'
-                    : '找不到符合的字體'}
+                    ? t('allFontsSelected')
+                    : t('noFontMatch')}
                 </div>
               )}
             </div>
@@ -393,6 +395,7 @@ export function FontSelector({
   onNormalFontChange,
   onMonoFontChange,
 }: FontSelectorProps) {
+  const { t } = useLanguage();
   // Parse stored font strings to arrays
   const normalFamilies = useMemo(() => parseFontFamilies(normalFont), [normalFont]);
   const monoFamilies = useMemo(() => parseFontFamilies(monoFont), [monoFont]);
@@ -404,57 +407,57 @@ export function FontSelector({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-ctp-accent">Font Settings</h3>
+        <h3 className="text-lg font-semibold text-ctp-accent">{t('fontSettings')}</h3>
         <span className="text-xs text-ctp-subtext0">
-          選擇多個字體作為備用
+          {t('selectFallbackFonts')}
         </span>
       </div>
 
       <div className="text-xs text-ctp-subtext0 bg-ctp-surface1/50 rounded-lg p-3 border border-ctp-surface2">
         <p className="mb-1">
-          <span className="text-ctp-subtext1 font-medium">提示：</span>
-          可選擇多個字體，依順序作為備用。拖曳或使用箭頭調整順序。
+          <span className="text-ctp-subtext1 font-medium">{t('tipLabel')}</span>
+          {t('fontTip')}
         </p>
         <p>
-          Nerd Fonts 需要先在系統上安裝。Google Fonts 會自動匯入。
+          {t('fontTip2')}
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <MultiFontDropdown
-          label="一般文字字體"
+          label={t('normalTextFont')}
           icon={<Type className="h-4 w-4" />}
           fonts={NORMAL_TEXT_FONTS}
           selectedFamilies={normalFamilies}
           onFamiliesChange={(families) => onNormalFontChange(serializeFontFamilies(families))}
-          placeholder="(保持原樣)"
+          placeholder={t('keepOriginal')}
         />
 
         <MultiFontDropdown
-          label="程式碼 / 等寬字體"
+          label={t('codeMonoFont')}
           icon={<Code className="h-4 w-4" />}
           fonts={MONOSPACE_FONTS}
           selectedFamilies={monoFamilies}
           onFamiliesChange={(families) => onMonoFontChange(serializeFontFamilies(families))}
-          placeholder="(保持原樣)"
+          placeholder={t('keepOriginal')}
         />
       </div>
 
       {/* Preview section */}
       {(normalFamilies.length > 0 || monoFamilies.length > 0) && (
         <div className="mt-4 p-4 bg-ctp-mantle rounded-lg border border-ctp-surface2">
-          <h4 className="text-sm font-medium text-ctp-subtext1 mb-3">預覽</h4>
+          <h4 className="text-sm font-medium text-ctp-subtext1 mb-3">{t('preview')}</h4>
           <div className="space-y-3">
             {normalFamilies.length > 0 && (
               <div>
                 <div className="text-xs text-ctp-overlay1 mb-1">
-                  一般文字 ({normalFamilies.length} 個字體)：
+                  {t('normalTextCount', { count: normalFamilies.length })}
                 </div>
                 <p
                   className="text-ctp-text"
                   style={{ fontFamily: normalCSSFamily }}
                 >
-                  The quick brown fox jumps over the lazy dog. 敏捷的棕色狐狸跳過懶狗。
+                  The quick brown fox jumps over the lazy dog.
                 </p>
                 <div className="text-xs text-ctp-overlay0 mt-1 font-mono break-all">
                   font-family: {normalCSSFamily}
@@ -464,13 +467,13 @@ export function FontSelector({
             {monoFamilies.length > 0 && (
               <div>
                 <div className="text-xs text-ctp-overlay1 mb-1">
-                  程式碼 ({monoFamilies.length} 個字體)：
+                  {t('codeTextCount', { count: monoFamilies.length })}
                 </div>
                 <code
                   className="block p-2 bg-ctp-crust rounded text-ctp-text text-sm"
                   style={{ fontFamily: monoCSSFamily }}
                 >
-                  const greeting = &quot;Hello, 世界!&quot;;
+                  const greeting = &quot;Hello, world!&quot;;
                 </code>
                 <div className="text-xs text-ctp-overlay0 mt-1 font-mono break-all">
                   font-family: {monoCSSFamily}

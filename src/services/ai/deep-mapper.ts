@@ -33,7 +33,6 @@ import {
 import { CATPPUCCIN_PALETTES } from '../../constants/catppuccin-colors';
 import { processSVGForLESS } from '../../utils/deep-analysis/svg-analyzer';
 import { analyzeColorsWithOpenRouter } from './openrouter';
-import { analyzeColorsWithChutes } from './chutes';
 
 const CATPPUCCIN_COLOR_TOKENS: CatppuccinColor[] = [
   'base',
@@ -947,22 +946,8 @@ async function callAIProvider(
       }
       return response;
     }
-    case 'chutes': {
-      if (!apiKey || !model) {
-        throw new Error('Chutes requires apiKey and model for deep analysis prompts');
-      }
-      const response = await analyzeColorsWithChutes(
-        crawl,
-        config.mainAccent,
-        apiKey,
-        model,
-        prompt,
-      );
-      if (typeof response !== 'string') {
-        throw new Error('Unexpected Chutes response for custom prompt');
-      }
-      return response;
-    }
+    case 'openai-compatible':
+      throw new Error('Custom deep analysis prompts are not yet supported for OpenAI-compatible providers.');
     case 'ollama':
       console.warn(
         `[DeepMapper] Ollama provider was selected for custom deep analysis prompt, but this operation is not supported. Falling back to default mappings. Prompt: "${prompt}"`

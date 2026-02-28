@@ -31,19 +31,22 @@ export interface CrawlerResult {
 }
 
 // AI service types
-export type AIProvider = 'openrouter' | 'chutes' | 'ollama';
+export type AIProvider = 'openrouter' | 'openai-compatible' | 'ollama';
 
 export interface AIModel {
   id: string;
   name: string;
   provider: AIProvider;
   isFree: boolean;
+  inputPricePerMillion?: number;
+  outputPricePerMillion?: number;
 }
 
 export interface AIConfig {
   provider: AIProvider;
   apiKey: string;
   model: string;
+  baseUrl?: string;
 }
 
 // Theme output formats

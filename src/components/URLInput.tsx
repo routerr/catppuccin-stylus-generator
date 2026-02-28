@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Globe } from 'lucide-react';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface URLInputProps {
   onSubmit: (url: string) => void;
@@ -10,6 +11,7 @@ interface URLInputProps {
 export function URLInput({ onSubmit, disabled, canRegenerate }: URLInputProps) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
+  const { t } = useLanguage();
 
   const validateURL = (input: string): boolean => {
     try {
@@ -25,12 +27,12 @@ export function URLInput({ onSubmit, disabled, canRegenerate }: URLInputProps) {
     setError('');
 
     if (!url.trim()) {
-      setError('Please enter a URL');
+      setError(t('enterUrl'));
       return;
     }
 
     if (!validateURL(url)) {
-      setError('Please enter a valid URL (e.g., https://example.com)');
+      setError(t('enterValidUrl'));
       return;
     }
 
@@ -41,7 +43,7 @@ export function URLInput({ onSubmit, disabled, canRegenerate }: URLInputProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="url" className="block text-sm font-medium text-ctp-subtext1 mb-2">
-          Website URL
+          {t('websiteUrl')}
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -64,8 +66,8 @@ export function URLInput({ onSubmit, disabled, canRegenerate }: URLInputProps) {
 
       {canRegenerate && (
         <div className="bg-ctp-yellow/20 border border-ctp-yellow/30 rounded-lg p-3">
-          <p className="text-sm text-ctp-subtext0">
-            ⚡ AI config changed - click below to regenerate with new settings
+            <p className="text-sm text-ctp-subtext0">
+            ⚡ {t('aiConfigChanged')}
           </p>
         </div>
       )}
@@ -75,7 +77,7 @@ export function URLInput({ onSubmit, disabled, canRegenerate }: URLInputProps) {
         disabled={disabled}
         className="w-full bg-gradient-to-r from-ctp-accent to-ctp-bi-accent hover:opacity-90 text-ctp-base font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
       >
-        {disabled ? 'Processing...' : canRegenerate ? 'Regenerate Theme' : 'Generate Theme'}
+        {disabled ? t('processing') : canRegenerate ? t('regenerateTheme') : t('generateTheme')}
       </button>
     </form>
   );

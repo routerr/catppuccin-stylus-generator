@@ -74,6 +74,7 @@ function applyThemeVariables(config: ThemeConfig): void {
   const accentValue = palette[config.accent];
   root.style.setProperty('--ctp-accent', accentValue.hex);
   root.style.setProperty('--ctp-accent-rgb', `${accentValue.rgb.r}, ${accentValue.rgb.g}, ${accentValue.rgb.b}`);
+  root.style.setProperty('--ctp-bi-accent', palette.pink.hex);
 
   // Set data attribute for potential CSS selectors
   root.setAttribute('data-ctp-flavor', config.flavor);
