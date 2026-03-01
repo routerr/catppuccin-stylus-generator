@@ -18,6 +18,28 @@ import { createUserStylePackage } from './services/generators';
 import { useVersion } from './hooks/useVersion';
 import catppuccinLogo from '/catppuccin.png';
 
+function inferSourceUrlFromHtml(html: string, fallbackUrl: string): string {
+  const pick = (regex: RegExp): string | null => {
+    const match = html.match(regex);
+    if (!match || !match[1]) return null;
+    const candidate = match[1].trim();
+    if (!/^https?:\/\//i.test(candidate)) return null;
+    try {
+      return new URL(candidate).href;
+    } catch {
+      return null;
+    }
+  };
+
+  return (
+    pick(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i) ||
+    pick(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i) ||
+    pick(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:url["']/i) ||
+    pick(/<meta[^>]+name=["']twitter:url["'][^>]+content=["']([^"']+)["']/i) ||
+    fallbackUrl
+  );
+}
+
 function App() {
   const { language, t } = useLanguage();
   const [aiProvider, setAIProvider] = useState<AIProvider>('openrouter');
@@ -344,17 +366,18 @@ function App() {
     ]);
 
     try {
+      const sourceUrl = inferSourceUrlFromHtml(folderResult.html, folderResult.url);
       // Build palette profile from folder content
       const { buildPaletteProfile } = await import('./services/palette-profile');
       const paletteProfile = buildPaletteProfile({
-        url: folderResult.url,
+        url: sourceUrl,
         html: folderResult.html,
         css: folderResult.css,
       });
 
       // Create a CrawlerResult from folder content
       const crawlerResult: CrawlerResult = {
-        url: folderResult.url,
+        url: sourceUrl,
         title: 'Local Folder',
         content: folderResult.html,
         html: folderResult.html,

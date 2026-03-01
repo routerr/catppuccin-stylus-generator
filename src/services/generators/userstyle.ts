@@ -68,6 +68,24 @@ export interface CSSAnalysisData {
   detectedMode?: 'dark' | 'light';
 }
 
+function buildDocumentScope(domain: string): string {
+  const clean = domain.replace(/^www\./i, '').toLowerCase().trim();
+  const targets = new Set<string>();
+  if (clean) targets.add(clean);
+
+  // Known alias pair: NotebookLM moved between notebook.google.com and notebooklm.google.com.
+  if (clean === 'notebook.google.com') targets.add('notebooklm.google.com');
+  if (clean === 'notebooklm.google.com') targets.add('notebook.google.com');
+
+  if (targets.size === 0) {
+    targets.add('example.com');
+  }
+
+  return Array.from(targets)
+    .map((d) => `domain("${d}")`)
+    .join(', ');
+}
+
 /**
  * generateUserStyle
  * Accepts legacy mappings: ColorMapping[]
@@ -152,7 +170,7 @@ export function generateUserStyle(
 
 @import "https://userstyles.catppuccin.com/lib/lib.less";
 
-@-moz-document domain("${meta.domain}") {
+@-moz-document ${buildDocumentScope(meta.domain)} {
 ${generateFontImports(cssAnalysis?.fontSettings)}
   /* Baseline theme: always apply one flavor so the stylesheet never becomes a no-op */
   :root {
